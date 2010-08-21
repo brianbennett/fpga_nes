@@ -1,0 +1,12 @@
+# ==== Clock inputs (CLK) ====
+NET "CLK_50MHZ" LOC = "C9" | IOSTANDARD = LVCMOS33 ;
+# Define clock period for 50 MHz oscillator (40%/60% duty-cycle)
+NET "CLK_50MHZ" PERIOD = 20.0ns HIGH 40%;
+
+# ==== Pushbuttons (BTN) ====
+NET "BTN_SOUTH" LOC = "K17" | IOSTANDARD = LVTTL | PULLDOWN ;
+
+# ==== RS-232 Serial Ports (RS232) ====
+NET "RS232_DCE_RXD" LOC = "R7" | IOSTANDARD = LVTTL ;
+NET "RS232_DCE_TXD" LOC = "M14" | IOSTANDARD = LVTTL | DRIVE = 8 | SLEW = SLOW ;
+
