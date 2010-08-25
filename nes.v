@@ -18,8 +18,32 @@ module nes
   output wire RS232_DCE_TXD   // rs-232 tx signal
 );
 
+wire [ 7:0] cpu_d;     // D[ 7:0] (data bus)
+wire [15:0] cpu_a;     // A[15:0] (address bus)
+wire        cpu_r_nw;  // R/!W
+
+wire        cpumc_err; // Error signal for cpumc block
+
+// cpumc block: cpu memory controller.
+cpumc cpumc_blk(
+  .clk(CLK_50MHZ),
+  .wr(~cpu_r_nw),
+  .addr(cpu_a),
+  .data(cpu_d),
+  .invalid_req(cpumc_err)
+);
+
 // dbg block: interacts with debugger through serial connection.
-dbg dbg_blk(CLK_50MHZ, BTN_SOUTH, RS232_DCE_RXD, RS232_DCE_TXD);
+dbg dbg_blk(
+  .clk(CLK_50MHZ),
+  .rst(BTN_SOUTH),
+  .rx(RS232_DCE_RXD),
+  .cpumc_err(cpumc_err),
+  .cpu_d(cpu_d),
+  .tx(RS232_DCE_TXD),
+  .cpu_r_nw(cpu_r_nw),
+  .cpu_a(cpu_a)
+);
 
 endmodule
 
