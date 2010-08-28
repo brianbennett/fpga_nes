@@ -166,7 +166,7 @@ always @*
                 begin
                   // Read CNT_HI into high bits of execute count.
                   d_execute_cnt = { rd_data, q_execute_cnt[7:0] };
-                  d_state = S_ECHO_STG_1;
+                  d_state = (d_execute_cnt) ? S_ECHO_STG_1 : S_DECODE;
                 end
             end
         end
