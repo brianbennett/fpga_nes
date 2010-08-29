@@ -219,7 +219,7 @@ always @*
                   // Read CNT_HI into high bits of execute count.  Execute count is shifted by 1:
                   // use 2 clock cycles per byte read.
                   d_execute_cnt = { rd_data, q_execute_cnt[7:0], 1'b0 };
-                  d_state = S_CPU_MEM_RD_STG_1;
+                  d_state = (d_execute_cnt) ? S_CPU_MEM_RD_STG_1 : S_DECODE;
                 end
             end
         end
@@ -280,7 +280,7 @@ always @*
                 begin
                   // Read CNT_HI into high bits of execute count.
                   d_execute_cnt = { rd_data, q_execute_cnt[7:0] };
-                  d_state = S_CPU_MEM_WR_STG_1;
+                  d_state = (d_execute_cnt) ? S_CPU_MEM_WR_STG_1 : S_DECODE;
                 end
             end
         end
