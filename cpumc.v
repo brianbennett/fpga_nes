@@ -98,13 +98,13 @@ always @*
       begin
         // PRG-ROM LO range (0x8000 - 0xBFFF).
         out_data     = prgrom_lo_rd_data;
-        prgrom_lo_wr = prgrom_lo_wr;
+        prgrom_lo_wr = wr;
       end
     else if (addr[15:14] == 2'b11)
       begin
         // PRG-ROM HI range (0xC000 - 0xFFFF).
         out_data     = prgrom_hi_rd_data;
-        prgrom_hi_wr = prgrom_hi_wr;
+        prgrom_hi_wr = wr;
       end
     else
       begin
