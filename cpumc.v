@@ -14,11 +14,10 @@ module cpumc
   input  wire        clk,         // 50MHz system clock signal
   input  wire        wr,          // write enable signal
   input  wire [15:0] addr,        // 16-bit memory address
-  inout  wire [ 7:0] data,        // data bits (input/output)
+  input  wire [ 7:0] din,         // data input bus
+  output reg  [ 7:0] dout,        // data output bus
   output reg         invalid_req  // invalid request signal (1 on error, 0 on success)
 );
-
-reg  [ 7:0] out_data;
 
 wire [10:0] ram_addr;
 wire [ 7:0] ram_rd_data;
@@ -47,7 +46,7 @@ dual_port_ram_sync #(.ADDR_WIDTH(11),
   .clk(clk),
   .we(ram_wr),
   .addr_a(ram_addr),
-  .din_a(data),
+  .din_a(din),
   .dout_a(ram_rd_data),
   .addr_b(11'h000)
 );
@@ -60,7 +59,7 @@ dual_port_ram_sync #(.ADDR_WIDTH(14),
   .clk(clk),
   .we(prgrom_lo_wr),
   .addr_a(prgrom_lo_addr),
-  .din_a(data),
+  .din_a(din),
   .dout_a(prgrom_lo_rd_data),
   .addr_b(14'h0000)
 );
@@ -73,7 +72,7 @@ dual_port_ram_sync #(.ADDR_WIDTH(14),
   .clk(clk),
   .we(prgrom_hi_wr),
   .addr_a(prgrom_hi_addr),
-  .din_a(data),
+  .din_a(din),
   .dout_a(prgrom_hi_rd_data),
   .addr_b(14'h0000)
 );
@@ -91,29 +90,27 @@ always @*
     if (addr[15:13] == 0)
       begin
         // RAM range (0x0000 - 0x1FFF).
-        out_data = ram_rd_data;
-        ram_wr   = wr;
+        dout   = ram_rd_data;
+        ram_wr = wr;
       end
     else if (addr[15:14] == 2'b10)
       begin
         // PRG-ROM LO range (0x8000 - 0xBFFF).
-        out_data     = prgrom_lo_rd_data;
+        dout         = prgrom_lo_rd_data;
         prgrom_lo_wr = wr;
       end
     else if (addr[15:14] == 2'b11)
       begin
         // PRG-ROM HI range (0xC000 - 0xFFFF).
-        out_data     = prgrom_hi_rd_data;
+        dout         = prgrom_hi_rd_data;
         prgrom_hi_wr = wr;
       end
     else
       begin
-        out_data    = 8'hcd;
+        dout        = 8'hcd;
         invalid_req = 1'b1;
       end
   end
-
-assign data = (wr) ? 8'bzzzzzzzz : out_data;
 
 endmodule
 
