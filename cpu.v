@@ -397,14 +397,14 @@ always @*
               zp_addr_to_ab = 1'b1;
               ac_to_dor     = 1'b1;
             end
-          STA_ZPX, STY_ZPX:
+          STA_ZPX, STY_ZPX, LDA_ZPX, LDY_ZPX:
             zpx_comps_to_alu = 1'b1;
           STX_ZP:
             begin
               zp_addr_to_ab = 1'b1;
               x_to_dor      = 1'b1;
             end
-          STX_ZPY:
+          STX_ZPY, LDX_ZPY:
             zpy_comps_to_alu = 1'b1;
           STY_ZP:
             begin
@@ -421,6 +421,8 @@ always @*
               load_prg_byte  = 1'b1;
               lda_last_cycle = 1'b1;
             end
+          LDA_ZPX, LDX_ZPY, LDY_ZPX:
+            zpidx_addr_to_ab = 1'b1;
           LDX_ZP:
             begin
               load_prg_byte  = 1'b1;
@@ -456,6 +458,21 @@ always @*
     else if (q_t == T3)
       begin
         case (q_ir)
+          LDA_ZPX:
+            begin
+              load_prg_byte  = 1'b1;
+              lda_last_cycle = 1'b1;
+            end
+          LDX_ZPY:
+            begin
+              load_prg_byte  = 1'b1;
+              ldx_last_cycle = 1'b1;
+            end
+          LDY_ZPX:
+            begin
+              load_prg_byte  = 1'b1;
+              ldy_last_cycle = 1'b1;
+            end
           STA_ZPX, STX_ZPY, STY_ZPX:
             begin
               load_prg_byte = 1'b1;
