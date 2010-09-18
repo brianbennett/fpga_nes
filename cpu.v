@@ -14,7 +14,9 @@ module cpu
   input  wire        clk,         // 50MHz system clock
   input  wire        rst,         // reset signal
   input  wire        ready,       // ready signal
-  input  wire [ 3:0] dbgreg_sel,  // dbg reg read/write select
+  input  wire [ 3:0] dbgreg_sel,  // dbg reg select
+  input  wire [ 7:0] dbgreg_in,   // dbg reg write input
+  input  wire        dbgreg_wr,   // dbg reg rd/wr select
   input  wire [ 7:0] din,         // data input bus
   output wire [ 7:0] dout,        // data output bus
   output wire [15:0] a,           // address bus
@@ -218,6 +220,23 @@ always @(posedge clk)
         q_ai   <= d_ai;
         q_bi   <= d_bi;
       end
+    else if (!rdy)
+      begin
+        // Continue to update the address bus registers during a debug break. This allows correct
+        // function when the debugger updates the PC.
+        q_abl  <= d_abl;
+        q_abh  <= d_abh;
+
+        // Update registers based on debug register write packets.
+        if (dbgreg_wr)
+          begin
+            q_ac <= (dbgreg_sel == `REGSEL_AC) ? dbgreg_in    : q_ac;
+            q_x  <= (dbgreg_sel == `REGSEL_X)  ? dbgreg_in    : q_x;
+            q_y  <= (dbgreg_sel == `REGSEL_Y)  ? dbgreg_in    : q_y;
+            q_z  <= (dbgreg_sel == `REGSEL_P)  ? dbgreg_in[1] : q_z;
+            q_n  <= (dbgreg_sel == `REGSEL_P)  ? dbgreg_in[7] : q_n;
+          end
+      end
   end
 
 //
@@ -240,6 +259,12 @@ always @(posedge clk)
         q_dl  <= d_dl;
         q_pd  <= d_pd;
         q_add <= d_add;
+      end
+    else if (!rdy && dbgreg_wr)
+      begin
+        // Update registers based on debug register write packets.
+        q_pcl <= (dbgreg_sel == `REGSEL_PCL) ? dbgreg_in : q_pcl;
+        q_pch <= (dbgreg_sel == `REGSEL_PCH) ? dbgreg_in : q_pch;
       end
   end
 

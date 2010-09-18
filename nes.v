@@ -29,12 +29,16 @@ wire        cpu_ready;       // READY
 wire        cpu_brk;         // signals CPU-intiated debug break
 wire [ 3:0] cpu_dbgreg_sel;  // CPU input for debugger register read/write select
 wire [ 7:0] cpu_dbgreg_out;  // CPU output for debugger register reads
+wire [ 7:0] cpu_dbgreg_in;   // CPU input for debugger register writes
+wire        cpu_dbgreg_wr;   // CPU input for debugger register writen enable
 
 cpu cpu_blk(
   .clk(CLK_50MHZ),
   .rst(BTN_SOUTH),
   .ready(cpu_ready),
   .dbgreg_sel(cpu_dbgreg_sel),
+  .dbgreg_in(cpu_dbgreg_in),
+  .dbgreg_wr(cpu_dbgreg_wr),
   .din(cpu_din),
   .dout(cpu_dout),
   .a(cpu_a),
@@ -75,14 +79,16 @@ dbg dbg_blk(
   .rx(RS232_DCE_RXD),
   .cpumc_err(cpumc_err),
   .brk(cpu_brk),
-  .cpu_dbgreg_in(cpu_dbgreg_out),
   .cpu_din(dbg_cpu_din),
-  .cpu_dout(dbg_cpu_dout),
+  .cpu_dbgreg_in(cpu_dbgreg_out),
   .tx(RS232_DCE_TXD),
   .cpu_r_nw(dbg_cpu_r_nw),
   .cpu_a(dbg_cpu_a),
+  .cpu_dout(dbg_cpu_dout),
   .cpu_ready(cpu_ready),
-  .cpu_dbgreg_sel(cpu_dbgreg_sel)
+  .cpu_dbgreg_sel(cpu_dbgreg_sel),
+  .cpu_dbgreg_out(cpu_dbgreg_in),
+  .cpu_dbgreg_wr(cpu_dbgreg_wr)
 );
 
 // Mux cpumc signals from cpu or dbg blk, depending on debug break state (cpu_ready).

@@ -18,13 +18,15 @@ module dbg
   input  wire        cpumc_err,      // cpumc error signal
   input  wire        brk,            // signal for cpu-intiated debug break
   input  wire [ 7:0] cpu_din,        // cpu data bus (D) [input]
-  output wire [ 7:0] cpu_dout,       // cpu data bus (D) [output]
   input  wire [ 7:0] cpu_dbgreg_in,  // cpu debug register read bus
   output wire        tx,             // rs-232 tx signal
   output reg         cpu_r_nw,       // cpu R/!W pin
   output wire [15:0] cpu_a,          // cpu A bus (A)
+  output wire [ 7:0] cpu_dout,       // cpu data bus (D) [output]
   output wire        cpu_ready,      // cpu READY signal
-  output reg  [ 3:0] cpu_dbgreg_sel  // selects cpu register to read through cpu_dbgreg_in
+  output reg  [ 3:0] cpu_dbgreg_sel, // selects cpu register to read/write through cpu_dbgreg_in
+  output reg  [ 7:0] cpu_dbgreg_out, // cpu register write value for debug reg writes
+  output reg         cpu_dbgreg_wr   // selects cpu register read/write mode
 );
 
 // Debug packet opcodes.
@@ -34,7 +36,8 @@ localparam [7:0] OP_ECHO          = 8'h00,
                  OP_DBG_BRK       = 8'h03,
                  OP_DBG_RUN       = 8'h04,
                  OP_CPU_REG_RD    = 8'h05,
-                 OP_QUERY_DBG_BRK = 8'h06;
+                 OP_CPU_REG_WR    = 8'h06,
+                 OP_QUERY_DBG_BRK = 8'h07;
 
 // Error code bit positions.
 localparam DBG_UART_PARITY_ERR = 0,
@@ -50,7 +53,9 @@ localparam [3:0] S_DISABLED         = 4'h0,
                  S_CPU_MEM_RD_STG_1 = 4'h5,
                  S_CPU_MEM_WR_STG_0 = 4'h6,
                  S_CPU_MEM_WR_STG_1 = 4'h7,
-                 S_CPU_REG_RD       = 4'h8;
+                 S_CPU_REG_RD       = 4'h8,
+                 S_CPU_REG_WR_STG_0 = 4'h9,
+                 S_CPU_REG_WR_STG_1 = 4'hA;
 
 reg [ 3:0] q_state,       d_state;
 reg [ 1:0] q_decode_cnt,  d_decode_cnt;
@@ -129,6 +134,8 @@ always @*
     // Setup default output regs.
     cpu_r_nw       = 1'b1;
     cpu_dbgreg_sel = 0;
+    cpu_dbgreg_out = 0;
+    cpu_dbgreg_wr  = 1'b0;
 
     if (parity_err)
       d_err_code[DBG_UART_PARITY_ERR] = 1'b1;
@@ -173,6 +180,7 @@ always @*
                 OP_CPU_MEM_WR:  d_state = S_CPU_MEM_WR_STG_0;
                 OP_DBG_BRK:     d_state = S_DECODE;
                 OP_CPU_REG_RD:  d_state = S_CPU_REG_RD;
+                OP_CPU_REG_WR:  d_state = S_CPU_REG_WR_STG_0;
                 OP_DBG_RUN:
                   begin
                     d_state = S_DISABLED;
@@ -359,6 +367,31 @@ always @*
               d_wr_en        = 1'b1;           // request uart write
 
               d_state = S_DECODE;
+            end
+        end
+
+      // --- CPU_REG_WR ---
+      //   OP_CODE
+      //   REG_SEL
+      //   DATA
+      S_CPU_REG_WR_STG_0:
+        begin
+          if (!rx_empty)
+            begin
+              rd_en   = 1'b1;
+              d_addr  = rd_data;
+              d_state = S_CPU_REG_WR_STG_1;
+            end
+        end
+      S_CPU_REG_WR_STG_1:
+        begin
+          if (!rx_empty)
+            begin
+              rd_en          = 1'b1;
+              cpu_dbgreg_sel = q_addr;
+              cpu_dbgreg_wr  = 1'b1;
+              cpu_dbgreg_out = rd_data;
+              d_state        = S_DECODE;
             end
         end
     endcase
