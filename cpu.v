@@ -37,10 +37,13 @@ localparam [7:0] BRK     = 8'h00,
                  LDY_ZP  = 8'hA4,
                  LDY_ZPX = 8'hB4,
                  NOP     = 8'hEA,
+                 STA_ABS = 8'h8D,
                  STA_ZP  = 8'h85,
                  STA_ZPX = 8'h95,
+                 STX_ABS = 8'h8E,
                  STX_ZP  = 8'h86,
                  STX_ZPY = 8'h96,
+                 STY_ABS = 8'h8C,
                  STY_ZP  = 8'h84,
                  STY_ZPX = 8'h94;
 
@@ -122,6 +125,7 @@ wire       dl_adl;   // output dl reg to adl bus
 wire       pcl_adl;  // output pcl reg to adl bus
 
 // ADH bus drive enables.
+wire       dl_adh;   // output dl reg to adh bus
 wire       pch_adh;  // output pch reg to adh bus
 
 // DB bus drive enables.
@@ -137,13 +141,14 @@ wire       sb_adh;   // controls sb/adh pass mosfet
 wire       sb_db;    // controls sb/db pass mosfet
 
 // Register LOAD controls.
+wire       sb_ac;    // latch sb bus value in ac reg
+wire       sb_x;     // latch sb bus value in x reg
+wire       sb_y;     // latch sb bus value in y reg
 wire       adh_abh;  // latch adh bus value in abh reg
 wire       adl_abl;  // latch adl bus value in abl reg
 wire       db_add;   // latch db bus value in bi reg
-wire       sb_ac;    // latch sb bus value in ac reg
 wire       sb_add;   // latch sb bus value in ai reg
-wire       sb_x;     // latch sb bus value in x reg
-wire       sb_y;     // latch sb bus value in y reg
+wire       zero_add; // latch 0 into ai reg
 
 // Misc. controls.
 wire       i_pc;     // increment pc
@@ -306,6 +311,7 @@ always @*
           // These instructions are in their last cycle, but are using the data bus during the last
           // cycle (e.g., load/store) such that they can't prefetch.
           if ((q_ir == STA_ZPX) || (q_ir == STX_ZPY) || (q_ir == STY_ZPX) ||
+              (q_ir == STA_ABS) || (q_ir == STX_ABS) || (q_ir == STY_ABS) ||
               (q_ir == LDA_ZPX) || (q_ir == LDX_ZPY) || (q_ir == LDY_ZPX))
             d_t = T0;
 
@@ -341,6 +347,8 @@ reg zp_addr_to_ab;     // load ab with zero-page address specified in dl
 reg zpidx_addr_to_ab;  // load ab with zero-page address computes for zpx/zpy instructions
 reg zpx_comps_to_alu;  // load alu inputs ai/bi with vals for zpx addr calc
 reg zpy_comps_to_alu;  // load alu inputs ai/bi with vals for zpy addr calc
+reg dl_to_add;         // load value from data bus into the add reg
+reg abs_addr_to_ab;    // load an absolute address into the ab regs (dl to abl, add to abh)
 
 always @*
   begin
@@ -356,6 +364,8 @@ always @*
     zpidx_addr_to_ab = 1'b0;
     zpx_comps_to_alu = 1'b0;
     zpy_comps_to_alu = 1'b0;
+    dl_to_add        = 1'b0;
+    abs_addr_to_ab   = 1'b0;
 
     // Defaults for output signals.
     r_nw = 1'b1;
@@ -392,6 +402,11 @@ always @*
             end
           NOP:
             load_prg_byte = 1'b1;
+          STA_ABS, STX_ABS, STY_ABS:
+            begin
+              load_prg_byte = 1'b1;
+              dl_to_add     = 1'b1;
+            end
           STA_ZP:
             begin
               zp_addr_to_ab = 1'b1;
@@ -433,6 +448,11 @@ always @*
               load_prg_byte  = 1'b1;
               ldy_last_cycle = 1'b1;
             end
+          STA_ABS:
+            begin
+              abs_addr_to_ab = 1'b1;
+              ac_to_dor      = 1'b1;
+            end            
           STA_ZP, STX_ZP, STY_ZP:
             begin
               load_prg_byte = 1'b1;
@@ -443,11 +463,21 @@ always @*
               zpidx_addr_to_ab = 1'b1;
               ac_to_dor        = 1'b1;
             end
+          STX_ABS:
+            begin
+              abs_addr_to_ab = 1'b1;
+              x_to_dor       = 1'b1;
+            end            
           STX_ZPY:
             begin
               zpidx_addr_to_ab = 1'b1;
               x_to_dor         = 1'b1;
             end
+          STY_ABS:
+            begin
+              abs_addr_to_ab = 1'b1;
+              y_to_dor       = 1'b1;
+            end            
           STY_ZPX:
             begin
               zpidx_addr_to_ab = 1'b1;
@@ -473,7 +503,7 @@ always @*
               load_prg_byte  = 1'b1;
               ldy_last_cycle = 1'b1;
             end
-          STA_ZPX, STX_ZPY, STY_ZPX:
+           STA_ABS, STA_ZPX, STX_ABS, STX_ZPY, STY_ABS, STY_ZPX:
             begin
               load_prg_byte = 1'b1;
               r_nw          = 1'b0;
@@ -496,29 +526,33 @@ always @*
 //
 // Random Control Logic
 //
-assign add_adl = zpidx_addr_to_ab;
-assign dl_adl  = zp_addr_to_ab;
-assign pcl_adl = load_prg_byte;
-assign pch_adh = load_prg_byte;
-assign ac_db   = ac_to_dor;
-assign dl_db   = lda_last_cycle   | ldx_last_cycle   | ldy_last_cycle   |
-                 zpx_comps_to_alu | zpy_comps_to_alu;
-assign x_sb    = zpx_comps_to_alu | x_to_dor;
-assign y_sb    = zpy_comps_to_alu | y_to_dor;
-assign sb_adh  = 1'b0;
-assign sb_db   = lda_last_cycle   | ldx_last_cycle   | ldy_last_cycle   |
-                 x_to_dor         | y_to_dor;
-assign adh_abh = load_prg_byte    | zp_addr_to_ab    | zpidx_addr_to_ab;
-assign adl_abl = load_prg_byte    | zp_addr_to_ab    | zpidx_addr_to_ab;
-assign db_add  = zpx_comps_to_alu | zpy_comps_to_alu;
-assign sb_ac   = lda_last_cycle;
-assign sb_add  = zpx_comps_to_alu | zpy_comps_to_alu;
-assign sb_x    = ldx_last_cycle;
-assign sb_y    = ldy_last_cycle;
-assign i_pc    = load_prg_byte;
-assign db7_n   = lda_last_cycle   | ldx_last_cycle   | ldy_last_cycle;
-assign dbz_z   = lda_last_cycle   | ldx_last_cycle   | ldy_last_cycle;
-assign sums    = zpidx_addr_to_ab;
+assign add_adl  = zpidx_addr_to_ab | abs_addr_to_ab;
+assign dl_adl   = zp_addr_to_ab;
+assign pcl_adl  = load_prg_byte;
+assign dl_adh   = abs_addr_to_ab;
+assign pch_adh  = load_prg_byte;
+assign ac_db    = ac_to_dor;
+assign dl_db    = lda_last_cycle   | ldx_last_cycle   | ldy_last_cycle   |
+                  zpx_comps_to_alu | zpy_comps_to_alu | dl_to_add;
+assign x_sb     = zpx_comps_to_alu | x_to_dor;
+assign y_sb     = zpy_comps_to_alu | y_to_dor;
+assign sb_adh   = 1'b0;
+assign sb_db    = lda_last_cycle   | ldx_last_cycle   | ldy_last_cycle   |
+                  x_to_dor         | y_to_dor;
+assign adh_abh  = load_prg_byte    | zp_addr_to_ab    | zpidx_addr_to_ab |
+                  abs_addr_to_ab;
+assign adl_abl  = load_prg_byte    | zp_addr_to_ab    | zpidx_addr_to_ab |
+                  abs_addr_to_ab;
+assign db_add   = zpx_comps_to_alu | zpy_comps_to_alu | dl_to_add;
+assign zero_add = dl_to_add;
+assign sb_ac    = lda_last_cycle;
+assign sb_add   = zpx_comps_to_alu | zpy_comps_to_alu;
+assign sb_x     = ldx_last_cycle;
+assign sb_y     = ldy_last_cycle;
+assign i_pc     = load_prg_byte;
+assign db7_n    = lda_last_cycle   | ldx_last_cycle   | ldy_last_cycle;
+assign dbz_z    = lda_last_cycle   | ldx_last_cycle   | ldy_last_cycle;
+assign sums     = zpidx_addr_to_ab | abs_addr_to_ab;
 
 //
 // Update internal buses.  Use of in/out to replicate pass mosfets and avoid using internal
@@ -527,7 +561,8 @@ assign sums    = zpidx_addr_to_ab;
 assign adl     = (pcl_adl) ? q_pcl :
                  (dl_adl)  ? q_dl  :
                  (add_adl) ? q_add : 8'h00;
-assign adh_in  = (pch_adh) ? q_pch : 8'h00;
+assign adh_in  = (dl_adh)  ? q_dl  : 
+                 (pch_adh) ? q_pch : 8'h00;
 assign db_in   = (dl_db)   ? q_dl  :
                  (ac_db)   ? q_ac  : 8'h00;
 assign sb_in   = (x_sb)    ? q_x   :
@@ -547,19 +582,20 @@ assign sb_out  = (sb_adh & sb_db) ? (sb_in | db_in | adh_in) :
 //
 // Assign next FF states.
 //
-assign d_abl            = (adl_abl) ? adl                         : q_abl;
-assign d_abh            = (adh_abh) ? adh_out                     : q_abh;
-assign d_ac             = (sb_ac)   ? sb_out                      : q_ac;
-assign d_x              = (sb_x)    ? sb_out                      : q_x;
-assign d_y              = (sb_y)    ? sb_out                      : q_y;
+assign d_abl            = (adl_abl)  ? adl                         : q_abl;
+assign d_abh            = (adh_abh)  ? adh_out                     : q_abh;
+assign d_ac             = (sb_ac)    ? sb_out                      : q_ac;
+assign d_x              = (sb_x)     ? sb_out                      : q_x;
+assign d_y              = (sb_y)     ? sb_out                      : q_y;
 assign d_pd             = din;
 assign d_dl             = din;
 assign d_dor            = db_out;
-assign { d_pch, d_pcl } = (i_pc)    ? { q_pch, q_pcl } + 16'h0001 : { q_pch, q_pcl };
-assign d_z              = (dbz_z)   ? ~|db_out                    : q_z;
-assign d_n              = (db7_n)   ? db_out[7]                   : q_n;
-assign d_ai             = (sb_add)  ? sb_out                      : q_ai;
-assign d_bi             = (db_add)  ? db_out                      : q_bi;
+assign { d_pch, d_pcl } = (i_pc)     ? { q_pch, q_pcl } + 16'h0001 : { q_pch, q_pcl };
+assign d_z              = (dbz_z)    ? ~|db_out                    : q_z;
+assign d_n              = (db7_n)    ? db_out[7]                   : q_n;
+assign d_ai             = (sb_add)   ? sb_out                      :
+                          (zero_add) ? 8'h0                        : q_ai;
+assign d_bi             = (db_add)   ? db_out                      : q_bi;
 
 // Combine full processor status register.
 assign p = { q_n, 5'b00000, q_z, 1'b0 };
