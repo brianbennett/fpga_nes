@@ -27,12 +27,15 @@ module cpu
 
 // Opcodes.
 localparam [7:0] BRK     = 8'h00,
+                 LDA_ABS = 8'hAD,
                  LDA_IMM = 8'hA9,
                  LDA_ZP  = 8'hA5,
                  LDA_ZPX = 8'hB5,
+                 LDX_ABS = 8'hAE,
                  LDX_IMM = 8'hA2,
                  LDX_ZP  = 8'hA6,
                  LDX_ZPY = 8'hB6,
+                 LDY_ABS = 8'hAC,
                  LDY_IMM = 8'hA0,
                  LDY_ZP  = 8'hA4,
                  LDY_ZPX = 8'hB4,
@@ -310,8 +313,9 @@ always @*
         begin
           // These instructions are in their last cycle, but are using the data bus during the last
           // cycle (e.g., load/store) such that they can't prefetch.
-          if ((q_ir == STA_ZPX) || (q_ir == STX_ZPY) || (q_ir == STY_ZPX) ||
-              (q_ir == STA_ABS) || (q_ir == STX_ABS) || (q_ir == STY_ABS) ||
+          if ((q_ir == STA_ABS) || (q_ir == STX_ABS) || (q_ir == STY_ABS) ||
+              (q_ir == STA_ZPX) || (q_ir == STX_ZPY) || (q_ir == STY_ZPX) ||
+              (q_ir == LDA_ABS) || (q_ir == LDX_ABS) || (q_ir == LDY_ABS) ||
               (q_ir == LDA_ZPX) || (q_ir == LDX_ZPY) || (q_ir == LDY_ZPX))
             d_t = T0;
 
@@ -383,6 +387,11 @@ always @*
               load_prg_byte = 1'b1;
               brk = (q_clk_phase == 2'b01) && rdy;
             end
+          LDA_ABS, LDX_ABS, LDY_ABS, STA_ABS, STX_ABS, STY_ABS:
+            begin
+              load_prg_byte = 1'b1;
+              dl_to_add     = 1'b1;
+            end
           LDA_IMM:
             begin
               load_prg_byte  = 1'b1;
@@ -390,11 +399,15 @@ always @*
             end
           LDA_ZP, LDX_ZP, LDY_ZP:
             zp_addr_to_ab = 1'b1;
+          LDA_ZPX, LDY_ZPX, STA_ZPX, STY_ZPX:
+            zpx_comps_to_alu = 1'b1;
           LDX_IMM:
             begin
               load_prg_byte  = 1'b1;
               ldx_last_cycle = 1'b1;
             end
+          LDX_ZPY, STX_ZPY:
+            zpy_comps_to_alu = 1'b1;
           LDY_IMM:
             begin
               load_prg_byte  = 1'b1;
@@ -402,25 +415,16 @@ always @*
             end
           NOP:
             load_prg_byte = 1'b1;
-          STA_ABS, STX_ABS, STY_ABS:
-            begin
-              load_prg_byte = 1'b1;
-              dl_to_add     = 1'b1;
-            end
           STA_ZP:
             begin
               zp_addr_to_ab = 1'b1;
               ac_to_dor     = 1'b1;
             end
-          STA_ZPX, STY_ZPX, LDA_ZPX, LDY_ZPX:
-            zpx_comps_to_alu = 1'b1;
           STX_ZP:
             begin
               zp_addr_to_ab = 1'b1;
               x_to_dor      = 1'b1;
             end
-          STX_ZPY, LDX_ZPY:
-            zpy_comps_to_alu = 1'b1;
           STY_ZP:
             begin
               zp_addr_to_ab = 1'b1;
@@ -431,6 +435,8 @@ always @*
     else if (q_t == T2)
       begin
         case (q_ir)
+          LDA_ABS, LDX_ABS, LDY_ABS:
+            abs_addr_to_ab = 1'b1;
           LDA_ZP:
             begin
               load_prg_byte  = 1'b1;
@@ -488,22 +494,22 @@ always @*
     else if (q_t == T3)
       begin
         case (q_ir)
-          LDA_ZPX:
+          LDA_ABS, LDA_ZPX:
             begin
               load_prg_byte  = 1'b1;
               lda_last_cycle = 1'b1;
             end
-          LDX_ZPY:
+          LDX_ABS, LDX_ZPY:
             begin
               load_prg_byte  = 1'b1;
               ldx_last_cycle = 1'b1;
             end
-          LDY_ZPX:
+          LDY_ABS, LDY_ZPX:
             begin
               load_prg_byte  = 1'b1;
               ldy_last_cycle = 1'b1;
             end
-           STA_ABS, STA_ZPX, STX_ABS, STX_ZPY, STY_ABS, STY_ZPX:
+          STA_ABS, STA_ZPX, STX_ABS, STX_ZPY, STY_ABS, STY_ZPX:
             begin
               load_prg_byte = 1'b1;
               r_nw          = 1'b0;
