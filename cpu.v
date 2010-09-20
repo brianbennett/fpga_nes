@@ -318,6 +318,11 @@ always @*
               (q_ir == LDA_ZP) || (q_ir == LDX_ZP) || (q_ir == LDY_ZP))
             d_t = T0;
 
+          // For loads using relative absolute addressing modes, we can skip stage 3 if the result
+          // doesn't cross a page boundary (i.e., don't need to add 1 to the high byte).
+          else if (!acr && ((q_ir == LDA_ABSX) || (q_ir == LDA_ABSY)))
+            d_t = T4;
+
           else
             d_t = T3;
         end
@@ -338,7 +343,8 @@ always @*
         begin
           // These instructions are in their last cycle, but are using the data bus during the last
           // cycle (e.g., load/store) such that they can't prefetch.
-          if ((q_ir == STA_ABSX) || (q_ir == STA_ABSY))
+          if ((q_ir == LDA_ABSX) || (q_ir == LDA_ABSY) || (q_ir == LDX_ABSY) ||(q_ir == LDY_ABSX) ||
+              (q_ir == STA_ABSX) || (q_ir == STA_ABSY))
             d_t = T0;
 
           else
@@ -370,11 +376,11 @@ reg ac_to_dor;           // load current ac value into dor
 reg x_to_dor;            // load current x value into dor
 reg y_to_dor;            // load current y value into dor
 reg zp_addr_to_ab;       // load ab with zero-page address specified in dl
-reg idx_loaddr_to_ab;    // load ab with lo address computes for indexed instructions
+reg zpidx_loaddr_to_ab;  // load abl with lo address for zp index ops, abh set to 0
 reg xidx_comps_to_alu;   // load alu inputs ai/bi with vals for x indexed addr calc
 reg yidx_comps_to_alu;   // load alu inputs ai/bi with vals for y indexed addr calc
 reg dl_plus_zero_to_add; // load ai, bi regs for dl + 0 operation
-reg abs_addr_to_ab;      // load an absolute address into the ab regs (dl to abl, add to abh)
+reg abs_addr_to_ab;      // load an absolute address into the ab regs (dl to abh, add to abl)
 reg idx_hiaddr_to_ab;    // load abh with indexed addressing result
 
 always @*
@@ -388,7 +394,7 @@ always @*
     x_to_dor            = 1'b0;
     y_to_dor            = 1'b0;
     zp_addr_to_ab       = 1'b0;
-    idx_loaddr_to_ab    = 1'b0;
+    zpidx_loaddr_to_ab  = 1'b0;
     xidx_comps_to_alu   = 1'b0;
     yidx_comps_to_alu   = 1'b0;
     dl_plus_zero_to_add = 1'b0;
@@ -416,6 +422,16 @@ always @*
               load_prg_byte       = 1'b1;
               dl_plus_zero_to_add = 1'b1;
             end
+          LDA_ABSX, LDY_ABSX, STA_ABSX:
+            begin
+              load_prg_byte     = 1'b1;
+              xidx_comps_to_alu = 1'b1;
+            end
+          LDA_ABSY, LDX_ABSY, STA_ABSY:
+            begin
+              load_prg_byte     = 1'b1;
+              yidx_comps_to_alu = 1'b1;
+            end
           LDA_IMM:
             begin
               load_prg_byte  = 1'b1;
@@ -439,11 +455,6 @@ always @*
             end
           NOP:
             load_prg_byte = 1'b1;
-          STA_ABSX:
-            begin
-              load_prg_byte     = 1'b1;
-              xidx_comps_to_alu = 1'b1;
-            end
           STA_ZP:
             begin
               zp_addr_to_ab = 1'b1;
@@ -466,13 +477,18 @@ always @*
         case (q_ir)
           LDA_ABS, LDX_ABS, LDY_ABS:
             abs_addr_to_ab = 1'b1;
+          LDA_ABSX, LDA_ABSY, LDX_ABSY, LDY_ABSX, STA_ABSX, STA_ABSY:
+            begin
+              abs_addr_to_ab      = 1'b1;
+              dl_plus_zero_to_add = 1'b1;
+            end
           LDA_ZP:
             begin
               load_prg_byte  = 1'b1;
               lda_last_cycle = 1'b1;
             end
           LDA_ZPX, LDX_ZPY, LDY_ZPX:
-            idx_loaddr_to_ab = 1'b1;
+            zpidx_loaddr_to_ab = 1'b1;
           LDX_ZP:
             begin
               load_prg_byte  = 1'b1;
@@ -488,11 +504,6 @@ always @*
               abs_addr_to_ab = 1'b1;
               ac_to_dor      = 1'b1;
             end
-          STA_ABSX:
-            begin
-              idx_loaddr_to_ab    = 1'b1;
-              dl_plus_zero_to_add = 1'b1;
-            end
           STA_ZP, STX_ZP, STY_ZP:
             begin
               load_prg_byte = 1'b1;
@@ -500,7 +511,7 @@ always @*
             end
           STA_ZPX:
             begin
-              idx_loaddr_to_ab = 1'b1;
+              zpidx_loaddr_to_ab = 1'b1;
               ac_to_dor        = 1'b1;
             end
           STX_ABS:
@@ -510,7 +521,7 @@ always @*
             end            
           STX_ZPY:
             begin
-              idx_loaddr_to_ab = 1'b1;
+              zpidx_loaddr_to_ab = 1'b1;
               x_to_dor         = 1'b1;
             end
           STY_ABS:
@@ -520,7 +531,7 @@ always @*
             end            
           STY_ZPX:
             begin
-              idx_loaddr_to_ab = 1'b1;
+              zpidx_loaddr_to_ab = 1'b1;
               y_to_dor         = 1'b1;
             end
         endcase
@@ -533,6 +544,8 @@ always @*
               load_prg_byte  = 1'b1;
               lda_last_cycle = 1'b1;
             end
+          LDA_ABSX, LDA_ABSY, LDX_ABSY, LDY_ABSX:
+            idx_hiaddr_to_ab = 1'b1;
           LDX_ABS, LDX_ZPY:
             begin
               load_prg_byte  = 1'b1;
@@ -548,7 +561,7 @@ always @*
               load_prg_byte = 1'b1;
               r_nw          = 1'b0;
             end
-          STA_ABSX:
+          STA_ABSX, STA_ABSY:
             begin
               idx_hiaddr_to_ab = 1'b1;
               ac_to_dor        = 1'b1;
@@ -558,7 +571,22 @@ always @*
     else if (q_t == T4)
       begin
         case (q_ir)
-          STA_ABSX:
+          LDA_ABSX, LDA_ABSY:
+            begin
+              load_prg_byte  = 1'b1;
+              lda_last_cycle = 1'b1;
+            end
+          LDX_ABSY:
+            begin
+              load_prg_byte  = 1'b1;
+              ldx_last_cycle = 1'b1;
+            end
+          LDY_ABSX:
+            begin
+              load_prg_byte  = 1'b1;
+              ldy_last_cycle = 1'b1;
+            end
+          STA_ABSX, STA_ABSY:
             begin
               load_prg_byte = 1'b1;
               r_nw          = 1'b0;
@@ -583,34 +611,35 @@ always @*
 //
 // Random Control Logic
 //
-assign add_adl  = idx_loaddr_to_ab    | abs_addr_to_ab;
+assign add_adl  = zpidx_loaddr_to_ab  | abs_addr_to_ab;
 assign dl_adl   = zp_addr_to_ab;
 assign pcl_adl  = load_prg_byte;
 assign dl_adh   = abs_addr_to_ab;
 assign pch_adh  = load_prg_byte;
 assign ac_db    = ac_to_dor;
-assign dl_db    = lda_last_cycle      | ldx_last_cycle    | ldy_last_cycle      |
-                  xidx_comps_to_alu   | yidx_comps_to_alu | dl_plus_zero_to_add;
+assign dl_db    = lda_last_cycle      | ldx_last_cycle      | ldy_last_cycle      |
+                  xidx_comps_to_alu   | yidx_comps_to_alu   | dl_plus_zero_to_add;
 assign add_sb   = idx_hiaddr_to_ab;
 assign x_sb     = xidx_comps_to_alu   | x_to_dor;
 assign y_sb     = yidx_comps_to_alu   | y_to_dor;
 assign sb_adh   = idx_hiaddr_to_ab;
-assign sb_db    = lda_last_cycle      | ldx_last_cycle    | ldy_last_cycle      |
+assign sb_db    = lda_last_cycle      | ldx_last_cycle      | ldy_last_cycle      |
                   x_to_dor            | y_to_dor;
-assign adh_abh  = load_prg_byte       | zp_addr_to_ab     | idx_loaddr_to_ab    |
+assign adh_abh  = load_prg_byte       | zp_addr_to_ab       | zpidx_loaddr_to_ab  |
                   abs_addr_to_ab      | idx_hiaddr_to_ab;
-assign adl_abl  = load_prg_byte       | zp_addr_to_ab     | idx_loaddr_to_ab    |
+assign adl_abl  = load_prg_byte       | zp_addr_to_ab       | zpidx_loaddr_to_ab  |
                   abs_addr_to_ab;
-assign db_add   = xidx_comps_to_alu   | yidx_comps_to_alu | dl_plus_zero_to_add;
+assign db_add   = xidx_comps_to_alu   | yidx_comps_to_alu   | dl_plus_zero_to_add;
 assign zero_add = dl_plus_zero_to_add;
 assign sb_ac    = lda_last_cycle;
 assign sb_add   = xidx_comps_to_alu   | yidx_comps_to_alu;
 assign sb_x     = ldx_last_cycle;
 assign sb_y     = ldy_last_cycle;
 assign i_pc     = load_prg_byte;
-assign db7_n    = lda_last_cycle      | ldx_last_cycle   | ldy_last_cycle;
-assign dbz_z    = lda_last_cycle      | ldx_last_cycle   | ldy_last_cycle;
-assign sums     = idx_loaddr_to_ab    | abs_addr_to_ab   | idx_hiaddr_to_ab;
+assign db7_n    = lda_last_cycle      | ldx_last_cycle     | ldy_last_cycle;
+assign dbz_z    = lda_last_cycle      | ldx_last_cycle     | ldy_last_cycle;
+assign sums     = zpidx_loaddr_to_ab  | abs_addr_to_ab     |
+                  idx_hiaddr_to_ab;
 assign addc     = idx_hiaddr_to_ab    & q_acr;
 
 //
