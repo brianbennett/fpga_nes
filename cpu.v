@@ -31,6 +31,8 @@ localparam [7:0] BRK      = 8'h00,
                  LDA_ABSX = 8'hBD,
                  LDA_ABSY = 8'hB9,
                  LDA_IMM  = 8'hA9,
+                 LDA_INDX = 8'hA1,
+                 LDA_INDY = 8'hB1,
                  LDA_ZP   = 8'hA5,
                  LDA_ZPX  = 8'hB5,
                  LDX_ABS  = 8'hAE,
@@ -47,6 +49,8 @@ localparam [7:0] BRK      = 8'h00,
                  STA_ABS  = 8'h8D,
                  STA_ABSX = 8'h9D,
                  STA_ABSY = 8'h99,
+                 STA_INDX = 8'h81,
+                 STA_INDY = 8'h91,
                  STA_ZP   = 8'h85,
                  STA_ZPX  = 8'h95,
                  STX_ABS  = 8'h8E,
@@ -168,7 +172,7 @@ wire       dbz_z;    // latch ~|db into z status reg
 
 // ALU controls, signals.
 wire       sums;     // perform addition on alu
-wire       addc;     // carry in
+reg        addc;     // carry in
 reg        acr;      // carry out
 
 //
@@ -336,6 +340,11 @@ always @*
               (q_ir == LDA_ZPX) || (q_ir == LDX_ZPY) || (q_ir == LDY_ZPX))
             d_t = T0;
 
+          // For loads using (indirect),Y addressing modes, we can skip stage 4 if the result
+          // doesn't cross a page boundary (i.e., don't need to add 1 to the high byte).
+          else if (!acr && (q_ir == LDA_INDY))
+            d_t = T5;
+            
           else
             d_t = T4;
         end
@@ -351,7 +360,16 @@ always @*
             d_t = T5;
         end
       T5:
-        d_t = T6;
+        begin
+          // These instructions are in their last cycle, but are using the data bus during the last
+          // cycle (e.g., load/store) such that they can't prefetch.
+          if ((q_ir == LDA_INDX) || (q_ir == LDA_INDY) ||
+              (q_ir == STA_INDX) || (q_ir == STA_INDY))
+            d_t = T0;
+
+          else
+            d_t = T6;
+        end
       T6:
         d_t = T7;
       T7:
@@ -400,6 +418,7 @@ always @*
     dl_plus_zero_to_add = 1'b0;
     abs_addr_to_ab      = 1'b0;
     idx_hiaddr_to_ab    = 1'b0;
+    addc                = 1'b0;
 
     // Defaults for output signals.
     r_nw = 1'b1;
@@ -437,10 +456,15 @@ always @*
               load_prg_byte  = 1'b1;
               lda_last_cycle = 1'b1;
             end
+          LDA_INDX, LDA_ZPX, LDY_ZPX, STA_INDX, STA_ZPX, STY_ZPX:
+            xidx_comps_to_alu = 1'b1;
+          LDA_INDY, STA_INDY:
+            begin
+              dl_plus_zero_to_add = 1'b1;
+              zp_addr_to_ab = 1'b1;
+            end
           LDA_ZP, LDX_ZP, LDY_ZP:
             zp_addr_to_ab = 1'b1;
-          LDA_ZPX, LDY_ZPX, STA_ZPX, STY_ZPX:
-            xidx_comps_to_alu = 1'b1;
           LDX_IMM:
             begin
               load_prg_byte  = 1'b1;
@@ -487,8 +511,14 @@ always @*
               load_prg_byte  = 1'b1;
               lda_last_cycle = 1'b1;
             end
-          LDA_ZPX, LDX_ZPY, LDY_ZPX:
+          LDA_INDX, LDA_ZPX, LDX_ZPY, LDY_ZPX, STA_INDX:
             zpidx_loaddr_to_ab = 1'b1;
+          LDA_INDY, STA_INDY:
+            begin
+              addc                = 1'b1;
+              zpidx_loaddr_to_ab  = 1'b1;
+              yidx_comps_to_alu   = 1'b1;
+            end
           LDX_ZP:
             begin
               load_prg_byte  = 1'b1;
@@ -545,7 +575,10 @@ always @*
               lda_last_cycle = 1'b1;
             end
           LDA_ABSX, LDA_ABSY, LDX_ABSY, LDY_ABSX:
-            idx_hiaddr_to_ab = 1'b1;
+            begin
+              addc             = q_acr;
+              idx_hiaddr_to_ab = 1'b1;
+            end
           LDX_ABS, LDX_ZPY:
             begin
               load_prg_byte  = 1'b1;
@@ -556,6 +589,17 @@ always @*
               load_prg_byte  = 1'b1;
               ldy_last_cycle = 1'b1;
             end
+          LDA_INDX, STA_INDX:
+            begin
+              addc                = 1'b1;
+              zpidx_loaddr_to_ab  = 1'b1;
+              dl_plus_zero_to_add = 1'b1;
+            end
+          LDA_INDY, STA_INDY:
+            begin
+              abs_addr_to_ab      = 1'b1;
+              dl_plus_zero_to_add = 1'b1;
+            end
           STA_ABS, STA_ZPX, STX_ABS, STX_ZPY, STY_ABS, STY_ZPX:
             begin
               load_prg_byte = 1'b1;
@@ -563,6 +607,7 @@ always @*
             end
           STA_ABSX, STA_ABSY:
             begin
+              addc             = q_acr;
               idx_hiaddr_to_ab = 1'b1;
               ac_to_dor        = 1'b1;
             end
@@ -586,10 +631,43 @@ always @*
               load_prg_byte  = 1'b1;
               ldy_last_cycle = 1'b1;
             end
+          LDA_INDX:
+            abs_addr_to_ab = 1'b1;
+          LDA_INDY:
+            begin
+              addc             = q_acr;
+              idx_hiaddr_to_ab = 1'b1;
+            end
           STA_ABSX, STA_ABSY:
             begin
               load_prg_byte = 1'b1;
               r_nw          = 1'b0;
+            end
+          STA_INDX:
+            begin
+              abs_addr_to_ab = 1'b1;
+              ac_to_dor      = 1'b1;
+            end
+          STA_INDY:
+            begin
+              addc             = q_acr;
+              idx_hiaddr_to_ab = 1'b1;
+              ac_to_dor        = 1'b1;
+            end
+        endcase
+      end
+    else if (q_t == T5)
+      begin
+        case (q_ir)
+          LDA_INDX, LDA_INDY:
+            begin
+              load_prg_byte  = 1'b1;
+              lda_last_cycle = 1'b1;
+            end
+          STA_INDX, STA_INDY:
+            begin
+              load_prg_byte  = 1'b1;
+              r_nw           = 1'b0;
             end
         endcase
       end
@@ -640,7 +718,6 @@ assign db7_n    = lda_last_cycle      | ldx_last_cycle     | ldy_last_cycle;
 assign dbz_z    = lda_last_cycle      | ldx_last_cycle     | ldy_last_cycle;
 assign sums     = zpidx_loaddr_to_ab  | abs_addr_to_ab     |
                   idx_hiaddr_to_ab;
-assign addc     = idx_hiaddr_to_ab    & q_acr;
 
 //
 // Update internal buses.  Use of in/out to replicate pass mosfets and avoid using internal
