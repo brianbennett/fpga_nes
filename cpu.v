@@ -54,6 +54,14 @@ localparam [7:0] AND_ABS  = 8'h2D,
                  LDY_ZP   = 8'hA4,
                  LDY_ZPX  = 8'hB4,
                  NOP      = 8'hEA,
+                 ORA_ABS  = 8'h0D,
+                 ORA_ABSX = 8'h1D,
+                 ORA_ABSY = 8'h19,
+                 ORA_IMM  = 8'h09,
+                 ORA_INDX = 8'h01,
+                 ORA_INDY = 8'h11,
+                 ORA_ZP   = 8'h05,
+                 ORA_ZPX  = 8'h15,
                  STA_ABS  = 8'h8D,
                  STA_ABSX = 8'h9D,
                  STA_ABSY = 8'h99,
@@ -192,7 +200,8 @@ wire       db7_n;    // latch db[7] into n status reg
 wire       dbz_z;    // latch ~|db into z status reg
 
 // ALU controls, signals.
-wire       ands;     // perform logical and on alu
+wire       ands;     // perform bitwise and on alu
+wire       ors;      // perform bitwise or on alu
 wire       sums;     // perform addition on alu
 reg        addc;     // carry in
 reg        acr;      // carry out
@@ -342,7 +351,7 @@ always @*
       T2:
         begin
           // These instructions are able to prefetch the next opcode during their final cycle.
-          if ((q_ir == AND_IMM))
+          if ((q_ir == AND_IMM) || (q_ir == ORA_IMM))
             d_t = T1;
 
           // These instructions are in their last cycle, but are using the data bus during the last
@@ -353,8 +362,8 @@ always @*
 
           // For loads using relative absolute addressing modes, we can skip stage 3 if the result
           // doesn't cross a page boundary (i.e., don't need to add 1 to the high byte).
-          else if (!acr && ((q_ir == AND_ABSX) || (q_ir == AND_ABSY) ||(q_ir == LDA_ABSX) ||
-                            (q_ir == LDA_ABSY)))
+          else if (!acr && ((q_ir == AND_ABSX) || (q_ir == AND_ABSY) || (q_ir == LDA_ABSX) ||
+                            (q_ir == LDA_ABSY) || (q_ir == ORA_ABSX) || (q_ir == ORA_ABSY)))
             d_t = T4;
 
           else
@@ -363,7 +372,7 @@ always @*
       T3:
         begin
           // These instructions are able to prefetch the next opcode during their final cycle.
-          if ((q_ir == AND_ZP))
+          if ((q_ir == AND_ZP) || (q_ir == ORA_ZP))
             d_t = T1;
 
           // These instructions are in their last cycle, but are using the data bus during the last
@@ -376,7 +385,7 @@ always @*
 
           // For loads using (indirect),Y addressing modes, we can skip stage 4 if the result
           // doesn't cross a page boundary (i.e., don't need to add 1 to the high byte).
-          else if (!acr && ((q_ir == AND_INDY) || (q_ir == LDA_INDY)))
+          else if (!acr && ((q_ir == AND_INDY) || (q_ir == LDA_INDY) || (q_ir == ORA_INDY)))
             d_t = T5;
 
           else
@@ -385,7 +394,7 @@ always @*
       T4:
         begin
           // These instructions are able to prefetch the next opcode during their final cycle.
-          if ((q_ir == AND_ABS) || (q_ir == AND_ZPX))
+          if ((q_ir == AND_ABS) || (q_ir == AND_ZPX) || (q_ir == ORA_ABS) || (q_ir == ORA_ZPX))
             d_t = T1;
 
           // These instructions are in their last cycle, but are using the data bus during the last
@@ -400,7 +409,7 @@ always @*
       T5:
         begin
           // These instructions are able to prefetch the next opcode during their final cycle.
-          if ((q_ir == AND_ABSX) || (q_ir == AND_ABSY))
+          if ((q_ir == AND_ABSX) || (q_ir == AND_ABSY) || (q_ir == ORA_ABSX) || (q_ir == ORA_ABSY))
             d_t = T1;
           
           // These instructions are in their last cycle, but are using the data bus during the last
@@ -415,7 +424,7 @@ always @*
       T6:
         begin
           // These instructions are able to prefetch the next opcode during their final cycle.
-          if ((q_ir == AND_INDX) || (q_ir == AND_INDY))
+          if ((q_ir == AND_INDX) || (q_ir == AND_INDY) || (q_ir == ORA_INDX) || (q_ir == ORA_INDY))
             d_t = T1;
 
           else
@@ -440,6 +449,7 @@ reg lda_last_cycle;      // final cycle of an lda inst
 reg ldx_last_cycle;      // final cycle of an ldx inst
 reg ldy_last_cycle;      // final cycle of an ldy inst
 reg and_last_cycle;      // final cycle of an and inst
+reg ora_last_cycle;      // final cycle of an ora inst
 reg ac_to_dor;           // load current ac value into dor
 reg x_to_dor;            // load current x value into dor
 reg y_to_dor;            // load current y value into dor
@@ -466,6 +476,7 @@ always @*
     ldx_last_cycle      = 1'b0;
     ldy_last_cycle      = 1'b0;
     and_last_cycle      = 1'b0;
+    ora_last_cycle      = 1'b0;
     ac_to_dor           = 1'b0;
     x_to_dor            = 1'b0;
     y_to_dor            = 1'b0;
@@ -496,34 +507,35 @@ always @*
     else if (q_t == T1)
       begin
         case (q_ir)
-          AND_ABS, LDA_ABS, LDX_ABS, LDY_ABS, STA_ABS, STX_ABS, STY_ABS:
+          AND_ABS, LDA_ABS, LDX_ABS, LDY_ABS, ORA_ABS, STA_ABS, STX_ABS, STY_ABS:
             begin
               load_prg_byte       = 1'b1;
               dl_and_zero_to_alu  = 1'b1;
             end
-          AND_ABSX, LDA_ABSX, LDY_ABSX, STA_ABSX:
+          AND_ABSX, LDA_ABSX, LDY_ABSX, ORA_ABSX, STA_ABSX:
             begin
               load_prg_byte     = 1'b1;
               xidx_comps_to_alu = 1'b1;
             end
-          AND_ABSY, LDA_ABSY, LDX_ABSY, STA_ABSY:
+          AND_ABSY, LDA_ABSY, LDX_ABSY, ORA_ABSY, STA_ABSY:
             begin
               load_prg_byte     = 1'b1;
               yidx_comps_to_alu = 1'b1;
             end
-          AND_IMM:
+          AND_IMM, ORA_IMM:
             begin
               load_prg_byte    = 1'b1;
               dl_and_ac_to_alu = 1'b1;
             end
-          AND_INDX, AND_ZPX, LDA_INDX, LDA_ZPX, LDY_ZPX, STA_INDX, STA_ZPX, STY_ZPX:
+          AND_INDX, AND_ZPX, LDA_INDX, LDA_ZPX, LDY_ZPX, ORA_INDX, ORA_ZPX, STA_INDX, STA_ZPX,
+          STY_ZPX:
             xidx_comps_to_alu = 1'b1;
-          AND_INDY, LDA_INDY, STA_INDY:
+          AND_INDY, LDA_INDY, ORA_INDY, STA_INDY:
             begin
               dl_and_zero_to_alu = 1'b1;
               zp_addr_to_ab      = 1'b1;
             end
-          AND_ZP, LDA_ZP, LDX_ZP, LDY_ZP:
+          AND_ZP, LDA_ZP, LDX_ZP, LDY_ZP, ORA_ZP:
             zp_addr_to_ab = 1'b1;
           BRK:
             begin
@@ -599,9 +611,10 @@ always @*
     else if (q_t == T2)
       begin
         case (q_ir)
-          AND_ABS, LDA_ABS, LDX_ABS, LDY_ABS:
+          AND_ABS, LDA_ABS, LDX_ABS, LDY_ABS, ORA_ABS:
             abs_addr_to_ab = 1'b1;
-          AND_ABSX, AND_ABSY, LDA_ABSX, LDA_ABSY, LDX_ABSY, LDY_ABSX, STA_ABSX, STA_ABSY:
+          AND_ABSX, AND_ABSY, LDA_ABSX, LDA_ABSY, LDX_ABSY, LDY_ABSX, ORA_ABSX, ORA_ABSY,
+          STA_ABSX, STA_ABSY:
             begin
               abs_addr_to_ab     = 1'b1;
               dl_and_zero_to_alu = 1'b1;
@@ -611,15 +624,15 @@ always @*
               load_prg_byte  = 1'b1;
               and_last_cycle = 1'b1;
             end
-          AND_INDX, AND_ZPX, LDA_INDX, LDA_ZPX, LDX_ZPY, LDY_ZPX, STA_INDX:
+          AND_INDX, AND_ZPX, LDA_INDX, LDA_ZPX, LDX_ZPY, LDY_ZPX, ORA_INDX, ORA_ZPX, STA_INDX:
             zpidx_loaddr_to_ab = 1'b1;
-          AND_INDY, LDA_INDY, STA_INDY:
+          AND_INDY, LDA_INDY, ORA_INDY, STA_INDY:
             begin
               addc                = 1'b1;
               zpidx_loaddr_to_ab  = 1'b1;
               yidx_comps_to_alu   = 1'b1;
             end
-          AND_ZP:
+          AND_ZP, ORA_ZP:
             begin
               load_prg_byte    = 1'b1;
               dl_and_ac_to_alu = 1'b1;
@@ -638,6 +651,11 @@ always @*
             begin
               load_prg_byte  = 1'b1;
               ldy_last_cycle = 1'b1;
+            end
+          ORA_IMM:
+            begin
+              load_prg_byte  = 1'b1;
+              ora_last_cycle = 1'b1;
             end
           STA_ABS:
             begin
@@ -679,23 +697,23 @@ always @*
     else if (q_t == T3)
       begin
         case (q_ir)
-          AND_ABS, AND_ZPX:
+          AND_ABS, AND_ZPX, ORA_ABS, ORA_ZPX:
             begin
               load_prg_byte    = 1'b1;
               dl_and_ac_to_alu = 1'b1;
             end            
-          AND_ABSX, AND_ABSY, LDA_ABSX, LDA_ABSY, LDX_ABSY, LDY_ABSX:
+          AND_ABSX, AND_ABSY, LDA_ABSX, LDA_ABSY, LDX_ABSY, LDY_ABSX, ORA_ABSX, ORA_ABSY:
             begin
               addc             = q_acr;
               idx_hiaddr_to_ab = 1'b1;
             end
-          AND_INDX, LDA_INDX, STA_INDX:
+          AND_INDX, LDA_INDX, ORA_INDX, STA_INDX:
             begin
               addc               = 1'b1;
               zpidx_loaddr_to_ab = 1'b1;
               dl_and_zero_to_alu = 1'b1;
             end
-          AND_INDY, LDA_INDY, STA_INDY:
+          AND_INDY, LDA_INDY, ORA_INDY, STA_INDY:
             begin
               abs_addr_to_ab     = 1'b1;
               dl_and_zero_to_alu = 1'b1;
@@ -720,6 +738,11 @@ always @*
               load_prg_byte  = 1'b1;
               ldy_last_cycle = 1'b1;
             end
+          ORA_ZP:
+            begin
+              load_prg_byte  = 1'b1;
+              ora_last_cycle = 1'b1;
+            end
           STA_ABS, STA_ZPX, STX_ABS, STX_ZPY, STY_ABS, STY_ZPX:
             begin
               load_prg_byte = 1'b1;
@@ -741,14 +764,14 @@ always @*
               load_prg_byte  = 1'b1;
               and_last_cycle = 1'b1;
             end
-          AND_ABSX, AND_ABSY:
+          AND_ABSX, AND_ABSY, ORA_ABSX, ORA_ABSY:
             begin
               load_prg_byte    = 1'b1;
               dl_and_ac_to_alu = 1'b1;
             end            
-          AND_INDX, LDA_INDX:
+          AND_INDX, LDA_INDX, ORA_INDX:
             abs_addr_to_ab = 1'b1;
-          AND_INDY, LDA_INDY:
+          AND_INDY, LDA_INDY, ORA_INDY:
             begin
               addc             = q_acr;
               idx_hiaddr_to_ab = 1'b1;
@@ -767,6 +790,11 @@ always @*
             begin
               load_prg_byte  = 1'b1;
               ldy_last_cycle = 1'b1;
+            end
+          ORA_ABS, ORA_ZPX:
+            begin
+              load_prg_byte  = 1'b1;
+              ora_last_cycle = 1'b1;
             end
           STA_ABSX, STA_ABSY:
             begin
@@ -794,7 +822,7 @@ always @*
               load_prg_byte  = 1'b1;
               and_last_cycle = 1'b1;
             end
-          AND_INDX, AND_INDY:
+          AND_INDX, AND_INDY, ORA_INDX, ORA_INDY:
             begin
               load_prg_byte    = 1'b1;
               dl_and_ac_to_alu = 1'b1;
@@ -803,6 +831,11 @@ always @*
             begin
               load_prg_byte  = 1'b1;
               lda_last_cycle = 1'b1;
+            end
+          ORA_ABSX, ORA_ABSY:
+            begin
+              load_prg_byte  = 1'b1;
+              ora_last_cycle = 1'b1;
             end
           STA_INDX, STA_INDY:
             begin
@@ -819,6 +852,11 @@ always @*
               load_prg_byte  = 1'b1;
               and_last_cycle = 1'b1;
             end
+          ORA_INDX, ORA_INDY:
+            begin
+              load_prg_byte  = 1'b1;
+              ora_last_cycle = 1'b1;
+            end
         endcase
       end
   end
@@ -830,10 +868,12 @@ always @*
   begin
     acr = 1'b0;
 
-    if (sums)
-      { acr, d_add } = q_ai + q_bi + addc;
-    else if (ands)
+    if (ands)
       d_add = q_ai & q_bi;
+    else if (ors)
+      d_add = q_ai | q_bi;
+    else if (sums)
+      { acr, d_add } = q_ai + q_bi + addc;
     else
       d_add = q_add;
   end
@@ -852,7 +892,7 @@ assign dl_db    = lda_last_cycle      | ldx_last_cycle      | ldy_last_cycle    
                   xidx_comps_to_alu   | yidx_comps_to_alu   | dl_and_zero_to_alu  |
                   dl_and_ac_to_alu;
 assign ac_sb    = dl_and_ac_to_alu    | tax                 | tay;
-assign add_sb   = idx_hiaddr_to_ab    | and_last_cycle;
+assign add_sb   = idx_hiaddr_to_ab    | and_last_cycle      | ora_last_cycle;
 assign x_sb     = xidx_comps_to_alu   | x_to_dor            | txs                 |
                   txa;
 assign y_sb     = yidx_comps_to_alu   | y_to_dor            | tya;
@@ -861,7 +901,7 @@ assign sb_adh   = idx_hiaddr_to_ab;
 assign sb_db    = lda_last_cycle      | ldx_last_cycle      | ldy_last_cycle      |
                   x_to_dor            | y_to_dor            | tax                 |
                   tay                 | tsx                 | txa                 |
-                  tya                 | and_last_cycle;
+                  tya                 | and_last_cycle      | ora_last_cycle;
 assign adh_abh  = load_prg_byte       | zp_addr_to_ab       | zpidx_loaddr_to_ab  |
                   abs_addr_to_ab      | idx_hiaddr_to_ab;
 assign adl_abl  = load_prg_byte       | zp_addr_to_ab       | zpidx_loaddr_to_ab  |
@@ -871,19 +911,22 @@ assign db_add   = xidx_comps_to_alu   | yidx_comps_to_alu   | dl_and_zero_to_alu
 assign sb_s     = txs;
 assign zero_add = dl_and_zero_to_alu;
 assign sb_ac    = lda_last_cycle      | txa                 | tya                 |
-                  and_last_cycle;
+                  and_last_cycle      | ora_last_cycle;
 assign sb_add   = xidx_comps_to_alu   | yidx_comps_to_alu   | dl_and_ac_to_alu;
 assign sb_x     = ldx_last_cycle      | tax                 | tsx;
 assign sb_y     = ldy_last_cycle      | tay;
 assign i_pc     = load_prg_byte;
 assign db7_n    = lda_last_cycle      | ldx_last_cycle      | ldy_last_cycle      |
                   tax                 | tay                 | tsx                 |
-                  txa                 | tya                 | and_last_cycle;
+                  txa                 | tya                 | and_last_cycle      |
+                  ora_last_cycle;
 assign dbz_z    = lda_last_cycle      | ldx_last_cycle      | ldy_last_cycle      |
                   tax                 | tay                 | tsx                 |
-                  txa                 | tya                 | and_last_cycle;
+                  txa                 | tya                 | and_last_cycle      |
+                  ora_last_cycle;
 assign sums     = zpidx_loaddr_to_ab  | abs_addr_to_ab      | idx_hiaddr_to_ab;
 assign ands     = and_last_cycle;
+assign ors      = ora_last_cycle;
 
 //
 // Update internal buses.  Use of in/out to replicate pass mosfets and avoid using internal
