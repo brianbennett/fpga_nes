@@ -106,8 +106,7 @@ localparam [3:0] T0  = 3'h0,
                  T3  = 3'h3,
                  T4  = 3'h4,
                  T5  = 3'h5,
-                 T6  = 3'h6,
-                 T7  = 3'h7;
+                 T6  = 3'h6;
 
 // User registers.
 reg  [7:0] q_ac;     // accumulator register
@@ -286,11 +285,6 @@ always @(posedge clk)
       end
     else if (!rdy)
       begin
-        // Continue to update the address bus registers during a debug break. This allows correct
-        // function when the debugger updates the PC.
-        q_abl  <= d_abl;
-        q_abh  <= d_abh;
-
         // Update registers based on debug register write packets.
         if (dbgreg_wr)
           begin
@@ -299,6 +293,12 @@ always @(posedge clk)
             q_y  <= (dbgreg_sel == `REGSEL_Y)  ? dbgreg_in    : q_y;
             q_z  <= (dbgreg_sel == `REGSEL_P)  ? dbgreg_in[1] : q_z;
             q_n  <= (dbgreg_sel == `REGSEL_P)  ? dbgreg_in[7] : q_n;
+
+            // This handles a problem found when updating the PC during a BRK instruction.  Force
+            // AB reg to update to the new PC value immediately so T0 of the next instruction
+            // will fetch the correct op.
+            q_abl <= ((d_t == T0) && (dbgreg_sel == `REGSEL_PCL)) ? dbgreg_in : q_abl;
+            q_abh <= ((d_t == T0) && (dbgreg_sel == `REGSEL_PCH)) ? dbgreg_in : q_abh;
           end
       end
   end
@@ -344,14 +344,10 @@ always @*
         d_t = T1;
       T1:
         begin
-          // These instructions are able to prefetch the next opcode during their final cycle.
-          if ((q_ir == BRK) || (q_ir == NOP) || (q_ir == TAX) || (q_ir == TAY) || (q_ir == TSX) ||
-              (q_ir == TXA) || (q_ir == TXS) || (q_ir == TYA))
-            d_t = T1;
-
-          // These instructions are in their last cycle, but are using the data bus during the last
-          // cycle (e.g., load) such that they can't prefetch.
-          else if ((q_ir == LDA_IMM) || (q_ir == LDX_IMM) || (q_ir == LDY_IMM))
+          // These instructions are in their last cycle but do not prefetch.
+          if ((q_ir == BRK) || (q_ir == LDA_IMM) || (q_ir == LDX_IMM) || (q_ir == LDY_IMM) ||
+              (q_ir == NOP) || (q_ir == TAX)     || (q_ir == TAY)     || (q_ir == TSX)     ||
+              (q_ir == TXA) || (q_ir == TXS)     || (q_ir == TYA))
             d_t = T0;
 
           else
@@ -359,20 +355,20 @@ always @*
         end
       T2:
         begin
-          // These instructions are able to prefetch the next opcode during their final cycle.
+          // These instructions prefetch the next opcode during their final cycle.
           if ((q_ir == AND_IMM) || (q_ir == EOR_IMM) || (q_ir == ORA_IMM))
             d_t = T1;
 
-          // These instructions are in their last cycle, but are using the data bus during the last
-          // cycle (e.g., load/store) such that they can't prefetch.
-          else if ((q_ir == STA_ZP) || (q_ir == STX_ZP) || (q_ir == STY_ZP) ||
-                   (q_ir == LDA_ZP) || (q_ir == LDX_ZP) || (q_ir == LDY_ZP))
+          // These instructions are in their last cycle but do not prefetch.
+          else if ((q_ir == LDA_ZP) || (q_ir == LDX_ZP) || (q_ir == LDY_ZP) ||
+                   (q_ir == STA_ZP) || (q_ir == STX_ZP) || (q_ir == STY_ZP))
             d_t = T0;
 
           // For loads using relative absolute addressing modes, we can skip stage 3 if the result
           // doesn't cross a page boundary (i.e., don't need to add 1 to the high byte).
-          else if (!acr && ((q_ir == AND_ABSX) || (q_ir == AND_ABSY) || (q_ir == EOR_ABSX) ||
-                            (q_ir == EOR_ABSY) || (q_ir == LDA_ABSX) || (q_ir == LDA_ABSY) ||
+          else if (!acr && ((q_ir == AND_ABSX) || (q_ir == AND_ABSY) ||
+                            (q_ir == EOR_ABSX) || (q_ir == EOR_ABSY) ||
+                            (q_ir == LDA_ABSX) || (q_ir == LDA_ABSY) ||
                             (q_ir == ORA_ABSX) || (q_ir == ORA_ABSY)))
             d_t = T4;
 
@@ -381,16 +377,15 @@ always @*
         end
       T3:
         begin
-          // These instructions are able to prefetch the next opcode during their final cycle.
+          // These instructions prefetch the next opcode during their final cycle.
           if ((q_ir == AND_ZP) || (q_ir == EOR_ZP) || (q_ir == ORA_ZP))
             d_t = T1;
 
-          // These instructions are in their last cycle, but are using the data bus during the last
-          // cycle (e.g., load/store) such that they can't prefetch.
-          else if ((q_ir == STA_ABS) || (q_ir == STX_ABS) || (q_ir == STY_ABS) ||
-                   (q_ir == STA_ZPX) || (q_ir == STX_ZPY) || (q_ir == STY_ZPX) ||
-                   (q_ir == LDA_ABS) || (q_ir == LDX_ABS) || (q_ir == LDY_ABS) ||
-                   (q_ir == LDA_ZPX) || (q_ir == LDX_ZPY) || (q_ir == LDY_ZPX))
+          // These instructions are in their last cycle but do not prefetch.
+          else if ((q_ir == LDA_ABS) || (q_ir == LDA_ZPX) || (q_ir == LDX_ABS) ||
+                   (q_ir == LDX_ZPY) || (q_ir == LDY_ABS) || (q_ir == LDY_ZPX) ||
+                   (q_ir == STA_ABS) || (q_ir == STA_ZPX) || (q_ir == STX_ABS) ||
+                   (q_ir == STX_ZPY) || (q_ir == STY_ABS) || (q_ir == STY_ZPX))
             d_t = T0;
 
           // For loads using (indirect),Y addressing modes, we can skip stage 4 if the result
@@ -404,13 +399,12 @@ always @*
         end
       T4:
         begin
-          // These instructions are able to prefetch the next opcode during their final cycle.
+          // These instructions prefetch the next opcode during their final cycle.
           if ((q_ir == AND_ABS) || (q_ir == AND_ZPX) || (q_ir == EOR_ABS) || (q_ir == EOR_ZPX) ||
               (q_ir == ORA_ABS) || (q_ir == ORA_ZPX))
             d_t = T1;
 
-          // These instructions are in their last cycle, but are using the data bus during the last
-          // cycle (e.g., load/store) such that they can't prefetch.
+          // These instructions are in their last cycle but do not prefetch.
           else if ((q_ir == LDA_ABSX) || (q_ir == LDA_ABSY) || (q_ir == LDX_ABSY) ||
                    (q_ir == LDY_ABSX) || (q_ir == STA_ABSX) || (q_ir == STA_ABSY))
             d_t = T0;
@@ -420,13 +414,12 @@ always @*
         end
       T5:
         begin
-          // These instructions are able to prefetch the next opcode during their final cycle.
+          // These instructions prefetch the next opcode during their final cycle.
           if ((q_ir == AND_ABSX) || (q_ir == AND_ABSY) || (q_ir == EOR_ABSX) ||
               (q_ir == EOR_ABSY) || (q_ir == ORA_ABSX) || (q_ir == ORA_ABSY))
             d_t = T1;
 
-          // These instructions are in their last cycle, but are using the data bus during the last
-          // cycle (e.g., load/store) such that they can't prefetch.
+          // These instructions are in their last cycle but do not prefetch.
           else if ((q_ir == LDA_INDX) || (q_ir == LDA_INDY) ||
                    (q_ir == STA_INDX) || (q_ir == STA_INDY))
             d_t = T0;
@@ -436,16 +429,14 @@ always @*
         end
       T6:
         begin
-          // These instructions are able to prefetch the next opcode during their final cycle.
+          // These instructions prefetch the next opcode during their final cycle.
           if ((q_ir == AND_INDX) || (q_ir == AND_INDY) || (q_ir == EOR_INDX) ||
               (q_ir == EOR_INDY) || (q_ir == ORA_INDX) || (q_ir == ORA_INDY))
             d_t = T1;
 
           else
-            d_t = T7;
+            d_t = T0;
         end
-      T7:
-        d_t = T0;
     endcase
 
     // Update IR register on cycle 1, otherwise retain current IR.
@@ -543,8 +534,8 @@ always @*
               load_prg_byte    = 1'b1;
               dl_and_ac_to_alu = 1'b1;
             end
-          AND_INDX, AND_ZPX, EOR_INDX, EOR_ZPX, LDA_INDX, LDA_ZPX, LDY_ZPX, ORA_INDX, ORA_ZPX,
-          STA_INDX, STA_ZPX, STY_ZPX:
+          AND_INDX, EOR_INDX, LDA_INDX, ORA_INDX, STA_INDX,
+          AND_ZPX,  EOR_ZPX,  LDA_ZPX,  LDY_ZPX,  ORA_ZPX, STA_ZPX, STY_ZPX:
             xidx_comps_to_alu = 1'b1;
           AND_INDY, EOR_INDY, LDA_INDY, ORA_INDY, STA_INDY:
             begin
@@ -554,10 +545,7 @@ always @*
           AND_ZP, EOR_ZP, LDA_ZP, LDX_ZP, LDY_ZP, ORA_ZP:
             zp_addr_to_ab = 1'b1;
           BRK:
-            begin
-              load_prg_byte = 1'b1;
-              brk = (q_clk_phase == 2'b01) && rdy;
-            end
+            brk = (q_clk_phase == 2'b01) && rdy;
           LDA_IMM:
             begin
               load_prg_byte  = 1'b1;
@@ -575,8 +563,6 @@ always @*
               load_prg_byte  = 1'b1;
               ldy_last_cycle = 1'b1;
             end
-          NOP:
-            load_prg_byte = 1'b1;
           STA_ZP:
             begin
               zp_addr_to_ab = 1'b1;
@@ -593,35 +579,17 @@ always @*
               y_to_dor      = 1'b1;
             end
           TAX:
-            begin
-              load_prg_byte = 1'b1;
-              tax           = 1'b1;
-            end
+            tax = 1'b1;
           TAY:
-            begin
-              load_prg_byte = 1'b1;
-              tay           = 1'b1;
-            end
+            tay = 1'b1;
           TSX:
-            begin
-              load_prg_byte = 1'b1;
-              tsx           = 1'b1;
-            end
+            tsx = 1'b1;
           TXA:
-            begin
-              load_prg_byte = 1'b1;
-              txa           = 1'b1;
-            end
+            txa = 1'b1;
           TXS:
-            begin
-              load_prg_byte = 1'b1;
-              txs           = 1'b1;
-            end
+            txs = 1'b1;
           TYA:
-            begin
-              load_prg_byte = 1'b1;
-              tya           = 1'b1;
-            end
+            tya = 1'b1;
         endcase
       end
     else if (q_t == T2)
@@ -629,8 +597,8 @@ always @*
         case (q_ir)
           AND_ABS, EOR_ABS, LDA_ABS, LDX_ABS, LDY_ABS, ORA_ABS:
             abs_addr_to_ab = 1'b1;
-          AND_ABSX, AND_ABSY, EOR_ABSX, EOR_ABSY, LDA_ABSX, LDA_ABSY, LDX_ABSY, LDY_ABSX,
-          ORA_ABSX, ORA_ABSY, STA_ABSX, STA_ABSY:
+          AND_ABSX, EOR_ABSX, LDA_ABSX, LDY_ABSX, ORA_ABSX, STA_ABSX,
+          AND_ABSY, EOR_ABSY, LDA_ABSY, LDX_ABSY, ORA_ABSY, STA_ABSY:
             begin
               abs_addr_to_ab     = 1'b1;
               dl_and_zero_to_alu = 1'b1;
@@ -640,8 +608,9 @@ always @*
               load_prg_byte  = 1'b1;
               and_last_cycle = 1'b1;
             end
-          AND_INDX, AND_ZPX, EOR_INDX, EOR_ZPX, LDA_INDX, LDA_ZPX, LDX_ZPY, LDY_ZPX, ORA_INDX,
-          ORA_ZPX, STA_INDX:
+          AND_INDX, EOR_INDX, LDA_INDX, ORA_INDX, STA_INDX,
+          AND_ZPX,  EOR_ZPX,  LDA_ZPX,  LDY_ZPX,  ORA_ZPX,
+          LDX_ZPY:
             zpidx_loaddr_to_ab = 1'b1;
           AND_INDY, EOR_INDY, LDA_INDY, ORA_INDY, STA_INDY:
             begin
@@ -719,13 +688,14 @@ always @*
     else if (q_t == T3)
       begin
         case (q_ir)
-          AND_ABS, AND_ZPX, EOR_ABS, EOR_ZPX, ORA_ABS, ORA_ZPX:
+          AND_ABS, EOR_ABS, ORA_ABS,
+          AND_ZPX, EOR_ZPX, ORA_ZPX:
             begin
               load_prg_byte    = 1'b1;
               dl_and_ac_to_alu = 1'b1;
             end
-          AND_ABSX, AND_ABSY, EOR_ABSX, EOR_ABSY, LDA_ABSX, LDA_ABSY, LDX_ABSY, LDY_ABSX,
-          ORA_ABSX, ORA_ABSY:
+          AND_ABSX, EOR_ABSX, LDA_ABSX, LDY_ABSX, ORA_ABSX,
+          AND_ABSY, EOR_ABSY, LDA_ABSY, LDX_ABSY, ORA_ABSY:
             begin
               addc             = q_acr;
               idx_hiaddr_to_ab = 1'b1;
@@ -771,12 +741,15 @@ always @*
               load_prg_byte  = 1'b1;
               ora_last_cycle = 1'b1;
             end
-          STA_ABS, STA_ZPX, STX_ABS, STX_ZPY, STY_ABS, STY_ZPX:
+          STA_ABS, STX_ABS, STY_ABS,
+          STA_ZPX, STY_ZPX,
+          STX_ZPY:
             begin
               load_prg_byte = 1'b1;
               r_nw          = 1'b0;
             end
-          STA_ABSX, STA_ABSY:
+          STA_ABSX,
+          STA_ABSY:
             begin
               addc             = q_acr;
               idx_hiaddr_to_ab = 1'b1;
@@ -787,12 +760,14 @@ always @*
     else if (q_t == T4)
       begin
         case (q_ir)
-          AND_ABS, AND_ZPX:
+          AND_ABS,
+          AND_ZPX:
             begin
               load_prg_byte  = 1'b1;
               and_last_cycle = 1'b1;
             end
-          AND_ABSX, AND_ABSY, EOR_ABSX, EOR_ABSY, ORA_ABSX, ORA_ABSY:
+          AND_ABSX, EOR_ABSX, ORA_ABSX,
+          AND_ABSY, EOR_ABSY, ORA_ABSY:
             begin
               load_prg_byte    = 1'b1;
               dl_and_ac_to_alu = 1'b1;
@@ -804,12 +779,14 @@ always @*
               addc             = q_acr;
               idx_hiaddr_to_ab = 1'b1;
             end
-          EOR_ABS, EOR_ZPX:
+          EOR_ABS,
+          EOR_ZPX:
             begin
               load_prg_byte  = 1'b1;
               eor_last_cycle = 1'b1;
             end
-          LDA_ABSX, LDA_ABSY:
+          LDA_ABSX,
+          LDA_ABSY:
             begin
               load_prg_byte  = 1'b1;
               lda_last_cycle = 1'b1;
@@ -824,12 +801,14 @@ always @*
               load_prg_byte  = 1'b1;
               ldy_last_cycle = 1'b1;
             end
-          ORA_ABS, ORA_ZPX:
+          ORA_ABS,
+          ORA_ZPX:
             begin
               load_prg_byte  = 1'b1;
               ora_last_cycle = 1'b1;
             end
-          STA_ABSX, STA_ABSY:
+          STA_ABSX,
+          STA_ABSY:
             begin
               load_prg_byte = 1'b1;
               r_nw          = 1'b0;
@@ -850,32 +829,38 @@ always @*
     else if (q_t == T5)
       begin
         case (q_ir)
-          AND_ABSX, AND_ABSY:
+          AND_ABSX,
+          AND_ABSY:
             begin
               load_prg_byte  = 1'b1;
               and_last_cycle = 1'b1;
             end
-          AND_INDX, AND_INDY, EOR_INDX, EOR_INDY, ORA_INDX, ORA_INDY:
+          AND_INDX, EOR_INDX, ORA_INDX,
+          AND_INDY, EOR_INDY, ORA_INDY:
             begin
               load_prg_byte    = 1'b1;
               dl_and_ac_to_alu = 1'b1;
             end
-          EOR_ABSX, EOR_ABSY:
+          EOR_ABSX,
+          EOR_ABSY:
             begin
               load_prg_byte  = 1'b1;
               eor_last_cycle = 1'b1;
             end
-          LDA_INDX, LDA_INDY:
+          LDA_INDX,
+          LDA_INDY:
             begin
               load_prg_byte  = 1'b1;
               lda_last_cycle = 1'b1;
             end
-          ORA_ABSX, ORA_ABSY:
+          ORA_ABSX,
+          ORA_ABSY:
             begin
               load_prg_byte  = 1'b1;
               ora_last_cycle = 1'b1;
             end
-          STA_INDX, STA_INDY:
+          STA_INDX,
+          STA_INDY:
             begin
               load_prg_byte  = 1'b1;
               r_nw           = 1'b0;
@@ -885,17 +870,20 @@ always @*
     else if (q_t == T6)
       begin
         case (q_ir)
-          AND_INDX, AND_INDY:
+          AND_INDX,
+          AND_INDY:
             begin
               load_prg_byte  = 1'b1;
               and_last_cycle = 1'b1;
             end
-          EOR_INDX, EOR_INDY:
+          EOR_INDX,
+          EOR_INDY:
             begin
               load_prg_byte  = 1'b1;
               eor_last_cycle = 1'b1;
             end
-          ORA_INDX, ORA_INDY:
+          ORA_INDX,
+          ORA_INDY:
             begin
               load_prg_byte  = 1'b1;
               ora_last_cycle = 1'b1;
