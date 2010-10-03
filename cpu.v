@@ -50,6 +50,10 @@ localparam [7:0] ADC_ABS  = 8'h6D, ADC_ABSX = 8'h7D, ADC_ABSY = 8'h79, ADC_IMM  
                  CMP_ABS  = 8'hCD, CMP_ABSX = 8'hDD, CMP_ABSY = 8'hD9, CMP_IMM  = 8'hC9,
                  CMP_INDX = 8'hC1, CMP_INDY = 8'hD1, CMP_ZP   = 8'hC5, CMP_ZPX  = 8'hD5,
 
+                 CPX_ABS  = 8'hEC, CPX_IMM  = 8'hE0, CPX_ZP   = 8'hE4,
+
+                 CPY_ABS  = 8'hCC, CPY_IMM  = 8'hC0, CPY_ZP   = 8'hC4,
+                 
                  EOR_ABS  = 8'h4D, EOR_ABSX = 8'h5D, EOR_ABSY = 8'h59, EOR_IMM  = 8'h49,
                  EOR_INDX = 8'h41, EOR_INDY = 8'h51, EOR_ZP   = 8'h45, EOR_ZPX  = 8'h55,
 
@@ -392,7 +396,7 @@ always @*
         begin
           // These instructions prefetch the next opcode during their final cycle.
           if ((q_ir == ADC_IMM) || (q_ir == AND_IMM) || (q_ir == ASL_ACC) || (q_ir == CMP_IMM) ||
-              (q_ir == EOR_IMM) || (q_ir == ORA_IMM))
+              (q_ir == CPX_IMM) || (q_ir == CPY_IMM) || (q_ir == EOR_IMM) || (q_ir == ORA_IMM))
             d_t = T1;
 
           // These instructions are in their last cycle but do not prefetch.
@@ -417,7 +421,7 @@ always @*
         begin
           // These instructions prefetch the next opcode during their final cycle.
           if ((q_ir == ADC_ZP) || (q_ir == AND_ZP) || (q_ir == BIT_ZP) || (q_ir == CMP_ZP) ||
-              (q_ir == EOR_ZP) || (q_ir == ORA_ZP))
+              (q_ir == CPX_ZP) || (q_ir == CPY_ZP) || (q_ir == EOR_ZP) || (q_ir == ORA_ZP))
             d_t = T1;
 
           // These instructions are in their last cycle but do not prefetch.
@@ -440,8 +444,9 @@ always @*
         begin
           // These instructions prefetch the next opcode during their final cycle.
           if ((q_ir == ADC_ABS) || (q_ir == ADC_ZPX) || (q_ir == AND_ABS) || (q_ir == AND_ZPX) ||
-              (q_ir == BIT_ABS) || (q_ir == CMP_ABS) || (q_ir == CMP_ZPX) || (q_ir == EOR_ABS) ||
-              (q_ir == EOR_ZPX) || (q_ir == ORA_ABS) || (q_ir == ORA_ZPX))
+              (q_ir == BIT_ABS) || (q_ir == CMP_ABS) || (q_ir == CMP_ZPX) || (q_ir == CPX_ABS) ||
+              (q_ir == CPY_ABS) || (q_ir == EOR_ABS) || (q_ir == EOR_ZPX) || (q_ir == ORA_ABS) ||
+              (q_ir == ORA_ZPX))
             d_t = T1;
 
           // These instructions are in their last cycle but do not prefetch.
@@ -516,6 +521,8 @@ reg dl_and_ac_to_alu;     // load bi with dl and ai with ac
 reg dl_and_dl_to_alu;     // load ai and bi with dl
 reg dl_and_zero_to_alu;   // load bi with dl and ai with 0
 reg invdl_and_ac_to_alu;  // load bi with ~dl and ai with ac
+reg invdl_and_x_to_alu;   // load bi with ~dl and ai with x
+reg invdl_and_y_to_alu;   // load bi with ~dl and ai with y
 reg xidx_comps_to_alu;    // load alu inputs ai/bi with vals for x indexed addr calc
 reg yidx_comps_to_alu;    // load alu inputs ai/bi with vals for y indexed addr calc
 reg dl_bits67_to_p;       // latch bits 6 and 7 into P V and N bits.
@@ -560,6 +567,8 @@ always @*
     dl_and_dl_to_alu    = 1'b0;
     dl_and_zero_to_alu  = 1'b0;
     invdl_and_ac_to_alu = 1'b0;
+    invdl_and_x_to_alu  = 1'b0;
+    invdl_and_y_to_alu  = 1'b0;
     xidx_comps_to_alu   = 1'b0;
     yidx_comps_to_alu   = 1'b0;
     dl_bits67_to_p      = 1'b0;
@@ -592,13 +601,14 @@ always @*
     else if (q_t == T1)
       begin
         case (q_ir)
-          ADC_ABS, AND_ABS, ASL_ABS, BIT_ABS, CMP_ABS, EOR_ABS, LDA_ABS, LDX_ABS, LDY_ABS, ORA_ABS,
-          STA_ABS, STX_ABS, STY_ABS:
+          ADC_ABS, AND_ABS, ASL_ABS, BIT_ABS, CMP_ABS, CPX_ABS, CPY_ABS, EOR_ABS,
+                   LDA_ABS, LDX_ABS, LDY_ABS, ORA_ABS, STA_ABS, STX_ABS, STY_ABS:
             begin
               load_prg_byte       = 1'b1;
               dl_and_zero_to_alu  = 1'b1;
             end
-          ADC_ABSX, AND_ABSX, ASL_ABSX, CMP_ABSX, EOR_ABSX, LDA_ABSX, LDY_ABSX, ORA_ABSX, STA_ABSX:
+          ADC_ABSX, AND_ABSX, ASL_ABSX, CMP_ABSX, EOR_ABSX, LDA_ABSX, LDY_ABSX, ORA_ABSX,
+                    STA_ABSX:
             begin
               load_prg_byte     = 1'b1;
               xidx_comps_to_alu = 1'b1;
@@ -622,7 +632,8 @@ always @*
               dl_and_zero_to_alu = 1'b1;
               zp_addr_to_ab      = 1'b1;
             end
-          ADC_ZP, AND_ZP, ASL_ZP, BIT_ZP, CMP_ZP, EOR_ZP, LDA_ZP, LDX_ZP, LDY_ZP, ORA_ZP:
+          ADC_ZP, AND_ZP, ASL_ZP, BIT_ZP, CMP_ZP, CPX_ZP, CPY_ZP, EOR_ZP,
+                  LDA_ZP, LDX_ZP, LDY_ZP, ORA_ZP:
             zp_addr_to_ab = 1'b1;
           ASL_ACC:
             ac_and_ac_to_alu = 1'b1;
@@ -640,6 +651,16 @@ always @*
             begin
               load_prg_byte       = 1'b1;
               invdl_and_ac_to_alu = 1'b1;
+            end
+          CPX_IMM:
+            begin
+              load_prg_byte       = 1'b1;
+              invdl_and_x_to_alu = 1'b1;
+            end
+          CPY_IMM:
+            begin
+              load_prg_byte       = 1'b1;
+              invdl_and_y_to_alu = 1'b1;
             end
           LDA_IMM:
             begin
@@ -702,7 +723,8 @@ always @*
               adc_last_cycle = 1'b1;
               addc           = q_c;
             end
-          ADC_ABS, AND_ABS, ASL_ABS, BIT_ABS, CMP_ABS, EOR_ABS, LDA_ABS, LDX_ABS, LDY_ABS, ORA_ABS:
+          ADC_ABS, AND_ABS, ASL_ABS, BIT_ABS, CMP_ABS, CPX_ABS, CPY_ABS, EOR_ABS,
+                   LDA_ABS, LDX_ABS, LDY_ABS, ORA_ABS:
             abs_addr_to_ab = 1'b1;
           ADC_ABSX, AND_ABSX, ASL_ABSX, CMP_ABSX, EOR_ABSX, LDA_ABSX, LDY_ABSX, ORA_ABSX, STA_ABSX,
           ADC_ABSY, AND_ABSY, CMP_ABSY, EOR_ABSY, LDA_ABSY, LDX_ABSY, ORA_ABSY, STA_ABSY:
@@ -743,7 +765,7 @@ always @*
               dl_and_ac_to_alu = 1'b1;
               dl_bits67_to_p   = 1'b1;
             end
-          CMP_IMM:
+          CMP_IMM, CPX_IMM, CPY_IMM:
             begin
               load_prg_byte  = 1'b1;
               addc           = 1'b1;
@@ -753,6 +775,16 @@ always @*
             begin
               load_prg_byte       = 1'b1;
               invdl_and_ac_to_alu = 1'b1;
+            end
+          CPX_ZP:
+            begin
+              load_prg_byte       = 1'b1;
+              invdl_and_x_to_alu = 1'b1;
+            end
+          CPY_ZP:
+            begin
+              load_prg_byte       = 1'b1;
+              invdl_and_y_to_alu = 1'b1;
             end
           EOR_IMM:
             begin
@@ -875,11 +907,21 @@ always @*
               load_prg_byte       = 1'b1;
               invdl_and_ac_to_alu = 1'b1;
             end
-          CMP_ZP:
+          CMP_ZP, CPX_ZP, CPY_ZP:
             begin
               load_prg_byte  = 1'b1;
               addc           = 1'b1;
               cmp_last_cycle = 1'b1;
+            end
+          CPX_ABS:
+            begin
+              load_prg_byte      = 1'b1;
+              invdl_and_x_to_alu = 1'b1;
+            end
+          CPY_ABS:
+            begin
+              load_prg_byte      = 1'b1;
+              invdl_and_y_to_alu = 1'b1;
             end
           EOR_ZP:
             begin
@@ -968,7 +1010,7 @@ always @*
               load_prg_byte  = 1'b1;
               bit_last_cycle = 1'b1;
             end
-          CMP_ABS,
+          CMP_ABS, CPX_ABS, CPY_ABS,
           CMP_ZPX:
             begin
               load_prg_byte  = 1'b1;
@@ -1166,15 +1208,17 @@ assign pch_adh  = load_prg_byte;
 assign ac_db    = ac_to_dor           | ac_and_ac_to_alu;
 assign dl_db    = lda_last_cycle      | ldx_last_cycle      | ldy_last_cycle      |
                   xidx_comps_to_alu   | yidx_comps_to_alu   | dl_and_zero_to_alu  |
-                  dl_and_ac_to_alu    | invdl_and_ac_to_alu | dl_and_dl_to_alu;
+                  dl_and_ac_to_alu    | invdl_and_ac_to_alu | dl_and_dl_to_alu    |
+                  invdl_and_x_to_alu  | invdl_and_y_to_alu;
 assign ac_sb    = dl_and_ac_to_alu    | tax                 | tay                 |
                   invdl_and_ac_to_alu | ac_and_ac_to_alu;
 assign add_sb   = idx_hiaddr_to_ab    | and_last_cycle      | ora_last_cycle      |
                   eor_last_cycle      | cmp_last_cycle      | adc_last_cycle      |
                   asl_acc             | asl_mem             | bit_last_cycle;
 assign x_sb     = xidx_comps_to_alu   | x_to_dor            | txs                 |
-                  txa;
-assign y_sb     = yidx_comps_to_alu   | y_to_dor            | tya;
+                  txa                 | invdl_and_x_to_alu;
+assign y_sb     = yidx_comps_to_alu   | y_to_dor            | tya                 |
+                  invdl_and_y_to_alu;
 assign s_sb     = tsx;
 assign sb_adh   = idx_hiaddr_to_ab;
 assign sb_db    = lda_last_cycle      | ldx_last_cycle      | ldy_last_cycle      |
@@ -1190,14 +1234,15 @@ assign adl_abl  = load_prg_byte       | zp_addr_to_ab       | zpidx_loaddr_to_ab
                   abs_addr_to_ab;
 assign db_add   = xidx_comps_to_alu   | yidx_comps_to_alu   | dl_and_zero_to_alu  |
                   dl_and_ac_to_alu    | ac_and_ac_to_alu    | dl_and_dl_to_alu;
-assign ndb_add  = invdl_and_ac_to_alu;
+assign ndb_add  = invdl_and_ac_to_alu | invdl_and_x_to_alu  | invdl_and_y_to_alu;
 assign sb_s     = txs;
 assign zero_add = dl_and_zero_to_alu;
 assign sb_ac    = lda_last_cycle      | txa                 | tya                 |
                   and_last_cycle      | ora_last_cycle      | eor_last_cycle      |
                   adc_last_cycle      | asl_acc;
 assign sb_add   = xidx_comps_to_alu   | yidx_comps_to_alu   | dl_and_ac_to_alu    |
-                  invdl_and_ac_to_alu | ac_and_ac_to_alu    | dl_and_dl_to_alu;
+                  invdl_and_ac_to_alu | ac_and_ac_to_alu    | dl_and_dl_to_alu    |
+                  invdl_and_x_to_alu  | invdl_and_y_to_alu;
 assign sb_x     = ldx_last_cycle      | tax                 | tsx;
 assign sb_y     = ldy_last_cycle      | tay;
 assign acr_c    = cmp_last_cycle      | adc_last_cycle      | asl_acc             |
