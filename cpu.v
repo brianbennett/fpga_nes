@@ -54,6 +54,7 @@ localparam [7:0] ADC_ABS  = 8'h6D, ADC_ABSX = 8'h7D, ADC_ABSY = 8'h79, ADC_IMM  
                  INC_ABS  = 8'hEE, INC_ABSX = 8'hFE, INC_ZP   = 8'hE6, INC_ZPX  = 8'hF6,
                  INX      = 8'hE8,
                  INY      = 8'hC8,
+                 JSR      = 8'h20,
                  LDA_ABS  = 8'hAD, LDA_ABSX = 8'hBD, LDA_ABSY = 8'hB9, LDA_IMM  = 8'hA9,
                                    LDA_INDX = 8'hA1, LDA_INDY = 8'hB1, LDA_ZP   = 8'hA5,
                                    LDA_ZPX  = 8'hB5,
@@ -75,6 +76,7 @@ localparam [7:0] ADC_ABS  = 8'h6D, ADC_ABSX = 8'h7D, ADC_ABSY = 8'h79, ADC_IMM  
                                    ROL_ZPX  = 8'h36,
                  ROR_ABS  = 8'h6E, ROR_ABSX = 8'h7E, ROR_ACC  = 8'h6A, ROR_ZP   = 8'h66,
                                    ROR_ZPX  = 8'h76,
+                 RTS      = 8'h60,
                  SBC_ABS  = 8'hED, SBC_ABSX = 8'hFD, SBC_ABSY = 8'hF9, SBC_IMM  = 8'hE9,
                                    SBC_INDX = 8'hE1, SBC_INDY = 8'hF1, SBC_ZP   = 8'hE5,
                                    SBC_ZPX  = 8'hF5,
@@ -155,6 +157,10 @@ reg  [7:0] q_pch;    // program counter high register
 wire [7:0] d_pch;
 reg  [7:0] q_pcl;    // program counter low register
 wire [7:0] d_pcl;
+reg  [7:0] q_pchs;   // program counter high select register
+wire [7:0] d_pchs;
+reg  [7:0] q_pcls;   // program counter low select register
+wire [7:0] d_pcls;
 reg  [7:0] q_pd;     // pre-decode register
 wire [7:0] d_pd;
 reg  [7:0] q_s;      // stack pointer register
@@ -172,7 +178,8 @@ wire [7:0] sb_in,    // SB bus
            sb_out;
 
 //
-// Internal control signals.
+// Internal control signals.  These names are all taken directly from the original 6502 block
+// diagram.
 //
 
 // ADL bus drive enables.
@@ -190,6 +197,9 @@ wire       zero_adh17;  // output 0 to bits 1-7 of adh bus
 // DB bus drive enables.
 wire       ac_db;       // output a reg to db bus
 wire       dl_db;       // output dl reg to db bus
+wire       p_db;        // output p reg to db bus
+wire       pch_db;      // output pch reg to db bus
+wire       pcl_db;      // output pcl reg to db bus
 
 // SB bus drive enables.
 wire       ac_sb;       // output ac reg to sb bus
@@ -203,17 +213,19 @@ wire       sb_adh;      // controls sb/adh pass mosfet
 wire       sb_db;       // controls sb/db pass mosfet
 
 // Register LOAD controls.
-wire       sb_ac;       // latch sb bus value in ac reg
-wire       sb_x;        // latch sb bus value in x reg
-wire       sb_y;        // latch sb bus value in y reg
 wire       adh_abh;     // latch adh bus value in abh reg
 wire       adl_abl;     // latch adl bus value in abl reg
+wire       sb_ac;       // latch sb bus value in ac reg
 wire       adl_add;     // latch adl bus value in bi reg
 wire       db_add;      // latch db bus value in bi reg
 wire       invdb_add;   // latch ~db value in bi reg
 wire       sb_add;      // latch sb bus value in ai reg
 wire       zero_add;    // latch 0 into ai reg
+wire       adh_pch;     // latch adh bus value in pch reg
+wire       adl_pcl;     // latch adl bus value in pcl reg
 wire       sb_s;        // latch sb bus value in s reg
+wire       sb_x;        // latch sb bus value in x reg
+wire       sb_y;        // latch sb bus value in y reg
 
 // Processor status controls.
 wire       acr_c;       // latch acr into c status reg
@@ -297,6 +309,8 @@ always @(posedge clk)
         q_bi   <= 8'h00;
         q_dor  <= 8'h00;
         q_ir   <= BRK;
+        q_pchs <= 8'h80;
+        q_pcls <= 8'h00;
         q_s    <= 8'hFF;
         q_t    <= T1;
       end
@@ -317,6 +331,8 @@ always @(posedge clk)
         q_bi   <= d_bi;
         q_dor  <= d_dor;
         q_ir   <= d_ir;
+        q_pchs <= d_pchs;
+        q_pcls <= d_pcls;
         q_s    <= d_s;
         q_t    <= d_t;
       end
@@ -325,15 +341,17 @@ always @(posedge clk)
         // Update registers based on debug register write packets.
         if (dbgreg_wr)
           begin
-            q_ac <= (dbgreg_sel == `REGSEL_AC) ? dbgreg_in    : q_ac;
-            q_x  <= (dbgreg_sel == `REGSEL_X)  ? dbgreg_in    : q_x;
-            q_y  <= (dbgreg_sel == `REGSEL_Y)  ? dbgreg_in    : q_y;
-            q_c  <= (dbgreg_sel == `REGSEL_P)  ? dbgreg_in[0] : q_c;
-            q_d  <= (dbgreg_sel == `REGSEL_P)  ? dbgreg_in[3] : q_d;
-            q_i  <= (dbgreg_sel == `REGSEL_P)  ? dbgreg_in[2] : q_i;
-            q_n  <= (dbgreg_sel == `REGSEL_P)  ? dbgreg_in[7] : q_n;
-            q_v  <= (dbgreg_sel == `REGSEL_P)  ? dbgreg_in[6] : q_v;
-            q_z  <= (dbgreg_sel == `REGSEL_P)  ? dbgreg_in[1] : q_z;
+            q_ac   <= (dbgreg_sel == `REGSEL_AC)  ? dbgreg_in    : q_ac;
+            q_x    <= (dbgreg_sel == `REGSEL_X)   ? dbgreg_in    : q_x;
+            q_y    <= (dbgreg_sel == `REGSEL_Y)   ? dbgreg_in    : q_y;
+            q_c    <= (dbgreg_sel == `REGSEL_P)   ? dbgreg_in[0] : q_c;
+            q_d    <= (dbgreg_sel == `REGSEL_P)   ? dbgreg_in[3] : q_d;
+            q_i    <= (dbgreg_sel == `REGSEL_P)   ? dbgreg_in[2] : q_i;
+            q_n    <= (dbgreg_sel == `REGSEL_P)   ? dbgreg_in[7] : q_n;
+            q_v    <= (dbgreg_sel == `REGSEL_P)   ? dbgreg_in[6] : q_v;
+            q_z    <= (dbgreg_sel == `REGSEL_P)   ? dbgreg_in[1] : q_z;
+            q_pchs <= (dbgreg_sel == `REGSEL_PCH) ? dbgreg_in    : q_pchs;
+            q_pcls <= (dbgreg_sel == `REGSEL_PCL) ? dbgreg_in    : q_pcls;
 
             // This handles a problem found when updating the PC during a BRK instruction.  Force
             // AB reg to update to the new PC value immediately so T0 of the next instruction
@@ -481,10 +499,10 @@ always @*
           // These instructions are in their last cycle but do not prefetch.
           else if ((q_ir == ASL_ABS)  || (q_ir == ASL_ZPX)  || (q_ir == DEC_ABS)  ||
                    (q_ir == DEC_ZPX)  || (q_ir == INC_ABS)  || (q_ir == INC_ZPX)  ||
-                   (q_ir == LDA_INDX) || (q_ir == LDA_INDY) || (q_ir == LSR_ABS)  ||
-                   (q_ir == LSR_ZPX)  || (q_ir == ROL_ABS)  || (q_ir == ROL_ZPX)  ||
-                   (q_ir == ROR_ABS)  || (q_ir == ROR_ZPX)  || (q_ir == STA_INDX) ||
-                   (q_ir == STA_INDY))
+                   (q_ir == JSR)      || (q_ir == LDA_INDX) || (q_ir == LDA_INDY) ||
+                   (q_ir == LSR_ABS)  || (q_ir == LSR_ZPX)  || (q_ir == ROL_ABS)  ||
+                   (q_ir == ROL_ZPX)  || (q_ir == ROR_ABS)  || (q_ir == ROR_ZPX)  ||
+                   (q_ir == RTS)      || (q_ir == STA_INDX) || (q_ir == STA_INDY))
             d_t = T0;
 
           else
@@ -512,148 +530,201 @@ always @*
   end
 
 //
-// Decode ROM
+// Decode ROM.
 //
-reg load_prg_byte;        // put PC on addr bus, increment PC, and latch returned data
-reg load_prg_byte_noinc;  // put PC on addr bus, latch returned data (no PC inc)
-reg adc_last_cycle;       // final cycle of an adc inst
-reg and_last_cycle;       // final cycle of an and inst
-reg cmp_last_cycle;       // final cycle of a cmp inst
-reg bit_last_cycle;       // final cycle of a bit inst
-reg dex_last_cycle;       // final cycle of a dex inst
-reg dey_last_cycle;       // final cycle of a dey inst
-reg eor_last_cycle;       // final cycle of an eor inst
-reg inx_last_cycle;       // final cycle of an inx inst
-reg iny_last_cycle;       // final cycle of an iny inst
-reg lda_last_cycle;       // final cycle of an lda inst
-reg ldx_last_cycle;       // final cycle of an ldx inst
-reg ldy_last_cycle;       // final cycle of an ldy inst
-reg ora_last_cycle;       // final cycle of an ora inst
-reg plp_last_cycle;       // final cycle of a plp inst
-reg ac_to_dor;            // load current ac value into dor
-reg p_to_dor;             // load current p value into dor
-reg x_to_dor;             // load current x value into dor
-reg y_to_dor;             // load current y value into dor
-reg abs_addr_to_ab;       // load an absolute address into the ab regs (dl to abh, add to abl)
-reg idx_hiaddr_to_ab;     // load abh with indexed addressing result
-reg ind_loaddr_to_ab;     // load abl with indirect lo address
-reg s_to_ab;              // load abl/abh with stack addr from s
-reg zp_addr_to_ab;        // load ab with zero-page address specified in dl
-reg zpidx_loaddr_to_ab;   // load abl with lo address for zp index ops, abh set to 0
-reg ac_and_ac_to_alu;     // load ai and bi with ac
-reg dl_and_ac_to_alu;     // load bi with dl and ai with ac
-reg dl_and_dl_to_alu;     // load ai and bi with dl
-reg dl_and_neg1_to_alu;   // load bi with dl and ai with -1
-reg dl_and_zero_to_alu;   // load bi with dl and ai with 0
-reg invdl_and_ac_to_alu;  // load bi with ~dl and ai with ac
-reg invdl_and_x_to_alu;   // load bi with ~dl and ai with x
-reg invdl_and_y_to_alu;   // load bi with ~dl and ai with y
-reg neg1_and_s_to_alu;    // load bi with all 1s and ai with s
-reg neg1_and_x_to_alu;    // load bi with all 1s and ai with x
-reg neg1_and_y_to_alu;    // load bi with all 1s and ai with y
-reg s_and_zero_to_alu;    // load bi with s and ai with 0
-reg x_and_zero_to_alu;    // load bi with x and ai with 0
-reg y_and_zero_to_alu;    // load bi with y and ai with 0
-reg xidx_comps_to_alu;    // load alu inputs ai/bi with vals for x indexed addr calc
-reg yidx_comps_to_alu;    // load alu inputs ai/bi with vals for y indexed addr calc
-reg dl_bits67_to_p;       // latch bits 6 and 7 into P V and N bits.
-reg push_s;               // latch alu result into s
-reg pop_s;                // latch alu result into s and carry in to alu
-reg asl_acc;              // perform asl_acc inst
-reg asl_mem;              // perform meat of asl inst for memory addressing modes
-reg dec_mem;              // perform meat of dec inst
-reg inc_mem;              // perform meat of inc inst
-reg lsr_acc;              // perform lsr_acc inst
-reg lsr_mem;              // perform meat of lsr inst for memory addressing modes
-reg rol_acc;              // perform rol_acc inst
-reg rol_mem;              // perform meat of rol inst for memory addressing modes
-reg ror_acc;              // perform ror_acc inst
-reg ror_mem;              // perform meat of ror inst for memory addressing modes
-reg clc;                  // clear carry bit
-reg cld;                  // clear decimal mode bit
-reg cli;                  // clear interrupt disable bit
-reg clv;                  // clear overflow bit
-reg sec;                  // set carry bit
-reg sed;                  // set decimal mode bit
-reg sei;                  // set interrupt disable bit
-reg tax;                  // transfer ac to x
-reg tay;                  // transfer ac to y
-reg tsx;                  // transfer s to x
-reg txa;                  // transfer x to z
-reg txs;                  // transfer x to s
-reg tya;                  // transfer y to a
+
+// PC and program stream controls.
+reg load_prg_byte;         // put PC on addr bus, increment PC, and latch returned data
+reg load_prg_byte_noinc;   // put PC on addr bus, latch returned data (no PC inc)
+reg incpc_noload;          // increment PC without putting PC on addr bus or latching returned data
+reg dl_to_pch;             // load pch with current data latch register
+reg s_to_pcl;              // load pcl with s
+
+// Instruction-specific controls.  Typically triggers the meat of a particular operation that
+// occurs regardless of addressing mode.
+reg adc_last_cycle;        // final cycle of an adc inst
+reg and_last_cycle;        // final cycle of an and inst
+reg asl_acc;               // perform asl_acc inst
+reg asl_mem;               // perform meat of asl inst for memory addressing modes
+reg bit_last_cycle;        // final cycle of a bit inst
+reg cmp_last_cycle;        // final cycle of a cmp inst
+reg clc;                   // clear carry bit
+reg cld;                   // clear decimal mode bit
+reg cli;                   // clear interrupt disable bit
+reg clv;                   // clear overflow bit
+reg dec_mem;               // perform meat of dec inst
+reg dex_last_cycle;        // final cycle of a dex inst
+reg dey_last_cycle;        // final cycle of a dey inst
+reg eor_last_cycle;        // final cycle of an eor inst
+reg inc_mem;               // perform meat of inc inst
+reg inx_last_cycle;        // final cycle of an inx inst
+reg iny_last_cycle;        // final cycle of an iny inst
+reg lda_last_cycle;        // final cycle of an lda inst
+reg ldx_last_cycle;        // final cycle of an ldx inst
+reg ldy_last_cycle;        // final cycle of an ldy inst
+reg lsr_acc;               // perform lsr_acc inst
+reg lsr_mem;               // perform meat of lsr inst for memory addressing modes
+reg ora_last_cycle;        // final cycle of an ora inst
+reg plp_last_cycle;        // final cycle of a plp inst
+reg rol_acc;               // perform rol_acc inst
+reg rol_mem;               // perform meat of rol inst for memory addressing modes
+reg ror_acc;               // perform ror_acc inst
+reg ror_mem;               // perform meat of ror inst for memory addressing modes
+reg sec;                   // set carry bit
+reg sed;                   // set decimal mode bit
+reg sei;                   // set interrupt disable bit
+reg tax;                   // transfer ac to x
+reg tay;                   // transfer ac to y
+reg tsx;                   // transfer s to x
+reg txa;                   // transfer x to z
+reg txs;                   // transfer x to s
+reg tya;                   // transfer y to a
+
+// DOR (data output register) load controls.
+reg ac_to_dor;             // load current ac value into dor
+reg p_to_dor;              // load current p value into dor
+reg pch_to_dor;            // load current pch value into dor
+reg pcl_to_dor;            // load current pcl value into dor
+reg x_to_dor;              // load current x value into dor
+reg y_to_dor;              // load current y value into dor
+
+// AB (address bus hold registers) load controls.
+reg abs_addr_to_ab;        // load an absolute address into the ab regs (dl to abh, add to abl)
+reg idx_hiaddr_to_ab;      // load abh with indexed addressing result
+reg ind_loaddr_to_ab;      // load abl with indirect lo address
+reg s_to_ab;               // load abl/abh with stack addr from s
+reg zp_addr_to_ab;         // load ab with zero-page address specified in dl
+reg zpidx_loaddr_to_ab;    // load abl with lo address for zp index ops, abh set to 0
+reg dl_to_abh;             // load abh with dl
+reg s_to_abl;              // load abl with s
+reg one_to_abh;            // load abh with 8'h01
+
+// ALU input register load controls (AI and BI).
+reg ac_and_ac_to_alu;      // load ai and bi with ac
+reg dl_and_ac_to_alu;      // load bi with dl and ai with ac
+reg dl_and_dl_to_alu;      // load ai and bi with dl
+reg dl_and_neg1_to_alu;    // load bi with dl and ai with -1
+reg dl_and_zero_to_alu;    // load bi with dl and ai with 0
+reg invdl_and_ac_to_alu;   // load bi with ~dl and ai with ac
+reg invdl_and_x_to_alu;    // load bi with ~dl and ai with x
+reg invdl_and_y_to_alu;    // load bi with ~dl and ai with y
+reg neg1_and_s_to_alu;     // load bi with all 1s and ai with s
+reg neg1_and_x_to_alu;     // load bi with all 1s and ai with x
+reg neg1_and_y_to_alu;     // load bi with all 1s and ai with y
+reg s_and_zero_to_alu;     // load bi with s and ai with 0
+reg x_and_zero_to_alu;     // load bi with x and ai with 0
+reg y_and_zero_to_alu;     // load bi with y and ai with 0
+reg xidx_comps_to_alu;     // load alu inputs ai/bi with vals for x indexed addr calc
+reg yidx_comps_to_alu;     // load alu inputs ai/bi with vals for y indexed addr calc
+reg s_to_bi;               // load ai with s
+reg neg1_to_ai;            // load ai with -1
+reg add_to_bi;             // load bi with add reg
+
+// Stack related controls.
+reg aluinc_to_s;           // load (ai+bi+1) into s
+reg dl_to_s;               // load s with current data latch register
+reg push_s;                // latch alu result into s
+reg pop_s;                 // latch alu result into s and carry in to alu
+reg aluinc_to_abl;         // load (ai+bi+1) into low address register
+reg aluinc_to_abl_and_bi;  // load (ai+bi+1) into low address register and bi
+reg alusum_to_abl_and_bi;  // load (ai+bi) into address register and bi
+
+// Process status register controls.
+reg dl_bits67_to_p;        // latch bits 6 and 7 into P V and N bits.
 
 always @*
   begin
     // Default all control signals to 0.
-    load_prg_byte       = 1'b0;
-    load_prg_byte_noinc = 1'b0;
-    adc_last_cycle      = 1'b0;
-    and_last_cycle      = 1'b0;
-    bit_last_cycle      = 1'b0;
-    cmp_last_cycle      = 1'b0;
-    dex_last_cycle      = 1'b0;
-    dey_last_cycle      = 1'b0;
-    eor_last_cycle      = 1'b0;
-    inx_last_cycle      = 1'b0;
-    iny_last_cycle      = 1'b0;
-    lda_last_cycle      = 1'b0;
-    ldx_last_cycle      = 1'b0;
-    ldy_last_cycle      = 1'b0;
-    ora_last_cycle      = 1'b0;
-    plp_last_cycle      = 1'b0;
-    ac_to_dor           = 1'b0;
-    p_to_dor            = 1'b0;
-    x_to_dor            = 1'b0;
-    y_to_dor            = 1'b0;
-    abs_addr_to_ab      = 1'b0;
-    idx_hiaddr_to_ab    = 1'b0;
-    ind_loaddr_to_ab    = 1'b0;
-    s_to_ab             = 1'b0;
-    zp_addr_to_ab       = 1'b0;
-    zpidx_loaddr_to_ab  = 1'b0;
-    ac_and_ac_to_alu    = 1'b0;
-    dl_and_ac_to_alu    = 1'b0;
-    dl_and_dl_to_alu    = 1'b0;
-    dl_and_neg1_to_alu  = 1'b0;
-    dl_and_zero_to_alu  = 1'b0;
-    invdl_and_ac_to_alu = 1'b0;
-    invdl_and_x_to_alu  = 1'b0;
-    invdl_and_y_to_alu  = 1'b0;
-    neg1_and_s_to_alu   = 1'b0;
-    neg1_and_x_to_alu   = 1'b0;
-    neg1_and_y_to_alu   = 1'b0;
-    s_and_zero_to_alu   = 1'b0;
-    x_and_zero_to_alu   = 1'b0;
-    y_and_zero_to_alu   = 1'b0;
-    xidx_comps_to_alu   = 1'b0;
-    yidx_comps_to_alu   = 1'b0;
-    dl_bits67_to_p      = 1'b0;
-    push_s              = 1'b0;
-    pop_s               = 1'b0;
-    asl_acc             = 1'b0;
-    asl_mem             = 1'b0;
-    inc_mem             = 1'b0;
-    dec_mem             = 1'b0;
-    lsr_acc             = 1'b0;
-    lsr_mem             = 1'b0;
-    rol_acc             = 1'b0;
-    rol_mem             = 1'b0;
-    ror_acc             = 1'b0;
-    ror_mem             = 1'b0;
-    clc                 = 1'b0;
-    cld                 = 1'b0;
-    cli                 = 1'b0;
-    clv                 = 1'b0;
-    sec                 = 1'b0;
-    sed                 = 1'b0;
-    sei                 = 1'b0;
-    tax                 = 1'b0;
-    tay                 = 1'b0;
-    tsx                 = 1'b0;
-    txa                 = 1'b0;
-    txs                 = 1'b0;
-    tya                 = 1'b0;
+    load_prg_byte        = 1'b0;
+    load_prg_byte_noinc  = 1'b0;
+    incpc_noload         = 1'b0;
+    dl_to_pch            = 1'b0;
+    s_to_pcl             = 1'b0;
+
+    adc_last_cycle       = 1'b0;
+    and_last_cycle       = 1'b0;
+    asl_acc              = 1'b0;
+    asl_mem              = 1'b0;
+    bit_last_cycle       = 1'b0;
+    cmp_last_cycle       = 1'b0;
+    clc                  = 1'b0;
+    cld                  = 1'b0;
+    cli                  = 1'b0;
+    clv                  = 1'b0;
+    dec_mem              = 1'b0;
+    dex_last_cycle       = 1'b0;
+    dey_last_cycle       = 1'b0;
+    eor_last_cycle       = 1'b0;
+    inc_mem              = 1'b0;
+    inx_last_cycle       = 1'b0;
+    iny_last_cycle       = 1'b0;
+    lda_last_cycle       = 1'b0;
+    ldx_last_cycle       = 1'b0;
+    ldy_last_cycle       = 1'b0;
+    lsr_acc              = 1'b0;
+    lsr_mem              = 1'b0;
+    ora_last_cycle       = 1'b0;
+    plp_last_cycle       = 1'b0;
+    rol_acc              = 1'b0;
+    rol_mem              = 1'b0;
+    ror_acc              = 1'b0;
+    ror_mem              = 1'b0;
+    sec                  = 1'b0;
+    sed                  = 1'b0;
+    sei                  = 1'b0;
+    tax                  = 1'b0;
+    tay                  = 1'b0;
+    tsx                  = 1'b0;
+    txa                  = 1'b0;
+    txs                  = 1'b0;
+    tya                  = 1'b0;
+
+    ac_to_dor            = 1'b0;
+    p_to_dor             = 1'b0;
+    pch_to_dor           = 1'b0;
+    pcl_to_dor           = 1'b0;
+    x_to_dor             = 1'b0;
+    y_to_dor             = 1'b0;
+
+    abs_addr_to_ab       = 1'b0;
+    idx_hiaddr_to_ab     = 1'b0;
+    ind_loaddr_to_ab     = 1'b0;
+    s_to_ab              = 1'b0;
+    zp_addr_to_ab        = 1'b0;
+    zpidx_loaddr_to_ab   = 1'b0;
+    dl_to_abh            = 1'b0;
+    s_to_abl             = 1'b0;
+    one_to_abh           = 1'b0;
+
+    ac_and_ac_to_alu     = 1'b0;
+    dl_and_ac_to_alu     = 1'b0;
+    dl_and_dl_to_alu     = 1'b0;
+    dl_and_neg1_to_alu   = 1'b0;
+    dl_and_zero_to_alu   = 1'b0;
+    invdl_and_ac_to_alu  = 1'b0;
+    invdl_and_x_to_alu   = 1'b0;
+    invdl_and_y_to_alu   = 1'b0;
+    neg1_and_s_to_alu    = 1'b0;
+    neg1_and_x_to_alu    = 1'b0;
+    neg1_and_y_to_alu    = 1'b0;
+    s_and_zero_to_alu    = 1'b0;
+    x_and_zero_to_alu    = 1'b0;
+    y_and_zero_to_alu    = 1'b0;
+    xidx_comps_to_alu    = 1'b0;
+    yidx_comps_to_alu    = 1'b0;
+    s_to_bi              = 1'b0;
+    neg1_to_ai           = 1'b0;
+    add_to_bi            = 1'b0;
+
+    aluinc_to_s          = 1'b0;
+    dl_to_s              = 1'b0;
+    push_s               = 1'b0;
+    pop_s                = 1'b0;
+    aluinc_to_abl        = 1'b0;
+    aluinc_to_abl_and_bi = 1'b0;
+    alusum_to_abl_and_bi = 1'b0;
+
+    dl_bits67_to_p       = 1'b0;
 
     // Defaults for output signals.
     r_nw = 1'b1;
@@ -739,6 +810,13 @@ always @*
             x_and_zero_to_alu = 1'b1;
           INY:
             y_and_zero_to_alu = 1'b1;
+          JSR:
+            begin
+              s_to_bi           = 1'b1;
+              incpc_noload      = 1'b1;
+              dl_to_s           = 1'b1;
+              s_to_abl          = 1'b1;
+            end
           LDA_IMM:
             begin
               load_prg_byte  = 1'b1;
@@ -766,7 +844,7 @@ always @*
               s_to_ab  = 1'b1;
               p_to_dor = 1'b1;
             end
-          PLA, PLP:
+          PLA, PLP, RTS:
             s_and_zero_to_alu = 1'b1;
           SEC:
             sec = 1'b1;
@@ -905,6 +983,12 @@ always @*
               load_prg_byte  = 1'b1;
               iny_last_cycle = 1'b1;
             end
+          JSR:
+            begin
+              pch_to_dor = 1'b1;
+              one_to_abh = 1'b1;
+              neg1_to_ai = 1'b1;
+            end
           LDA_ZP:
             begin
               load_prg_byte  = 1'b1;
@@ -947,6 +1031,11 @@ always @*
             begin
               load_prg_byte = 1'b1;
               ror_acc       = 1'b1;
+            end
+          RTS:
+            begin
+              aluinc_to_abl_and_bi = 1'b1;
+              one_to_abh           = 1'b1;
             end
           STA_ABS:
             begin
@@ -1070,6 +1159,12 @@ always @*
             dl_and_zero_to_alu = 1'b1;
           INC_ZP:
             inc_mem = 1'b1;
+          JSR:
+            begin
+              r_nw                 = 1'b0;
+              pcl_to_dor           = 1'b1;
+              alusum_to_abl_and_bi = 1'b1;
+            end
           LDA_ABS, LDA_ZPX:
             begin
               load_prg_byte  = 1'b1;
@@ -1111,6 +1206,11 @@ always @*
             rol_mem = 1'b1;
           ROR_ZP:
             ror_mem = 1'b1;
+          RTS:
+            begin
+              aluinc_to_abl = 1'b1;
+              dl_to_s       = 1'b1;
+            end
           STA_ABS, STX_ABS, STY_ABS,
           STA_ZPX, STY_ZPX,
           STX_ZPY:
@@ -1196,6 +1296,11 @@ always @*
             inc_mem = 1'b1;
           INC_ABSX:
             dl_and_zero_to_alu = 1'b1;
+          JSR:
+            begin
+              r_nw                = 1'b0;
+              load_prg_byte_noinc = 1'b1;
+            end
           LDA_ABSX,
           LDA_ABSY:
             begin
@@ -1227,6 +1332,12 @@ always @*
           ROR_ABS,
           ROR_ZPX:
             ror_mem = 1'b1;
+          RTS:
+            begin
+              dl_to_pch   = 1'b1;
+              s_to_pcl    = 1'b1;
+              aluinc_to_s = 1'b1;
+            end
           STA_INDX:
             begin
               abs_addr_to_ab = 1'b1;
@@ -1292,6 +1403,15 @@ always @*
             end
           INC_ABSX:
             inc_mem = 1'b1;
+          JSR:
+            begin
+              dl_to_pch    = 1'b1;
+              dl_to_abh    = 1'b1;
+              s_to_pcl     = 1'b1;
+              s_to_abl     = 1'b1;
+              push_s       = 1'b1;
+              incpc_noload = 1'b1;
+            end
           LDA_INDX,
           LDA_INDY:
             begin
@@ -1310,6 +1430,8 @@ always @*
             rol_mem = 1'b1;
           ROR_ABSX:
             ror_mem = 1'b1;
+          RTS:
+            load_prg_byte = 1'b1;
         endcase
       end
     else if (q_t == T6)
@@ -1382,129 +1504,144 @@ always @*
 //
 // Random Control Logic
 //
-assign add_adl    = abs_addr_to_ab      | ind_loaddr_to_ab    | pop_s               |
-                    zpidx_loaddr_to_ab;
+assign add_adl    = abs_addr_to_ab       | add_to_bi            | aluinc_to_abl        |
+                    aluinc_to_abl_and_bi | ind_loaddr_to_ab     | pop_s                |
+                    alusum_to_abl_and_bi | zpidx_loaddr_to_ab;
 assign dl_adl     = zp_addr_to_ab;
-assign pcl_adl    = load_prg_byte       | load_prg_byte_noinc;
-assign s_adl      = s_and_zero_to_alu   | s_to_ab;
-assign dl_adh     = abs_addr_to_ab;
-assign pch_adh    = load_prg_byte       | load_prg_byte_noinc;
-assign zero_adh0  = ind_loaddr_to_ab    | zp_addr_to_ab       | zpidx_loaddr_to_ab;
-assign zero_adh17 = ind_loaddr_to_ab    | pop_s               | s_to_ab             |
-                    zp_addr_to_ab       | zpidx_loaddr_to_ab;
-assign ac_db      = ac_and_ac_to_alu    | ac_to_dor;
-assign dl_db      = dl_and_ac_to_alu    | dl_and_dl_to_alu    | dl_and_neg1_to_alu  |
-                    dl_and_zero_to_alu  | invdl_and_ac_to_alu | invdl_and_x_to_alu  |
-                    invdl_and_y_to_alu  | lda_last_cycle      | ldx_last_cycle      |
-                    ldy_last_cycle      | plp_last_cycle      | xidx_comps_to_alu   |
+assign pcl_adl    = load_prg_byte        | load_prg_byte_noinc;
+assign s_adl      = s_and_zero_to_alu    | s_to_ab              | s_to_abl             |
+                    s_to_bi              | s_to_pcl;
+assign dl_adh     = abs_addr_to_ab       | dl_to_abh            | dl_to_pch            |
+                    dl_to_s;
+assign pch_adh    = load_prg_byte        | load_prg_byte_noinc;
+assign zero_adh0  = ind_loaddr_to_ab     | zp_addr_to_ab        | zpidx_loaddr_to_ab;
+assign zero_adh17 = ind_loaddr_to_ab     | one_to_abh           | pop_s                |
+                    s_to_ab              | zp_addr_to_ab        | zpidx_loaddr_to_ab;
+assign ac_db      = ac_and_ac_to_alu     | ac_to_dor;
+assign dl_db      = dl_and_ac_to_alu     | dl_and_dl_to_alu     | dl_and_neg1_to_alu   |
+                    dl_and_zero_to_alu   | invdl_and_ac_to_alu  | invdl_and_x_to_alu   |
+                    invdl_and_y_to_alu   | lda_last_cycle       | ldx_last_cycle       |
+                    ldy_last_cycle       | plp_last_cycle       | xidx_comps_to_alu    |
                     yidx_comps_to_alu;
 assign p_db       = p_to_dor;
-assign ac_sb      = ac_and_ac_to_alu    | dl_and_ac_to_alu    | invdl_and_ac_to_alu |
-                    tax                 | tay;
-assign add_sb     = adc_last_cycle      | and_last_cycle      | asl_acc             |
-                    asl_mem             | bit_last_cycle      | cmp_last_cycle      |
-                    dec_mem             | dex_last_cycle      | dey_last_cycle      |
-                    eor_last_cycle      | idx_hiaddr_to_ab    | inc_mem             |
-                    inx_last_cycle      | iny_last_cycle      | lsr_acc             |
-                    lsr_mem             | ora_last_cycle      | pop_s               |
-                    push_s              | rol_acc             | rol_mem             |
-                    ror_acc             | ror_mem;
-assign x_sb       = invdl_and_x_to_alu  | neg1_and_x_to_alu   | txa                 |
-                    txs                 | x_and_zero_to_alu   | x_to_dor            |
+assign pch_db     = pch_to_dor;
+assign pcl_db     = pcl_to_dor;
+assign ac_sb      = ac_and_ac_to_alu     | dl_and_ac_to_alu     | invdl_and_ac_to_alu  |
+                    tax                  | tay;
+assign add_sb     = adc_last_cycle       | aluinc_to_s          | and_last_cycle       |
+                    asl_acc              | asl_mem              | bit_last_cycle       |
+                    cmp_last_cycle       | dec_mem              | dex_last_cycle       |
+                    dey_last_cycle       | eor_last_cycle       | idx_hiaddr_to_ab     |
+                    inc_mem              | inx_last_cycle       | iny_last_cycle       |
+                    lsr_acc              | lsr_mem              | ora_last_cycle       |
+                    pop_s                | push_s               | rol_acc              |
+                    rol_mem              | ror_acc              | ror_mem;
+assign x_sb       = invdl_and_x_to_alu   | neg1_and_x_to_alu    | txa                  |
+                    txs                  | x_and_zero_to_alu    | x_to_dor             |
                     xidx_comps_to_alu;
-assign y_sb       = invdl_and_y_to_alu  | neg1_and_y_to_alu   | tya                 |
-                    y_and_zero_to_alu   | y_to_dor            | yidx_comps_to_alu;
-assign s_sb       = neg1_and_s_to_alu   | tsx;
-assign sb_adh     = idx_hiaddr_to_ab;
-assign sb_db      = adc_last_cycle      | and_last_cycle      | asl_acc             |
-                    asl_mem             | bit_last_cycle      | cmp_last_cycle      |
-                    dec_mem             | dex_last_cycle      | dey_last_cycle      |
-                    dl_and_dl_to_alu    | eor_last_cycle      | inc_mem             |
-                    inx_last_cycle      | iny_last_cycle      | lda_last_cycle      |
-                    ldx_last_cycle      | ldy_last_cycle      | lsr_acc             |
-                    lsr_mem             | ora_last_cycle      | rol_acc             |
-                    rol_mem             | ror_acc             | ror_mem             |
-                    tax                 | tay                 | tsx                 |
-                    txa                 | tya                 | x_and_zero_to_alu   |
-                    x_to_dor            | y_and_zero_to_alu   | y_to_dor;
-assign adh_abh    = abs_addr_to_ab      | idx_hiaddr_to_ab    | ind_loaddr_to_ab    |
-                    load_prg_byte       | load_prg_byte_noinc | pop_s               |
-                    s_to_ab             | zp_addr_to_ab       | zpidx_loaddr_to_ab;
-assign adl_abl    = abs_addr_to_ab      | ind_loaddr_to_ab    | load_prg_byte       |
-                    load_prg_byte_noinc | pop_s               | s_to_ab             |
-                    zp_addr_to_ab       | zpidx_loaddr_to_ab;
-assign adl_add    = s_and_zero_to_alu;
-assign db_add     = ac_and_ac_to_alu    | dl_and_ac_to_alu    | dl_and_dl_to_alu    |
-                    dl_and_neg1_to_alu  | dl_and_zero_to_alu  | neg1_and_s_to_alu   |
-                    neg1_and_x_to_alu   | neg1_and_y_to_alu   | x_and_zero_to_alu   |
-                    xidx_comps_to_alu   | y_and_zero_to_alu   | yidx_comps_to_alu;
-assign invdb_add  = invdl_and_ac_to_alu | invdl_and_x_to_alu  | invdl_and_y_to_alu;
-assign sb_s       = pop_s               | push_s              | txs;
-assign zero_add   = dl_and_zero_to_alu  | s_and_zero_to_alu   | x_and_zero_to_alu   |
+assign y_sb       = invdl_and_y_to_alu   | neg1_and_y_to_alu    | tya                  |
+                    y_and_zero_to_alu    | y_to_dor             | yidx_comps_to_alu;
+assign s_sb       = neg1_and_s_to_alu    | tsx;
+assign sb_adh     = dl_to_s              | idx_hiaddr_to_ab;
+assign sb_db      = adc_last_cycle       | and_last_cycle       | asl_acc              |
+                    asl_mem              | bit_last_cycle       | cmp_last_cycle       |
+                    dec_mem              | dex_last_cycle       | dey_last_cycle       |
+                    dl_and_dl_to_alu     | eor_last_cycle       | inc_mem              |
+                    inx_last_cycle       | iny_last_cycle       | lda_last_cycle       |
+                    ldx_last_cycle       | ldy_last_cycle       | lsr_acc              |
+                    lsr_mem              | ora_last_cycle       | rol_acc              |
+                    rol_mem              | ror_acc              | ror_mem              |
+                    tax                  | tay                  | tsx                  |
+                    txa                  | tya                  | x_and_zero_to_alu    |
+                    x_to_dor             | y_and_zero_to_alu    | y_to_dor;
+assign adh_abh    = abs_addr_to_ab       | dl_to_abh            | idx_hiaddr_to_ab     |
+                    ind_loaddr_to_ab     | load_prg_byte        | load_prg_byte_noinc  |
+                    one_to_abh           | pop_s                | s_to_ab              |
+                    zp_addr_to_ab        | zpidx_loaddr_to_ab;
+assign adl_abl    = abs_addr_to_ab       | aluinc_to_abl        | aluinc_to_abl_and_bi |
+                    ind_loaddr_to_ab     | load_prg_byte        | load_prg_byte_noinc  |
+                    pop_s                | alusum_to_abl_and_bi | s_to_ab              |
+                    s_to_abl             | zp_addr_to_ab        | zpidx_loaddr_to_ab;
+assign adl_add    = add_to_bi            | aluinc_to_abl_and_bi | alusum_to_abl_and_bi |
+                    s_and_zero_to_alu    | s_to_bi;
+assign db_add     = ac_and_ac_to_alu     | dl_and_ac_to_alu     | dl_and_dl_to_alu     |
+                    dl_and_neg1_to_alu   | dl_and_zero_to_alu   | neg1_and_s_to_alu    |
+                    neg1_and_x_to_alu    | neg1_and_y_to_alu    | x_and_zero_to_alu    |
+                    xidx_comps_to_alu    | y_and_zero_to_alu    | yidx_comps_to_alu;
+assign invdb_add  = invdl_and_ac_to_alu  | invdl_and_x_to_alu   | invdl_and_y_to_alu;
+assign sb_s       = aluinc_to_s          | dl_to_s              | pop_s                |
+                    push_s               | txs;
+assign zero_add   = dl_and_zero_to_alu   | s_and_zero_to_alu    | x_and_zero_to_alu    |
                     y_and_zero_to_alu;
-assign sb_ac      = adc_last_cycle      | and_last_cycle      | asl_acc             |
-                    eor_last_cycle      | lda_last_cycle      | lsr_acc             |
-                    ora_last_cycle      | rol_acc             | ror_acc             |
-                    txa                 | tya;
-assign sb_add     = ac_and_ac_to_alu    | dl_and_ac_to_alu    | dl_and_dl_to_alu    |
-                    dl_and_neg1_to_alu  | invdl_and_ac_to_alu | invdl_and_x_to_alu  |
-                    invdl_and_y_to_alu  | neg1_and_s_to_alu   | neg1_and_x_to_alu   |
-                    neg1_and_y_to_alu   | xidx_comps_to_alu   | yidx_comps_to_alu;
-assign sb_x       = dex_last_cycle      | inx_last_cycle      | ldx_last_cycle      |
-                    tax                 | tsx;
-assign sb_y       = dey_last_cycle      | iny_last_cycle      | ldy_last_cycle      |
+assign sb_ac      = adc_last_cycle       | and_last_cycle       | asl_acc              |
+                    eor_last_cycle       | lda_last_cycle       | lsr_acc              |
+                    ora_last_cycle       | rol_acc              | ror_acc              |
+                    txa                  | tya;
+assign sb_add     = ac_and_ac_to_alu     | dl_and_ac_to_alu     | dl_and_dl_to_alu     |
+                    dl_and_neg1_to_alu   | invdl_and_ac_to_alu  | invdl_and_x_to_alu   |
+                    invdl_and_y_to_alu   | neg1_and_s_to_alu    | neg1_and_x_to_alu    |
+                    neg1_and_y_to_alu    | neg1_to_ai           | xidx_comps_to_alu    |
+                    yidx_comps_to_alu;
+assign adh_pch    = dl_to_pch;
+assign adl_pcl    = s_to_pcl;
+assign sb_x       = dex_last_cycle       | inx_last_cycle       | ldx_last_cycle       |
+                    tax                  | tsx;
+assign sb_y       = dey_last_cycle       | iny_last_cycle       | ldy_last_cycle       |
                     tay;
-assign acr_c      = adc_last_cycle      | asl_acc             | asl_mem             |
-                    cmp_last_cycle      | lsr_acc             | lsr_mem             |
-                    rol_acc             | rol_mem             | ror_acc             |
+assign acr_c      = adc_last_cycle       | asl_acc              | asl_mem              |
+                    cmp_last_cycle       | lsr_acc              | lsr_mem              |
+                    rol_acc              | rol_mem              | ror_acc              |
                     ror_mem;
 assign db0_c      = plp_last_cycle;
-assign ir5_c      = clc                 | sec;
+assign ir5_c      = clc                  | sec;
 assign db3_d      = plp_last_cycle;
-assign ir5_d      = cld                 | sed;
+assign ir5_d      = cld                  | sed;
 assign db2_i      = plp_last_cycle;
-assign ir5_i      = cli                 | sei;
-assign db7_n      = adc_last_cycle      | and_last_cycle      | asl_acc             |
-                    asl_mem             | cmp_last_cycle      | dec_mem             |
-                    dex_last_cycle      | dey_last_cycle      | dl_bits67_to_p      |
-                    eor_last_cycle      | inc_mem             | inx_last_cycle      |
-                    iny_last_cycle      | lda_last_cycle      | ldx_last_cycle      |
-                    ldy_last_cycle      | lsr_acc             | lsr_mem             |
-                    ora_last_cycle      | plp_last_cycle      | rol_acc             |
-                    rol_mem             | ror_acc             | ror_mem             |
-                    tax                 | tay                 | tsx                 |
-                    txa                 | tya;
+assign ir5_i      = cli                  | sei;
+assign db7_n      = adc_last_cycle       | and_last_cycle       | asl_acc              |
+                    asl_mem              | cmp_last_cycle       | dec_mem              |
+                    dex_last_cycle       | dey_last_cycle       | dl_bits67_to_p       |
+                    eor_last_cycle       | inc_mem              | inx_last_cycle       |
+                    iny_last_cycle       | lda_last_cycle       | ldx_last_cycle       |
+                    ldy_last_cycle       | lsr_acc              | lsr_mem              |
+                    ora_last_cycle       | plp_last_cycle       | rol_acc              |
+                    rol_mem              | ror_acc              | ror_mem              |
+                    tax                  | tay                  | tsx                  |
+                    txa                  | tya;
 assign avr_v      = adc_last_cycle;
-assign db6_v      = dl_bits67_to_p      | plp_last_cycle;
+assign db6_v      = dl_bits67_to_p       | plp_last_cycle;
 assign zero_v     = clv;
 assign db1_z      = plp_last_cycle;
-assign dbz_z      = adc_last_cycle      | and_last_cycle      | asl_acc             |
-                    asl_mem             | bit_last_cycle      | cmp_last_cycle      |
-                    dec_mem             | dex_last_cycle      | dey_last_cycle      |
-                    eor_last_cycle      | inc_mem             | inx_last_cycle      |
-                    iny_last_cycle      | lda_last_cycle      | ldx_last_cycle      |
-                    ldy_last_cycle      | lsr_acc             | lsr_mem             |
-                    ora_last_cycle      | rol_acc             | rol_mem             |
-                    ror_acc             | ror_mem             | tax                 |
-                    tay                 | tsx                 | txa                 |
+assign dbz_z      = adc_last_cycle       | and_last_cycle       | asl_acc              |
+                    asl_mem              | bit_last_cycle       | cmp_last_cycle       |
+                    dec_mem              | dex_last_cycle       | dey_last_cycle       |
+                    eor_last_cycle       | inc_mem              | inx_last_cycle       |
+                    iny_last_cycle       | lda_last_cycle       | ldx_last_cycle       |
+                    ldy_last_cycle       | lsr_acc              | lsr_mem              |
+                    ora_last_cycle       | rol_acc              | rol_mem              |
+                    ror_acc              | ror_mem              | tax                  |
+                    tay                  | tsx                  | txa                  |
                     tya;
-assign i_pc       = load_prg_byte;
-assign ands       = and_last_cycle      | bit_last_cycle;
+assign i_pc       = load_prg_byte        | incpc_noload;
+assign ands       = and_last_cycle       | bit_last_cycle;
 assign eors       = eor_last_cycle;
 assign ors        = ora_last_cycle;
-assign sums       = abs_addr_to_ab      | adc_last_cycle      | asl_acc             |
-                    asl_mem             | cmp_last_cycle      | dec_mem             |
-                    dex_last_cycle      | dey_last_cycle      | idx_hiaddr_to_ab    |
-                    inc_mem             | ind_loaddr_to_ab    | inx_last_cycle      |
-                    iny_last_cycle      | pop_s               | push_s              |
-                    rol_acc             | rol_mem             | zpidx_loaddr_to_ab;
-assign srs        = lsr_acc             | lsr_mem             | ror_acc             |
+assign sums       = abs_addr_to_ab       | adc_last_cycle       | aluinc_to_abl        |
+                    aluinc_to_abl_and_bi | aluinc_to_s          | asl_acc              |
+                    asl_mem              | cmp_last_cycle       | dec_mem              |
+                    dex_last_cycle       | dey_last_cycle       | idx_hiaddr_to_ab     |
+                    inc_mem              | ind_loaddr_to_ab     | inx_last_cycle       |
+                    iny_last_cycle       | pop_s                | alusum_to_abl_and_bi |
+                    push_s               | rol_acc              | rol_mem              |
+                    zpidx_loaddr_to_ab;
+assign srs        = lsr_acc              | lsr_mem              | ror_acc              |
                     ror_mem;
 
 assign addc       = (adc_last_cycle | rol_acc | rol_mem | ror_acc | ror_mem) ? q_c   :
                     (idx_hiaddr_to_ab)                                       ? q_acr :
-                    cmp_last_cycle      | inc_mem             | ind_loaddr_to_ab    |
-                    inx_last_cycle      | iny_last_cycle      | pop_s;
+                    aluinc_to_abl        | aluinc_to_abl_and_bi | aluinc_to_s          |
+                    cmp_last_cycle       | inc_mem              | ind_loaddr_to_ab     |
+                    inx_last_cycle       | iny_last_cycle       | pop_s;
 
 //
 // Update internal buses.  Use of in/out to replicate pass mosfets and avoid using internal
@@ -1523,7 +1660,9 @@ assign adl     = (add_adl) ? q_add :
                  (s_adl)   ? q_s   : 8'hFF;
 assign db_in   = (ac_db)   ? q_ac  :
                  (dl_db)   ? q_dl  :
-                 (p_db)    ? p     : 8'hFF;
+                 (p_db)    ? p     :
+                 (pch_db)  ? q_pch :
+                 (pcl_db)  ? q_pcl : 8'hFF;
 assign sb_in   = (ac_sb)   ? q_ac  :
                  (add_sb)  ? q_add :
                  (x_sb)    ? q_x   :
@@ -1544,34 +1683,37 @@ assign sb_out  = (sb_adh & sb_db) ? (sb_in & db_in & adh_in) :
 //
 // Assign next FF states.
 //
-assign d_ac             = (sb_ac)     ? sb_out                      : q_ac;
-assign d_x              = (sb_x)      ? sb_out                      : q_x;
-assign d_y              = (sb_y)      ? sb_out                      : q_y;
-assign d_c              = (acr_c)     ? acr                         :
-                          (db0_c)     ? db_out[0]                   :
-                          (ir5_c)     ? q_ir[5]                     : q_c;
-assign d_d              = (db3_d)     ? db_out[3]                   :
-                          (ir5_d)     ? q_ir[5]                     : q_d;
-assign d_i              = (db2_i)     ? db_out[2]                   :
-                          (ir5_i)     ? q_ir[5]                     : q_i;
-assign d_n              = (db7_n)     ? db_out[7]                   : q_n;
-assign d_v              = (avr_v)     ? avr                         :
-                          (db6_v)     ? db_out[6]                   :
-                          (zero_v)    ? 1'b0                        : q_v;
-assign d_z              = (db1_z)     ? db_out[1]                   :
-                          (dbz_z)     ? ~|db_out                    : q_z;
-assign d_abh            = (adh_abh)   ? adh_out                     : q_abh;
-assign d_abl            = (adl_abl)   ? adl                         : q_abl;
-assign d_ai             = (sb_add)    ? sb_out                      :
-                          (zero_add)  ? 8'h0                        : q_ai;
-assign d_bi             = (adl_add)   ? adl                         :
-                          (db_add)    ? db_out                      :
-                          (invdb_add) ? ~db_out                     : q_bi;
-assign d_dl             = (r_nw)      ? din                         : q_dl;
+assign d_ac             = (sb_ac)     ? sb_out                        : q_ac;
+assign d_x              = (sb_x)      ? sb_out                        : q_x;
+assign d_y              = (sb_y)      ? sb_out                        : q_y;
+assign d_c              = (acr_c)     ? acr                           :
+                          (db0_c)     ? db_out[0]                     :
+                          (ir5_c)     ? q_ir[5]                       : q_c;
+assign d_d              = (db3_d)     ? db_out[3]                     :
+                          (ir5_d)     ? q_ir[5]                       : q_d;
+assign d_i              = (db2_i)     ? db_out[2]                     :
+                          (ir5_i)     ? q_ir[5]                       : q_i;
+assign d_n              = (db7_n)     ? db_out[7]                     : q_n;
+assign d_v              = (avr_v)     ? avr                           :
+                          (db6_v)     ? db_out[6]                     :
+                          (zero_v)    ? 1'b0                          : q_v;
+assign d_z              = (db1_z)     ? db_out[1]                     :
+                          (dbz_z)     ? ~|db_out                      : q_z;
+assign d_abh            = (adh_abh)   ? adh_out                       : q_abh;
+assign d_abl            = (adl_abl)   ? adl                           : q_abl;
+assign d_ai             = (sb_add)    ? sb_out                        :
+                          (zero_add)  ? 8'h0                          : q_ai;
+assign d_bi             = (adl_add)   ? adl                           :
+                          (db_add)    ? db_out                        :
+                          (invdb_add) ? ~db_out                       : q_bi;
+assign d_dl             = (r_nw)      ? din                           : q_dl;
 assign d_dor            = db_out;
-assign { d_pch, d_pcl } = (i_pc)      ? { q_pch, q_pcl } + 16'h0001 : { q_pch, q_pcl };
-assign d_pd             = (r_nw)      ? din                         : q_pd;
-assign d_s              = (sb_s)      ? sb_out                      : q_s;
+assign d_pd             = (r_nw)      ? din                           : q_pd;
+assign d_s              = (sb_s)      ? sb_out                        : q_s;
+
+assign d_pchs           = (adh_pch)   ? adh_out                       : q_pch;
+assign d_pcls           = (adl_pcl)   ? adl                           : q_pcl;
+assign { d_pch, d_pcl } = (i_pc)      ? { q_pchs, q_pcls } + 16'h0001 : { q_pchs, q_pcls };
 
 // Combine full processor status register.
 assign p = { q_n, q_v, 2'b00, q_d, q_i, q_z, q_c };
