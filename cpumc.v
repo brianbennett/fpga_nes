@@ -41,40 +41,37 @@ reg         prgrom_hi_wr;
 
 // Block ram instance for "RAM" memory range (0x0000 - 0x1FFF).  0x0800 - 0x1FFF mirrors 0x0000 -
 // 0x07FF, so we only need 2048 bytes of physical block ram.
-dual_port_ram_sync #(.ADDR_WIDTH(11),
-                     .DATA_WIDTH(8)) ram(
+single_port_ram_sync #(.ADDR_WIDTH(11),
+                       .DATA_WIDTH(8)) ram(
   .clk(clk),
   .we(ram_wr),
   .addr_a(ram_addr),
   .din_a(din),
-  .dout_a(ram_rd_data),
-  .addr_b(11'h000)
+  .dout_a(ram_rd_data)
 );
 
 assign ram_addr = addr[10:0];
 
 // Block ram instance for "PRG-ROM LO" memory range (0x8000 - 0xBFFF).
-dual_port_ram_sync #(.ADDR_WIDTH(14),
-                     .DATA_WIDTH(8)) prgrom_lo(
+single_port_ram_sync #(.ADDR_WIDTH(14),
+                       .DATA_WIDTH(8)) prgrom_lo(
   .clk(clk),
   .we(prgrom_lo_wr),
   .addr_a(prgrom_lo_addr),
   .din_a(din),
-  .dout_a(prgrom_lo_rd_data),
-  .addr_b(14'h0000)
+  .dout_a(prgrom_lo_rd_data)
 );
 
 assign prgrom_lo_addr = addr[13:0];
 
 // Block ram instance for "PRG-ROM HI" memory range (0xC000 - 0xFFFF).
-dual_port_ram_sync #(.ADDR_WIDTH(14),
-                     .DATA_WIDTH(8)) prgrom_hi(
+single_port_ram_sync #(.ADDR_WIDTH(14),
+                       .DATA_WIDTH(8)) prgrom_hi(
   .clk(clk),
   .we(prgrom_hi_wr),
   .addr_a(prgrom_hi_addr),
   .din_a(din),
-  .dout_a(prgrom_hi_rd_data),
-  .addr_b(14'h0000)
+  .dout_a(prgrom_hi_rd_data)
 );
 
 assign prgrom_hi_addr = addr[13:0];

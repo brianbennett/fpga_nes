@@ -30,14 +30,15 @@ module dbg
 );
 
 // Debug packet opcodes.
-localparam [7:0] OP_ECHO          = 8'h00,
-                 OP_CPU_MEM_RD    = 8'h01,
-                 OP_CPU_MEM_WR    = 8'h02,
-                 OP_DBG_BRK       = 8'h03,
-                 OP_DBG_RUN       = 8'h04,
-                 OP_CPU_REG_RD    = 8'h05,
-                 OP_CPU_REG_WR    = 8'h06,
-                 OP_QUERY_DBG_BRK = 8'h07;
+localparam [7:0] OP_ECHO           = 8'h00,
+                 OP_CPU_MEM_RD     = 8'h01,
+                 OP_CPU_MEM_WR     = 8'h02,
+                 OP_DBG_BRK        = 8'h03,
+                 OP_DBG_RUN        = 8'h04,
+                 OP_CPU_REG_RD     = 8'h05,
+                 OP_CPU_REG_WR     = 8'h06,
+                 OP_QUERY_DBG_BRK  = 8'h07,
+                 OP_QUERY_ERR_CODE = 8'h08;
 
 // Error code bit positions.
 localparam DBG_UART_PARITY_ERR = 0,
@@ -55,7 +56,8 @@ localparam [3:0] S_DISABLED         = 4'h0,
                  S_CPU_MEM_WR_STG_1 = 4'h7,
                  S_CPU_REG_RD       = 4'h8,
                  S_CPU_REG_WR_STG_0 = 4'h9,
-                 S_CPU_REG_WR_STG_1 = 4'hA;
+                 S_CPU_REG_WR_STG_1 = 4'hA,
+                 S_QUERY_ERR_CODE   = 4'hB;
 
 reg [ 3:0] q_state,       d_state;
 reg [ 1:0] q_decode_cnt,  d_decode_cnt;
@@ -157,7 +159,7 @@ always @*
 
               if (rd_data == OP_DBG_BRK)
                 begin
-                  d_state   = S_DECODE;
+                  d_state = S_DECODE;
                 end
               else if (rd_data == OP_QUERY_DBG_BRK)
                 begin
@@ -175,12 +177,13 @@ always @*
 
               // Move to appropriate decode stage based on opcode.
               case (rd_data)
-                OP_ECHO:        d_state = S_ECHO_STG_0;
-                OP_CPU_MEM_RD:  d_state = S_CPU_MEM_RD_STG_0;
-                OP_CPU_MEM_WR:  d_state = S_CPU_MEM_WR_STG_0;
-                OP_DBG_BRK:     d_state = S_DECODE;
-                OP_CPU_REG_RD:  d_state = S_CPU_REG_RD;
-                OP_CPU_REG_WR:  d_state = S_CPU_REG_WR_STG_0;
+                OP_ECHO:           d_state = S_ECHO_STG_0;
+                OP_CPU_MEM_RD:     d_state = S_CPU_MEM_RD_STG_0;
+                OP_CPU_MEM_WR:     d_state = S_CPU_MEM_WR_STG_0;
+                OP_DBG_BRK:        d_state = S_DECODE;
+                OP_CPU_REG_RD:     d_state = S_CPU_REG_RD;
+                OP_CPU_REG_WR:     d_state = S_CPU_REG_WR_STG_0;
+                OP_QUERY_ERR_CODE: d_state = S_QUERY_ERR_CODE;
                 OP_DBG_RUN:
                   begin
                     d_state = S_DISABLED;
@@ -392,6 +395,18 @@ always @*
               cpu_dbgreg_wr  = 1'b1;
               cpu_dbgreg_out = rd_data;
               d_state        = S_DECODE;
+            end
+        end
+
+      // --- QUERY_ERR_CODE ---
+      //   OP_CODE
+      S_QUERY_ERR_CODE:
+        begin
+          if (!tx_full)
+            begin
+              d_tx_data = q_err_code; // write current error code
+              d_wr_en   = 1'b1;       // request uart write
+              d_state   = S_DECODE;
             end
         end
     endcase
