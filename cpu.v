@@ -588,70 +588,70 @@ always @*
 //
 
 // PC and program stream controls.
-reg load_prg_byte;         // put PC on addr bus, increment PC, and latch returned data
-reg load_prg_byte_noinc;   // put PC on addr bus, latch returned data (no PC inc)
-reg incpc_noload;          // increment PC without putting PC on addr bus or latching returned data
-reg dl_to_pch;             // load pch with current data latch register
-reg s_to_pcl;              // load pcl with s
+reg load_prg_byte;         // put PC on addr bus and increment PC (adh, adl)
+reg load_prg_byte_noinc;   // put PC on addr bus only (adh, adl)
+reg incpc_noload;          // increment PC only (-)
+reg dl_to_pch;             // load pch with current data latch register (adh)
+reg s_to_pcl;              // load pcl with s (adl)
 reg alusum_to_pcl;         // load pcl with ai+bi (adl)
 
 // Instruction-specific controls.  Typically triggers the meat of a particular operation that
 // occurs regardless of addressing mode.
-reg adc_op;                // final cycle of an adc inst
-reg and_op;                // final cycle of an and inst
-reg asl_acc_op;            // perform asl_acc inst
-reg asl_mem_op;            // perform meat of asl inst for memory addressing modes
-reg bit_op;                // final cycle of a bit inst
-reg cmp_op;                // final cycle of a cmp inst
-reg clc_op;                // clear carry bit
-reg cld_op;                // clear decimal mode bit
-reg cli_op;                // clear interrupt disable bit
-reg clv_op;                // clear overflow bit
-reg dec_op;                // perform meat of dec inst
-reg dex_op;                // final cycle of a dex inst
-reg dey_op;                // final cycle of a dey inst
-reg eor_op;                // final cycle of an eor inst
-reg inc_op;                // perform meat of inc inst
-reg inx_op;                // final cycle of an inx inst
-reg iny_op;                // final cycle of an iny inst
-reg lda_op;                // final cycle of an lda inst
-reg ldx_op;                // final cycle of an ldx inst
-reg ldy_op;                // final cycle of an ldy inst
-reg lsr_acc_op;            // perform lsr_acc inst
-reg lsr_mem_op;            // perform meat of lsr inst for memory addressing modes
-reg ora_op;                // final cycle of an ora inst
-reg plp_op;                // final cycle of a plp inst
-reg rol_acc_op;            // perform rol_acc inst
-reg rol_mem_op;            // perform meat of rol inst for memory addressing modes
-reg ror_acc_op;            // perform ror_acc inst
-reg ror_mem_op;            // perform meat of ror inst for memory addressing modes
-reg sec_op;                // set carry bit
-reg sed_op;                // set decimal mode bit
-reg sei_op;                // set interrupt disable bit
-reg tax_op;                // transfer ac to x
-reg tay_op;                // transfer ac to y
-reg tsx_op;                // transfer s to x
-reg txa_op;                // transfer x to z
-reg txs_op;                // transfer x to s
-reg tya_op;                // transfer y to a
+reg adc_op;                // final cycle of an adc inst (db, sb)
+reg and_op;                // final cycle of an and inst (db, sb)
+reg asl_acc_op;            // perform asl_acc inst (db, sb)
+reg asl_mem_op;            // perform meat of asl inst for memory addressing modes (db, sb)
+reg bit_op;                // final cycle of a bit inst (db, sb)
+reg cmp_op;                // final cycle of a cmp inst (db, sb)
+reg clc_op;                // clear carry bit (-)
+reg cld_op;                // clear decimal mode bit (-)
+reg cli_op;                // clear interrupt disable bit (-)
+reg clv_op;                // clear overflow bit (-)
+reg dec_op;                // perform meat of dec inst (db, sb)
+reg dex_op;                // final cycle of a dex inst (db, sb)
+reg dey_op;                // final cycle of a dey inst (db, sb)
+reg eor_op;                // final cycle of an eor inst (db, sb)
+reg inc_op;                // perform meat of inc inst (db, sb)
+reg inx_op;                // final cycle of an inx inst (db, sb)
+reg iny_op;                // final cycle of an iny inst (db, sb)
+reg lda_op;                // final cycle of an lda inst (db, sb)
+reg ldx_op;                // final cycle of an ldx inst (db, sb)
+reg ldy_op;                // final cycle of an ldy inst (db, sb)
+reg lsr_acc_op;            // perform lsr_acc inst (db, sb)
+reg lsr_mem_op;            // perform meat of lsr inst for memory addressing modes (db, sb)
+reg ora_op;                // final cycle of an ora inst (db, sb)
+reg plp_op;                // final cycle of a plp inst (db)
+reg rol_acc_op;            // perform rol_acc inst (db, sb)
+reg rol_mem_op;            // perform meat of rol inst for memory addressing modes (db, sb)
+reg ror_acc_op;            // perform ror_acc inst (db, sb)
+reg ror_mem_op;            // perform meat of ror inst for memory addressing modes (db, sb)
+reg sec_op;                // set carry bit (-)
+reg sed_op;                // set decimal mode bit (-)
+reg sei_op;                // set interrupt disable bit (-)
+reg tax_op;                // transfer ac to x (db, sb)
+reg tay_op;                // transfer ac to y (db, sb)
+reg tsx_op;                // transfer s to x (db, sb)
+reg txa_op;                // transfer x to z (db, sb)
+reg txs_op;                // transfer x to s (db, sb)
+reg tya_op;                // transfer y to a (db, sb)
 
 // DOR (data output register) load controls.
-reg ac_to_dor;             // load current ac value into dor
-reg p_to_dor;              // load current p value into dor
-reg pch_to_dor;            // load current pch value into dor
-reg pcl_to_dor;            // load current pcl value into dor
-reg x_to_dor;              // load current x value into dor
-reg y_to_dor;              // load current y value into dor
+reg ac_to_dor;             // load current ac value into dor (db)
+reg p_to_dor;              // load current p value into dor (db)
+reg pch_to_dor;            // load current pch value into dor (db)
+reg pcl_to_dor;            // load current pcl value into dor (db)
+reg x_to_dor;              // load current x value into dor (db, sb)
+reg y_to_dor;              // load current y value into dor (db, sb)
 
 // AB (address bus hold registers) load controls.
-reg aluacrinc_to_abh;      // load abh with ai+bi+q_acr
-reg dl_to_abh;             // load abh with dl
-reg one_to_abh;            // load abh with 8'h01
-reg zero_to_abh;           // load abh with 8'h00
-reg aluinc_to_abl;         // load abl with (ai+bi+1)
+reg aluacrinc_to_abh;      // load abh with ai+bi+q_acr (adh, sb)
+reg dl_to_abh;             // load abh with dl (adh)
+reg one_to_abh;            // load abh with 8'h01 (adh)
+reg zero_to_abh;           // load abh with 8'h00 (adh)
+reg aluinc_to_abl;         // load abl with ai+bi+1 (adl)
 reg alusum_to_abl;         // load abl with ai+bi (adl)
-reg dl_to_abl;             // load abl with dl
-reg s_to_abl;              // load abl with s
+reg dl_to_abl;             // load abl with dl (adl)
+reg s_to_abl;              // load abl with s (adl)
 
 // AI/BI (ALU input registers) load controls.
 reg ac_to_ai;              // load ai with ac (sb)
@@ -672,13 +672,12 @@ reg x_to_bi;               // load bi with x (db, sb)
 reg y_to_bi;               // load bi with y (db, sb)
 
 // Stack related controls.
-reg aluinc_to_s;           // load (ai+bi+1) into s
-reg dl_to_s;               // load s with current data latch register
-reg push_s;                // latch alu result into s
-reg pop_s;                 // latch alu result into s and carry in to alu
+reg aluinc_to_s;           // load ai+bi+1 into s (sb)
+reg alusum_to_s;           // load ai+bi into s (sb)
+reg dl_to_s;               // load s with current data latch register (adh, sb)
 
 // Process status register controls.
-reg dl_bits67_to_p;        // latch bits 6 and 7 into P V and N bits.
+reg dl_bits67_to_p;        // latch bits 6 and 7 into P V and N bits (db)
 
 // Sets all decode ROM output signals to the specified value (0 for init, X for con't care states.
 `define SET_ALL_CONTROL_SIGNALS(val) \
@@ -761,9 +760,8 @@ reg dl_bits67_to_p;        // latch bits 6 and 7 into P V and N bits.
     y_to_bi              = (val);    \
                                      \
     aluinc_to_s          = (val);    \
+    alusum_to_s          = (val);    \
     dl_to_s              = (val);    \
-    push_s               = (val);    \
-    pop_s                = (val);    \
                                      \
     dl_bits67_to_p       = (val);
 
@@ -820,8 +818,8 @@ always @*
                     LDY_ZPX,  LSR_ZPX,  ORA_ZPX,  ROL_ZPX,  ROR_ZPX,  SBC_ZPX,  STA_ZPX,
                     STY_ZPX:
             begin
-              x_to_ai       = 1'b1;
-              dl_to_bi      = 1'b1;
+              x_to_ai  = 1'b1;
+              dl_to_bi = 1'b1;
             end
           ADC_INDY, AND_INDY, CMP_INDY, EOR_INDY, LDA_INDY, ORA_INDY, SBC_INDY, STA_INDY:
             begin
@@ -843,7 +841,12 @@ always @*
               ac_to_bi = 1'b1;
             end
           BRK:
-            brk = (q_clk_phase == 2'b01) && rdy;
+            begin
+              // Note that the BRK instruction is not implemented as on a true 6502 processor.
+              // Instead of firing an interrupt, it deasserts the rdy signal, effectively pausing
+              // the cpu and allowing the debug block to inspect the internal state.
+              brk = (q_clk_phase == 2'b01) && rdy;
+            end
           CLC:
             clc_op = 1'b1;
           CLD:
@@ -892,10 +895,10 @@ always @*
             end
           JSR:
             begin
-              s_to_bi           = 1'b1;
-              incpc_noload      = 1'b1;
-              dl_to_s           = 1'b1;
-              s_to_abl          = 1'b1;
+              incpc_noload = 1'b1;
+              s_to_abl     = 1'b1;
+              s_to_bi      = 1'b1;
+              dl_to_s      = 1'b1;
             end
           LDA_IMM:
             begin
@@ -909,8 +912,8 @@ always @*
             end
           LDX_ZPY, STX_ZPY:
             begin
-              y_to_ai       = 1'b1;
-              dl_to_bi      = 1'b1;
+              y_to_ai  = 1'b1;
+              dl_to_bi = 1'b1;
             end
           LDY_IMM:
             begin
@@ -919,15 +922,15 @@ always @*
             end
           PHA:
             begin
+              ac_to_dor  = 1'b1;
               one_to_abh = 1'b1;
               s_to_abl   = 1'b1;
-              ac_to_dor  = 1'b1;
             end
           PHP:
             begin
+              p_to_dor   = 1'b1;
               one_to_abh = 1'b1;
               s_to_abl   = 1'b1;
-              p_to_dor  = 1'b1;
             end
           PLA, PLP, RTS:
             begin
@@ -942,21 +945,21 @@ always @*
             sei_op = 1'b1;
           STA_ZP:
             begin
+              ac_to_dor   = 1'b1;
               zero_to_abh = 1'b1;
               dl_to_abl   = 1'b1;
-              ac_to_dor   = 1'b1;
             end
           STX_ZP:
             begin
+              x_to_dor    = 1'b1;
               zero_to_abh = 1'b1;
               dl_to_abl   = 1'b1;
-              x_to_dor    = 1'b1;
             end
           STY_ZP:
             begin
+              y_to_dor    = 1'b1;
               zero_to_abh = 1'b1;
               dl_to_abl   = 1'b1;
-              y_to_dor    = 1'b1;
             end
           TAX:
             tax_op = 1'b1;
@@ -1067,11 +1070,6 @@ always @*
               y_to_ai       = 1'b1;
               invdl_to_bi   = 1'b1;
             end
-          EOR_IMM:
-            begin
-              load_prg_byte = 1'b1;
-              eor_op        = 1'b1;
-            end
           DEC_ZP:
             begin
               neg1_to_ai = 1'b1;
@@ -1087,10 +1085,15 @@ always @*
               load_prg_byte = 1'b1;
               dey_op        = 1'b1;
             end
+          EOR_IMM:
+            begin
+              load_prg_byte = 1'b1;
+              eor_op        = 1'b1;
+            end
           INC_ZP:
             begin
-              zero_to_ai    = 1'b1;
-              dl_to_bi      = 1'b1;
+              zero_to_ai = 1'b1;
+              dl_to_bi   = 1'b1;
             end
           INX:
             begin
@@ -1148,7 +1151,11 @@ always @*
               r_nw                = 1'b0;
             end
           PLA, PLP:
-            pop_s = 1'b1;
+            begin
+              one_to_abh    = 1'b1;
+              aluinc_to_abl = 1'b1;
+              aluinc_to_s   = 1'b1;
+            end
           ROL_ACC:
             begin
               load_prg_byte = 1'b1;
@@ -1161,15 +1168,15 @@ always @*
             end
           RTS:
             begin
+              one_to_abh    = 1'b1;
               aluinc_to_abl = 1'b1;
               aluinc_to_bi  = 1'b1;
-              one_to_abh    = 1'b1;
             end
           STA_ABS:
             begin
+              ac_to_dor     = 1'b1;
               dl_to_abh     = 1'b1;
               alusum_to_abl = 1'b1;
-              ac_to_dor     = 1'b1;
             end
           STA_ZP, STX_ZP, STY_ZP:
             begin
@@ -1178,33 +1185,33 @@ always @*
             end
           STA_ZPX:
             begin
+              ac_to_dor     = 1'b1;
               zero_to_abh   = 1'b1;
               alusum_to_abl = 1'b1;
-              ac_to_dor     = 1'b1;
             end
           STX_ABS:
             begin
+              x_to_dor      = 1'b1;
               dl_to_abh     = 1'b1;
               alusum_to_abl = 1'b1;
-              x_to_dor      = 1'b1;
             end
           STX_ZPY:
             begin
+              x_to_dor      = 1'b1;
               zero_to_abh   = 1'b1;
               alusum_to_abl = 1'b1;
-              x_to_dor      = 1'b1;
             end
           STY_ABS:
             begin
+              y_to_dor      = 1'b1;
               dl_to_abh     = 1'b1;
               alusum_to_abl = 1'b1;
-              y_to_dor      = 1'b1;
             end
           STY_ZPX:
             begin
+              y_to_dor      = 1'b1;
               zero_to_abh   = 1'b1;
               alusum_to_abl = 1'b1;
-              y_to_dor      = 1'b1;
             end
           default:
             begin
@@ -1250,14 +1257,14 @@ always @*
               load_prg_byte = 1'b1;
               and_op        = 1'b1;
             end
-          ASL_ZP:
-            asl_mem_op = 1'b1;
           ASL_ABS, LSR_ABS, ROL_ABS, ROR_ABS,
           ASL_ZPX, LSR_ZPX, ROL_ZPX, ROR_ZPX:
             begin
               dl_to_ai = 1'b1;
               dl_to_bi = 1'b1;
             end
+          ASL_ZP:
+            asl_mem_op = 1'b1;
           BIT_ABS:
             begin
               load_prg_byte  = 1'b1;
@@ -1323,10 +1330,10 @@ always @*
             end
           JSR:
             begin
-              r_nw          = 1'b0;
               pcl_to_dor    = 1'b1;
               alusum_to_abl = 1'b1;
               alusum_to_bi  = 1'b1;
+              r_nw          = 1'b0;
             end
           LDA_ABS, LDA_ZPX:
             begin
@@ -1353,7 +1360,7 @@ always @*
           PHA, PHP:
             begin
               load_prg_byte = 1'b1;
-              push_s        = 1'b1;
+              alusum_to_s   = 1'b1;
             end
           PLA:
             begin
@@ -1384,8 +1391,8 @@ always @*
           STA_ABSX,
           STA_ABSY:
             begin
-              aluacrinc_to_abh = 1'b1;
               ac_to_dor        = 1'b1;
+              aluacrinc_to_abh = 1'b1;
             end
           default:
             begin
@@ -1422,6 +1429,9 @@ always @*
               load_prg_byte = 1'b1;
               and_op        = 1'b1;
             end
+          ASL_ABS,
+          ASL_ZPX:
+            asl_mem_op = 1'b1;
           ASL_ZP, DEC_ZP, INC_ZP, LSR_ZP, ROL_ZP, ROR_ZP,
           STA_ABSX,
           STA_ABSY:
@@ -1429,9 +1439,6 @@ always @*
               load_prg_byte = 1'b1;
               r_nw          = 1'b0;
             end
-          ASL_ABS,
-          ASL_ZPX:
-            asl_mem_op = 1'b1;
           ASL_ABSX, LSR_ABSX, ROL_ABSX, ROR_ABSX:
             begin
               dl_to_ai = 1'b1;
@@ -1486,8 +1493,8 @@ always @*
             end
           JSR:
             begin
-              r_nw                = 1'b0;
               load_prg_byte_noinc = 1'b1;
+              r_nw                = 1'b0;
             end
           LDA_ABSX,
           LDA_ABSY:
@@ -1528,14 +1535,14 @@ always @*
             end
           STA_INDX:
             begin
+              ac_to_dor     = 1'b1;
               dl_to_abh     = 1'b1;
               alusum_to_abl = 1'b1;
-              ac_to_dor     = 1'b1;
             end
           STA_INDY:
             begin
-              aluacrinc_to_abh = 1'b1;
               ac_to_dor        = 1'b1;
+              aluacrinc_to_abh = 1'b1;
             end
           default:
             begin
@@ -1570,8 +1577,8 @@ always @*
           STA_INDX,
           STA_INDY:
             begin
-              load_prg_byte  = 1'b1;
-              r_nw           = 1'b0;
+              load_prg_byte = 1'b1;
+              r_nw          = 1'b0;
             end
           ASL_ABSX:
             asl_mem_op = 1'b1;
@@ -1600,12 +1607,12 @@ always @*
             inc_op = 1'b1;
           JSR:
             begin
-              dl_to_pch    = 1'b1;
-              dl_to_abh    = 1'b1;
-              s_to_pcl     = 1'b1;
-              s_to_abl     = 1'b1;
-              push_s       = 1'b1;
               incpc_noload = 1'b1;
+              dl_to_pch    = 1'b1;
+              s_to_pcl     = 1'b1;
+              dl_to_abh    = 1'b1;
+              s_to_abl     = 1'b1;
+              alusum_to_s  = 1'b1;
             end
           LDA_INDX,
           LDA_INDY:
@@ -1708,14 +1715,14 @@ always @*
 // Random Control Logic
 //
 assign add_adl    = aluinc_to_abl        | aluinc_to_bi         | alusum_to_abl        |
-                    alusum_to_bi         | alusum_to_pcl        | pop_s;
+                    alusum_to_bi         | alusum_to_pcl;
 assign dl_adl     = dl_to_abl;
 assign pcl_adl    = load_prg_byte        | load_prg_byte_noinc;
 assign s_adl      = s_to_abl             | s_to_bi              | s_to_pcl;
 assign dl_adh     = dl_to_abh            | dl_to_pch            | dl_to_s;
 assign pch_adh    = load_prg_byte        | load_prg_byte_noinc;
 assign zero_adh0  = zero_to_abh;
-assign zero_adh17 = zero_to_abh          | one_to_abh           | pop_s;
+assign zero_adh17 = zero_to_abh          | one_to_abh;
 assign ac_db      = ac_to_bi             | ac_to_dor;
 assign dl_db      = dl_to_ai             | dl_to_bi             | invdl_to_bi          |
                     lda_op               | ldx_op               | ldy_op               |
@@ -1724,14 +1731,14 @@ assign p_db       = p_to_dor;
 assign pch_db     = pch_to_dor;
 assign pcl_db     = pcl_to_dor;
 assign ac_sb      = ac_to_ai             | tax_op               | tay_op;
-assign add_sb     = adc_op               | aluinc_to_s          | and_op               |
-                    asl_acc_op           | asl_mem_op           | bit_op               |
-                    cmp_op               | dec_op               | dex_op               |
-                    dey_op               | eor_op               | aluacrinc_to_abh     |
-                    inc_op               | inx_op               | iny_op               |
-                    lsr_acc_op           | lsr_mem_op           | ora_op               |
-                    pop_s                | push_s               | rol_acc_op           |
-                    rol_mem_op           | ror_acc_op           | ror_mem_op;
+assign add_sb     = adc_op               | aluinc_to_s          | alusum_to_s          |
+                    and_op               | asl_acc_op           | asl_mem_op           |
+                    bit_op               | cmp_op               | dec_op               |
+                    dex_op               | dey_op               | eor_op               |
+                    aluacrinc_to_abh     | inc_op               | inx_op               |
+                    iny_op               | lsr_acc_op           | lsr_mem_op           |
+                    ora_op               | rol_acc_op           | rol_mem_op           |
+                    ror_acc_op           | ror_mem_op;
 assign x_sb       = txa_op               | txs_op               | x_to_ai              |
                     x_to_bi              | x_to_dor;
 assign y_sb       = tya_op               | y_to_ai              | y_to_bi              |
@@ -1750,17 +1757,15 @@ assign sb_db      = adc_op               | and_op               | asl_acc_op    
                     txa_op               | tya_op               | x_to_bi              |
                     x_to_dor             | y_to_bi              | y_to_dor;
 assign adh_abh    = dl_to_abh            | aluacrinc_to_abh     | load_prg_byte        |
-                    load_prg_byte_noinc  | one_to_abh           | pop_s                |
-                    zero_to_abh;
+                    load_prg_byte_noinc  | one_to_abh           | zero_to_abh;
 assign adl_abl    = aluinc_to_abl        | alusum_to_abl        | load_prg_byte        |
-                    load_prg_byte_noinc  | pop_s                | s_to_abl             |
-                    dl_to_abl;
+                    load_prg_byte_noinc  | s_to_abl             | dl_to_abl;
 assign adl_add    = aluinc_to_bi         | alusum_to_bi         | s_to_bi;
 assign db_add     = ac_to_bi             | dl_to_bi             | neg1_to_bi           |
                     x_to_bi              | y_to_bi;
 assign invdb_add  = invdl_to_bi;
-assign sb_s       = aluinc_to_s          | dl_to_s              | pop_s                |
-                    push_s               | txs_op;
+assign sb_s       = aluinc_to_s          | alusum_to_s          | dl_to_s              |
+                    txs_op;
 assign zero_add   = zero_to_ai;
 assign sb_ac      = adc_op               | and_op               | asl_acc_op           |
                     eor_op               | lda_op               | lsr_acc_op           |
@@ -1814,11 +1819,11 @@ assign eors       = eor_op;
 assign ors        = ora_op;
 assign sums       = adc_op               | aluacrinc_to_abh     | aluinc_to_abl        |
                     aluinc_to_bi         | aluinc_to_s          | alusum_to_abl        |
-                    alusum_to_bi         | alusum_to_pcl        | asl_acc_op           |
-                    asl_mem_op           | cmp_op               | dec_op               |
-                    dex_op               | dey_op               | inc_op               |
-                    inx_op               | iny_op               | pop_s                |
-                    push_s               | rol_acc_op           | rol_mem_op;
+                    alusum_to_bi         | alusum_to_pcl        | alusum_to_s          |
+                    asl_acc_op           | asl_mem_op           | cmp_op               |
+                    dec_op               | dex_op               | dey_op               |
+                    inc_op               | inx_op               | iny_op               |
+                    rol_acc_op           | rol_mem_op;
 assign srs        = lsr_acc_op           | lsr_mem_op           | ror_acc_op           |
                     ror_mem_op;
 
@@ -1826,10 +1831,10 @@ assign addc       = (adc_op | rol_acc_op | rol_mem_op | ror_acc_op | ror_mem_op)
                     (aluacrinc_to_abh)                                           ? q_acr :
                     aluinc_to_abl        | aluinc_to_bi         | aluinc_to_s          |
                     cmp_op               | inc_op               | inx_op               |
-                    iny_op               | pop_s;
+                    iny_op;
 
 //
-// Update internal buses.  Use of in/out to replicate pass mosfets and avoid using internal
+// Update internal buses.  Use in/out to replicate pass mosfets and avoid using internal
 // tristate buffers.
 //
 assign adh_in[7:1]  = (dl_adh)     ? q_dl[7:1]  :
