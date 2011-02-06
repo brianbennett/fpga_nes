@@ -711,7 +711,7 @@ reg y_to_bi;               // load bi with y (db, sb)
 // Stack related controls.
 reg aluinc_to_s;           // load ai+bi+1 into s (sb)
 reg alusum_to_s;           // load ai+bi into s (sb)
-reg dl_to_s;               // load s with current data latch register (adh, sb)
+reg dl_to_s;               // load s with current data latch register (db, sb)
 
 // Process status register controls.
 reg dl_bits67_to_p;        // latch bits 6 and 7 into P V and N bits (db)
@@ -944,6 +944,7 @@ always @*
           JSR:
             begin
               incpc_noload = 1'b1;
+              one_to_abh   = 1'b1;
               s_to_abl     = 1'b1;
               s_to_bi      = 1'b1;
               dl_to_s      = 1'b1;
@@ -1173,7 +1174,6 @@ always @*
           JSR:
             begin
               pch_to_dor = 1'b1;
-              one_to_abh = 1'b1;
               neg1_to_ai = 1'b1;
             end
           LDA_ZP:
@@ -1670,7 +1670,6 @@ always @*
             inc_op = 1'b1;
           JSR:
             begin
-              incpc_noload = 1'b1;
               dl_to_pch    = 1'b1;
               s_to_pcl     = 1'b1;
               dl_to_abh    = 1'b1;
@@ -1782,14 +1781,14 @@ assign add_adl    = aluinc_to_abl        | aluinc_to_bi         | alusum_to_abl 
 assign dl_adl     = dl_to_abl;
 assign pcl_adl    = load_prg_byte        | load_prg_byte_noinc  | pcl_to_bi;
 assign s_adl      = s_to_abl             | s_to_bi              | s_to_pcl;
-assign dl_adh     = dl_to_abh            | dl_to_pch            | dl_to_s;
+assign dl_adh     = dl_to_abh            | dl_to_pch;
 assign pch_adh    = load_prg_byte        | load_prg_byte_noinc;
 assign zero_adh0  = zero_to_abh;
 assign zero_adh17 = one_to_abh           | one_to_ai            | zero_to_abh;
 assign ac_db      = ac_to_bi             | ac_to_dor;
-assign dl_db      = dl_to_ai             | dl_to_bi             | invdl_to_bi          |
-                    lda_op               | ldx_op               | ldy_op               |
-                    plp_op;
+assign dl_db      = dl_to_ai             | dl_to_bi             | dl_to_s              |
+                    invdl_to_bi          | lda_op               | ldx_op               |
+                    ldy_op               | plp_op;
 assign p_db       = p_to_dor;
 assign pch_db     = pch_to_bi            | pch_to_dor;
 assign pcl_db     = pcl_to_dor;
@@ -1809,18 +1808,19 @@ assign y_sb       = tya_op               | y_to_ai              | y_to_bi       
                     y_to_dor;
 assign s_sb       = s_to_ai              | tsx_op;
 assign sb_adh     = aluacrinc_to_abh     | alusum_to_abh        | alusum_to_pch        |
-                    dl_to_s              | one_to_ai;
+                    one_to_ai;
 assign sb_db      = adc_op               | and_op               | asl_acc_op           |
                     asl_mem_op           | bit_op               | cmp_op               |
-                    dec_op               | dex_op               | dey_op               |
-                    dl_to_ai             | eor_op               | inc_op               |
-                    inx_op               | iny_op               | lda_op               |
-                    ldx_op               | ldy_op               | lsr_acc_op           |
-                    lsr_mem_op           | ora_op               | rol_acc_op           |
-                    rol_mem_op           | ror_acc_op           | ror_mem_op           |
-                    tax_op               | tay_op               | tsx_op               |
-                    txa_op               | tya_op               | x_to_bi              |
-                    x_to_dor             | y_to_bi              | y_to_dor;
+                    dl_to_s              | dec_op               | dex_op               |
+                    dey_op               | dl_to_ai             | eor_op               |
+                    inc_op               | inx_op               | iny_op               |
+                    lda_op               | ldx_op               | ldy_op               |
+                    lsr_acc_op           | lsr_mem_op           | ora_op               |
+                    rol_acc_op           | rol_mem_op           | ror_acc_op           |
+                    ror_mem_op           | tax_op               | tay_op               |
+                    tsx_op               | txa_op               | tya_op               |
+                    x_to_bi              | x_to_dor             | y_to_bi              |
+                    y_to_dor;
 assign adh_abh    = aluacrinc_to_abh     | alusum_to_abh        | dl_to_abh            |
                     load_prg_byte        | load_prg_byte_noinc  | one_to_abh           |
                     zero_to_abh;
