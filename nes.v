@@ -12,10 +12,16 @@
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 module nes
 (
-  input  wire CLK_50MHZ,      // 50MHz system clock signal
-  input  wire BTN_SOUTH,      // reset push button
-  input  wire RS232_DCE_RXD,  // rs-232 rx signal
-  output wire RS232_DCE_TXD   // rs-232 tx signal
+  input  wire       CLK_50MHZ,      // 50MHz system clock signal
+  input  wire       BTN_SOUTH,      // reset push button
+  input  wire       RS232_DCE_RXD,  // rs-232 rx signal
+  input  wire       SW0,            // switch 0
+  output wire       RS232_DCE_TXD,  // rs-232 tx signal
+  output wire       VGA_HSYNC,      // vga hsync signal
+  output wire       VGA_VSYNC,      // vga vsync signal
+  output wire [3:0] VGA_RED,        // vga red signal
+  output wire [3:0] VGA_GREEN,      // vga green signal
+  output wire [3:0] VGA_BLUE        // vga blue signal
 );
 
 //
@@ -63,6 +69,20 @@ cpumc cpumc_blk(
   .din(cpumc_din),
   .dout(cpumc_dout),
   .invalid_req(cpumc_err)
+);
+
+//
+// PPU: picture processing unit block
+//
+ppu ppu_blk(
+  .clk(CLK_50MHZ),
+  .rst(BTN_SOUTH),
+  .dbl(SW0),
+  .hsync(VGA_HSYNC),
+  .vsync(VGA_VSYNC),
+  .r(VGA_RED),
+  .g(VGA_GREEN),
+  .b(VGA_BLUE)
 );
 
 //

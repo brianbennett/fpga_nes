@@ -12,7 +12,7 @@
     <!-- Copyright (c) 1995-2010 Xilinx, Inc.  All rights reserved. -->
   </header>
 
-  <version xil_pn:ise_version="12.1" xil_pn:schema_version="2"/>
+  <version xil_pn:ise_version="12.4" xil_pn:schema_version="2"/>
 
   <files>
     <file xil_pn:name="nes.v" xil_pn:type="FILE_VERILOG">
@@ -34,11 +34,19 @@
       <association xil_pn:name="BehavioralSimulation"/>
       <association xil_pn:name="Implementation"/>
     </file>
-    <file xil_pn:name="../lib/block_ram/block_ram.v" xil_pn:type="FILE_VERILOG">
+    <file xil_pn:name="cpu.v" xil_pn:type="FILE_VERILOG">
       <association xil_pn:name="BehavioralSimulation"/>
       <association xil_pn:name="Implementation"/>
     </file>
-    <file xil_pn:name="cpu.v" xil_pn:type="FILE_VERILOG">
+    <file xil_pn:name="ppu.v" xil_pn:type="FILE_VERILOG">
+      <association xil_pn:name="BehavioralSimulation"/>
+      <association xil_pn:name="Implementation"/>
+    </file>
+    <file xil_pn:name="../lib/vga_sync/vga_sync.v" xil_pn:type="FILE_VERILOG">
+      <association xil_pn:name="BehavioralSimulation"/>
+      <association xil_pn:name="Implementation"/>
+    </file>
+    <file xil_pn:name="../lib/block_ram/block_ram.v" xil_pn:type="FILE_VERILOG">
       <association xil_pn:name="BehavioralSimulation"/>
       <association xil_pn:name="Implementation"/>
     </file>
@@ -98,7 +106,7 @@
     <property xil_pn:name="Enable Debugging of Serial Mode BitStream" xil_pn:value="false" xil_pn:valueState="default"/>
     <property xil_pn:name="Enable Hardware Co-Simulation" xil_pn:value="false" xil_pn:valueState="default"/>
     <property xil_pn:name="Enable Internal Done Pipe" xil_pn:value="false" xil_pn:valueState="default"/>
-    <property xil_pn:name="Enable Message Filtering" xil_pn:value="false" xil_pn:valueState="default"/>
+    <property xil_pn:name="Enable Message Filtering" xil_pn:value="true" xil_pn:valueState="non-default"/>
     <property xil_pn:name="Enable Outputs (Output Events)" xil_pn:value="Default (5)" xil_pn:valueState="default"/>
     <property xil_pn:name="Equivalent Register Removal XST" xil_pn:value="true" xil_pn:valueState="default"/>
     <property xil_pn:name="Exclude Compilation of Deprecated EDK Cores" xil_pn:value="true" xil_pn:valueState="default"/>
@@ -156,6 +164,7 @@
     <property xil_pn:name="Last Applied Goal" xil_pn:value="Balanced" xil_pn:valueState="default"/>
     <property xil_pn:name="Last Applied Strategy" xil_pn:value="Xilinx Default (unlocked)" xil_pn:valueState="default"/>
     <property xil_pn:name="Last Unlock Status" xil_pn:value="false" xil_pn:valueState="default"/>
+    <property xil_pn:name="Library for Verilog Sources" xil_pn:value="" xil_pn:valueState="default"/>
     <property xil_pn:name="Logical Shifter Extraction" xil_pn:value="true" xil_pn:valueState="default"/>
     <property xil_pn:name="Manual Implementation Compile Order" xil_pn:value="false" xil_pn:valueState="default"/>
     <property xil_pn:name="Map Effort Level" xil_pn:value="High" xil_pn:valueState="default"/>
@@ -325,6 +334,7 @@
     <property xil_pn:name="PROP_PostParSimTop" xil_pn:value="" xil_pn:valueState="default"/>
     <property xil_pn:name="PROP_PostSynthSimTop" xil_pn:value="" xil_pn:valueState="default"/>
     <property xil_pn:name="PROP_PostXlateSimTop" xil_pn:value="" xil_pn:valueState="default"/>
+    <property xil_pn:name="PROP_PreSynthesis" xil_pn:value="PreSynthesis" xil_pn:valueState="default"/>
     <property xil_pn:name="PROP_intProjectCreationTimestamp" xil_pn:value="2010-08-09T15:20:50" xil_pn:valueState="non-default"/>
     <property xil_pn:name="PROP_intWbtProjectID" xil_pn:value="562C5D06C3304617942DDCD28F1E3FD1" xil_pn:valueState="non-default"/>
     <property xil_pn:name="PROP_intWorkingDirLocWRTProjDir" xil_pn:value="Same" xil_pn:valueState="non-default"/>
