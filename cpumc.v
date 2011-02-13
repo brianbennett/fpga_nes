@@ -23,10 +23,6 @@ wire [10:0] ram_addr;
 wire [ 7:0] ram_rd_data;
 reg         ram_wr;
 
-wire [13:0] prgrom_lo_addr;
-wire [ 7:0] prgrom_lo_rd_data;
-reg         prgrom_lo_wr;
-
 wire [13:0] prgrom_hi_addr;
 wire [ 7:0] prgrom_hi_rd_data;
 reg         prgrom_hi_wr;
@@ -36,7 +32,7 @@ reg         prgrom_hi_wr;
 //   0x2000 - 0x401F I/O Regs      (0x2008 - 0x3FFF mirrors 0x2000 - 0x2007)
 //   0x4020 - 0x5FFF Expansion ROM (currently unsupported)
 //   0x6000 - 0x7FFF SRAM          (currently unsupported)
-//   0x8000 - 0xBFFF PRG-ROM LO
+//   0x8000 - 0xBFFF PRG-ROM LO    (currently mirrors PRG-ROM HI)
 //   0xC000 - 0xFFFF PRG-ROM HI
 
 // Block ram instance for "RAM" memory range (0x0000 - 0x1FFF).  0x0800 - 0x1FFF mirrors 0x0000 -
@@ -51,18 +47,6 @@ single_port_ram_sync #(.ADDR_WIDTH(11),
 );
 
 assign ram_addr = addr[10:0];
-
-// Block ram instance for "PRG-ROM LO" memory range (0x8000 - 0xBFFF).
-single_port_ram_sync #(.ADDR_WIDTH(14),
-                       .DATA_WIDTH(8)) prgrom_lo(
-  .clk(clk),
-  .we(prgrom_lo_wr),
-  .addr_a(prgrom_lo_addr),
-  .din_a(din),
-  .dout_a(prgrom_lo_rd_data)
-);
-
-assign prgrom_lo_addr = addr[13:0];
 
 // Block ram instance for "PRG-ROM HI" memory range (0xC000 - 0xFFFF).
 single_port_ram_sync #(.ADDR_WIDTH(14),
@@ -79,7 +63,6 @@ assign prgrom_hi_addr = addr[13:0];
 always @*
   begin
     ram_wr       = 1'b0;
-    prgrom_lo_wr = 1'b0;
     prgrom_hi_wr = 1'b0;
 
     invalid_req  = 1'b0;
@@ -90,13 +73,7 @@ always @*
         dout   = ram_rd_data;
         ram_wr = wr;
       end
-    else if (addr[15:14] == 2'b10)
-      begin
-        // PRG-ROM LO range (0x8000 - 0xBFFF).
-        dout         = prgrom_lo_rd_data;
-        prgrom_lo_wr = wr;
-      end
-    else if (addr[15:14] == 2'b11)
+    else if (addr[15] == 1'b1)
       begin
         // PRG-ROM HI range (0xC000 - 0xFFFF).
         dout         = prgrom_hi_rd_data;

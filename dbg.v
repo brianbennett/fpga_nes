@@ -19,6 +19,7 @@ module dbg
   input  wire        brk,            // signal for cpu-intiated debug break
   input  wire [ 7:0] cpu_din,        // cpu data bus (D) [input]
   input  wire [ 7:0] cpu_dbgreg_in,  // cpu debug register read bus
+  input  wire [ 7:0] ppu_din,        // ppu data bus [input]
   output wire        tx,             // rs-232 tx signal
   output reg         cpu_r_nw,       // cpu R/!W pin
   output wire [15:0] cpu_a,          // cpu A bus (A)
@@ -26,7 +27,10 @@ module dbg
   output wire        cpu_ready,      // cpu READY signal
   output reg  [ 3:0] cpu_dbgreg_sel, // selects cpu register to read/write through cpu_dbgreg_in
   output reg  [ 7:0] cpu_dbgreg_out, // cpu register write value for debug reg writes
-  output reg         cpu_dbgreg_wr   // selects cpu register read/write mode
+  output reg         cpu_dbgreg_wr,  // selects cpu register read/write mode
+  output reg         ppu_wr,         // ppu memory write enable signal
+  output wire [15:0] ppu_a,          // ppu memory address
+  output wire [ 7:0] ppu_dout        // ppu data bus [output]
 );
 
 // Debug packet opcodes.
@@ -38,7 +42,9 @@ localparam [7:0] OP_ECHO           = 8'h00,
                  OP_CPU_REG_RD     = 8'h05,
                  OP_CPU_REG_WR     = 8'h06,
                  OP_QUERY_DBG_BRK  = 8'h07,
-                 OP_QUERY_ERR_CODE = 8'h08;
+                 OP_QUERY_ERR_CODE = 8'h08,
+                 OP_PPU_MEM_RD     = 8'h09,
+                 OP_PPU_MEM_WR     = 8'h0A;
 
 // Error code bit positions.
 localparam DBG_UART_PARITY_ERR = 0,
@@ -57,7 +63,11 @@ localparam [3:0] S_DISABLED         = 4'h0,
                  S_CPU_REG_RD       = 4'h8,
                  S_CPU_REG_WR_STG_0 = 4'h9,
                  S_CPU_REG_WR_STG_1 = 4'hA,
-                 S_QUERY_ERR_CODE   = 4'hB;
+                 S_QUERY_ERR_CODE   = 4'hB,
+                 S_PPU_MEM_RD_STG_0 = 4'hC,
+                 S_PPU_MEM_RD_STG_1 = 4'hD,
+                 S_PPU_MEM_WR_STG_0 = 4'hE,
+                 S_PPU_MEM_WR_STG_1 = 4'hF;
 
 reg [ 3:0] q_state,       d_state;
 reg [ 1:0] q_decode_cnt,  d_decode_cnt;
@@ -138,6 +148,7 @@ always @*
     cpu_dbgreg_sel = 0;
     cpu_dbgreg_out = 0;
     cpu_dbgreg_wr  = 1'b0;
+    ppu_wr         = 1'b0;
 
     if (parity_err)
       d_err_code[DBG_UART_PARITY_ERR] = 1'b1;
@@ -184,6 +195,8 @@ always @*
                 OP_CPU_REG_RD:     d_state = S_CPU_REG_RD;
                 OP_CPU_REG_WR:     d_state = S_CPU_REG_WR_STG_0;
                 OP_QUERY_ERR_CODE: d_state = S_QUERY_ERR_CODE;
+                OP_PPU_MEM_RD:     d_state = S_PPU_MEM_RD_STG_0;
+                OP_PPU_MEM_WR:     d_state = S_PPU_MEM_WR_STG_0;
                 OP_DBG_RUN:
                   begin
                     d_state = S_DISABLED;
@@ -409,6 +422,119 @@ always @*
               d_state   = S_DECODE;
             end
         end
+
+      // --- PPU_MEM_RD ---
+      //   OP_CODE
+      //   ADDR_LO
+      //   ADDR_HI
+      //   CNT_LO
+      //   CNT_HI
+      S_PPU_MEM_RD_STG_0:
+        begin
+          if (!rx_empty)
+            begin
+              rd_en        = 1'b1;              // pop packet byte off uart fifo
+              d_decode_cnt = q_decode_cnt + 1;  // advance to next decode stage
+              if (q_decode_cnt == 0)
+                begin
+                  // Read ADDR_LO into low bits of addr.
+                  d_addr = rd_data;
+                end
+              else if (q_decode_cnt == 1)
+                begin
+                  // Read ADDR_HI into high bits of addr.
+                  d_addr = { rd_data, q_addr[7:0] };
+                end
+              else if (q_decode_cnt == 2)
+                begin
+                  // Read CNT_LO into low bits of execute count.
+                  d_execute_cnt = rd_data;
+                end
+              else
+                begin
+                  // Read CNT_HI into high bits of execute count.  Execute count is shifted by 1:
+                  // use 2 clock cycles per byte read.
+                  d_execute_cnt = { rd_data, q_execute_cnt[7:0], 1'b0 };
+                  d_state = (d_execute_cnt) ? S_PPU_MEM_RD_STG_1 : S_DECODE;
+                end
+            end
+        end
+      S_PPU_MEM_RD_STG_1:
+        begin
+          if (~q_execute_cnt[0])
+            begin
+              // Dummy cycle.  Allow memory read 1 cycle to return result, and allow uart tx fifo
+              // 1 cycle to update tx_full setting.
+              d_execute_cnt = q_execute_cnt - 1;
+            end
+          else
+            begin
+              if (!tx_full)
+                begin
+                  d_execute_cnt = q_execute_cnt - 1;  // advance to next execute stage (read byte)
+                  d_tx_data     = ppu_din;            // write data from ppu D bus
+                  d_wr_en       = 1'b1;               // request uart write
+
+                  d_addr = q_addr + 1;                // advance to next byte
+
+                  // After last byte is written to uart, return to decode stage.
+                  if (d_execute_cnt == 0)
+                    d_state = S_DECODE;
+                end
+            end
+        end
+
+      // --- PPU_MEM_WR ---
+      //   OP_CODE
+      //   ADDR_LO
+      //   ADDR_HI
+      //   CNT_LO
+      //   CNT_HI
+      //   DATA
+      S_PPU_MEM_WR_STG_0:
+        begin
+          if (!rx_empty)
+            begin
+              rd_en        = 1'b1;              // pop packet byte off uart fifo
+              d_decode_cnt = q_decode_cnt + 1;  // advance to next decode stage
+              if (q_decode_cnt == 0)
+                begin
+                  // Read ADDR_LO into low bits of addr.
+                  d_addr = rd_data;
+                end
+              else if (q_decode_cnt == 1)
+                begin
+                  // Read ADDR_HI into high bits of addr.
+                  d_addr = { rd_data, q_addr[7:0] };
+                end
+              else if (q_decode_cnt == 2)
+                begin
+                  // Read CNT_LO into low bits of execute count.
+                  d_execute_cnt = rd_data;
+                end
+              else
+                begin
+                  // Read CNT_HI into high bits of execute count.
+                  d_execute_cnt = { rd_data, q_execute_cnt[7:0] };
+                  d_state = (d_execute_cnt) ? S_PPU_MEM_WR_STG_1 : S_DECODE;
+                end
+            end
+        end
+      S_PPU_MEM_WR_STG_1:
+        begin
+          if (!rx_empty)
+            begin
+              rd_en         = 1'b1;               // pop packet byte off uart fifo
+              d_execute_cnt = q_execute_cnt - 1;  // advance to next execute stage (write byte)
+              d_addr        = q_addr + 1;         // advance to next byte
+
+              ppu_wr        = 1'b1;
+
+              // After last byte is written to memory, return to decode stage.
+              if (d_execute_cnt == 0)
+                d_state = S_DECODE;
+            end
+        end
     endcase
   end
 
@@ -416,6 +542,9 @@ assign cpu_a = q_addr;
 assign cpu_dout = rd_data;
 
 assign cpu_ready = (q_state == S_DISABLED);
+
+assign ppu_a = q_addr;
+assign ppu_dout = rd_data;
 
 endmodule
 

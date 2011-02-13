@@ -86,12 +86,32 @@ ppu ppu_blk(
 );
 
 //
+// PPUMC: ppu memory controller block.
+//
+wire [ 7:0] ppumc_din;   // D[ 7:0] (data bus [input])
+wire [ 7:0] ppumc_dout;  // D[ 7:0] (data bus [output])
+wire [13:0] ppumc_a;     // A[13:0] (address bus)
+wire        ppumc_wr;    // WR
+
+ppumc ppumc_blk(
+  .clk(CLK_50MHZ),
+  .wr(ppumc_wr),
+  .addr(ppumc_a),
+  .din(ppumc_din),
+  .dout(ppumc_dout)
+);
+
+//
 // DBG: debug block.  Interacts with debugger through serial connection.
 //
-wire [ 7:0] dbg_cpu_din;   // D[ 7:0] (data bus [input])
-wire [ 7:0] dbg_cpu_dout;  // D[ 7:0] (data bus [output])
-wire [15:0] dbg_cpu_a;     // A[15:0] (address bus)
-wire        dbg_cpu_r_nw;  // R/!W
+wire [ 7:0] dbg_cpu_din;   // CPU: D[ 7:0] (data bus [input])
+wire [ 7:0] dbg_cpu_dout;  // CPU: D[ 7:0] (data bus [output])
+wire [15:0] dbg_cpu_a;     // CPU: A[15:0] (address bus)
+wire        dbg_cpu_r_nw;  // CPU: R/!W
+wire [ 7:0] dbg_ppu_din;   // PPU: D[ 7:0] (data bus [input])
+wire [ 7:0] dbg_ppu_dout;  // PPU: D[ 7:0] (data bus [output])
+wire [15:0] dbg_ppu_a;     // PPU: A[15:0] (address bus)
+wire        dbg_ppu_wr;    // PPU: WR
 
 dbg dbg_blk(
   .clk(CLK_50MHZ),
@@ -101,6 +121,7 @@ dbg dbg_blk(
   .brk(cpu_brk),
   .cpu_din(dbg_cpu_din),
   .cpu_dbgreg_in(cpu_dbgreg_out),
+  .ppu_din(dbg_ppu_din),
   .tx(RS232_DCE_TXD),
   .cpu_r_nw(dbg_cpu_r_nw),
   .cpu_a(dbg_cpu_a),
@@ -108,7 +129,10 @@ dbg dbg_blk(
   .cpu_ready(cpu_ready),
   .cpu_dbgreg_sel(cpu_dbgreg_sel),
   .cpu_dbgreg_out(cpu_dbgreg_in),
-  .cpu_dbgreg_wr(cpu_dbgreg_wr)
+  .cpu_dbgreg_wr(cpu_dbgreg_wr),
+  .ppu_wr(dbg_ppu_wr),
+  .ppu_a(dbg_ppu_a),
+  .ppu_dout(dbg_ppu_dout)
 );
 
 // Mux cpumc signals from cpu or dbg blk, depending on debug break state (cpu_ready).
@@ -117,6 +141,12 @@ assign cpumc_r_nw  = (cpu_ready) ? cpu_r_nw : dbg_cpu_r_nw;
 assign cpumc_din   = (cpu_ready) ? cpu_dout : dbg_cpu_dout;
 assign cpu_din     = cpumc_dout;
 assign dbg_cpu_din = cpumc_dout;
+
+// Mux ppumc signals from ppu or dbg blk, depending on debug break state (cpu_ready).
+assign ppumc_a     = dbg_ppu_a[13:0];
+assign ppumc_wr    = dbg_ppu_wr;
+assign ppumc_din   = dbg_ppu_dout;
+assign dbg_ppu_din = ppumc_dout;
 
 endmodule
 
