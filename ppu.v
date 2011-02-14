@@ -11,14 +11,16 @@
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 module ppu
 (
-  input  wire       clk,    // 50MHz system clock signal
-  input  wire       rst,    // reset signal
-  input  wire       dbl,    // request nes resolution doubler
-  output wire       hsync,  // vga hsync signal
-  output wire       vsync,  // vga vsync signal
-  output wire [3:0] r,      // vga red signal
-  output wire [3:0] g,      // vga green signal
-  output wire [3:0] b       // vga blue signal
+  input  wire        clk,    // 50MHz system clock signal
+  input  wire        rst,    // reset signal
+  input  wire        dbl,    // request nes resolution doubler
+  input  wire [ 7:0] din,    // video memory data bus (input)
+  output wire        hsync,  // vga hsync signal
+  output wire        vsync,  // vga vsync signal
+  output wire [ 3:0] r,      // vga red signal
+  output wire [ 3:0] g,      // vga green signal
+  output wire [ 3:0] b,      // vga blue signal
+  output reg  [13:0] a       // video memory address bus
 );
 
 // Display dimensions (640x480).
@@ -29,8 +31,11 @@ localparam [9:0] DISPLAY_W = 10'h280,
 localparam [9:0] NES_W = 10'h100,
                  NES_H = 10'h0F0;
 
-// Border color (surrounding NES screen).               
+// Border color (surrounding NES screen).
 localparam [11:0] BORDER_COLOR = 12'h888;
+
+// Name table 0 base address.
+localparam [13:0] NAME_TABLE = 14'h2000;
 
 //
 // VGA_SYNC: VGA synchronization control block.
@@ -50,14 +55,25 @@ vga_sync vga_sync_blk(
 //
 // PPU registers.
 //
-reg  [11:0] q_rgb, d_rgb;  // output color latch (required by vga_sync for stability)
+reg [11:0] q_rgb;              // output color latch (required by vga_sync)
+reg [11:0] d_rgb;
+reg [ 7:0] q_tile_name [1:0];  // name for current and next tile
+reg [ 7:0] d_tile_name [1:0];
 
 always @(posedge clk)
   begin
     if (rst)
-      q_rgb = 12'h000;
+      begin
+        q_rgb          = 12'h000;
+        q_tile_name[0] = 8'h00;
+        q_tile_name[1] = 8'h00;
+      end
     else
-      q_rgb = d_rgb;
+      begin
+        q_rgb          = d_rgb;
+        q_tile_name[0] = d_tile_name[0];
+        q_tile_name[1] = d_tile_name[1];
+      end
   end
 
 //
@@ -65,20 +81,42 @@ always @(posedge clk)
 // if necessary.
 //
 wire [9:0] x, y;
+wire [4:0] tile_x, tile_y, next_tile_x;
 wire       border;
 
-assign x      = (vga_x - ((DISPLAY_W - (NES_W << dbl)) >> 1)) >> dbl;
-assign y      = (vga_y - ((DISPLAY_H - (NES_H << dbl)) >> 1)) >> dbl;
-assign border = (x >= NES_W) || (y >= NES_H);
+assign x           = (vga_x - ((DISPLAY_W - (NES_W << dbl)) >> 1)) >> dbl;
+assign y           = (vga_y - ((DISPLAY_H - (NES_H << dbl)) >> 1)) >> dbl;
+assign tile_x      = x >> 3;
+assign tile_y      = y >> 3;
+assign next_tile_x = tile_x + 5'h01;
+assign border      = (x >= NES_W) || (y >= NES_H);
 
 //
 // Derive output color (system palette index).
 //
+always @(q_tile_name[0] or q_tile_name[1] or tile_x or tile_y or next_tile_x or din)
+  begin
+    // Default registers to their current values.
+    d_tile_name[0] = q_tile_name[0];
+    d_tile_name[1] = q_tile_name[1];
+
+    a = 14'h0000;
+
+    case (x[2:0])
+      3'b000:
+        begin
+          // Stage 0.  Load next tile's name.
+          a = { NAME_TABLE[13:10], tile_y[4:0], next_tile_x[4:0] };
+          d_tile_name[~tile_x[0]] = din;
+        end
+    endcase
+  end
+
+
 wire [5:0] sys_palette_idx;
+assign sys_palette_idx = q_tile_name[tile_x[0]][5:0];
 
-assign sys_palette_idx = { y[5:4], x[7:4] };
-
-//             
+//
 // Lookup RGB values based on sys_palette_idx.
 //
 always @*

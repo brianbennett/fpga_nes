@@ -74,15 +74,20 @@ cpumc cpumc_blk(
 //
 // PPU: picture processing unit block
 //
+wire [ 7:0] ppu_din;  // D[ 7:0] (data bus [input])
+wire [13:0] ppu_a;    // A[13:0] (address bus)
+
 ppu ppu_blk(
   .clk(CLK_50MHZ),
   .rst(BTN_SOUTH),
   .dbl(SW0),
+  .din(ppu_din),
   .hsync(VGA_HSYNC),
   .vsync(VGA_VSYNC),
   .r(VGA_RED),
   .g(VGA_GREEN),
-  .b(VGA_BLUE)
+  .b(VGA_BLUE),
+  .a(ppu_a)
 );
 
 //
@@ -143,9 +148,10 @@ assign cpu_din     = cpumc_dout;
 assign dbg_cpu_din = cpumc_dout;
 
 // Mux ppumc signals from ppu or dbg blk, depending on debug break state (cpu_ready).
-assign ppumc_a     = dbg_ppu_a[13:0];
+assign ppumc_a     = (cpu_ready) ? ppu_a : dbg_ppu_a[13:0];
 assign ppumc_wr    = dbg_ppu_wr;
 assign ppumc_din   = dbg_ppu_dout;
+assign ppu_din     = ppumc_dout;
 assign dbg_ppu_din = ppumc_dout;
 
 endmodule
