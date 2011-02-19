@@ -34,8 +34,10 @@ localparam [9:0] NES_W = 10'h100,
 // Border color (surrounding NES screen).
 localparam [11:0] BORDER_COLOR = 12'h888;
 
-// Name table 0 base address.
-localparam [13:0] NAME_TABLE = 14'h2000;
+// PPU memory segment base addresses.
+localparam [13:0] PATTERN_TABLE   = 14'h0000;
+localparam [13:0] NAME_TABLE      = 14'h2000;
+localparam [13:0] ATTRIBUTE_TABLE = 14'h23C0;
 
 //
 // VGA_SYNC: VGA synchronization control block.
@@ -57,22 +59,66 @@ vga_sync vga_sync_blk(
 //
 reg [11:0] q_rgb;              // output color latch (required by vga_sync)
 reg [11:0] d_rgb;
-reg [ 7:0] q_tile_name [1:0];  // name for current and next tile
-reg [ 7:0] d_tile_name [1:0];
+reg [ 7:0] q_tile_name;        // name for current and next tile
+reg [ 7:0] d_tile_name;
+reg [ 7:0] q_attribute [1:0];  // attribute byte for current and next tile
+reg [ 7:0] d_attribute [1:0];
+reg [ 7:0] q_tile_bit0 [1:0];  // pattern table data with bit0 data for current and next tile
+reg [ 7:0] d_tile_bit0 [1:0];
+reg [ 7:0] q_tile_bit1 [1:0];  // pattern table data with bit1 data for current and next tile
+reg [ 7:0] d_tile_bit1 [1:0];
 
 always @(posedge clk)
   begin
     if (rst)
       begin
         q_rgb          = 12'h000;
-        q_tile_name[0] = 8'h00;
-        q_tile_name[1] = 8'h00;
+        q_tile_name    = 8'h00;
+        q_attribute[0] = 8'h00;
+        q_attribute[1] = 8'h00;
+        q_tile_bit0[0] = 8'h00;
+        q_tile_bit0[1] = 8'h00;
+        q_tile_bit1[0] = 8'h00;
+        q_tile_bit1[1] = 8'h00;
       end
     else
       begin
         q_rgb          = d_rgb;
-        q_tile_name[0] = d_tile_name[0];
-        q_tile_name[1] = d_tile_name[1];
+        q_tile_name    = d_tile_name;
+        q_attribute[0] = d_attribute[0];
+        q_attribute[1] = d_attribute[1];
+        q_tile_bit0[0] = d_tile_bit0[0];
+        q_tile_bit0[1] = d_tile_bit0[1];
+        q_tile_bit1[0] = d_tile_bit1[0];
+        q_tile_bit1[1] = d_tile_bit1[1];
+      end
+  end
+
+//
+// PPU internal RAM.
+//
+reg [5:0] image_palette [15:0];
+
+always @(posedge clk)
+  begin
+    if (rst)
+      begin
+        image_palette[ 0] <= 6'h0E;
+        image_palette[ 1] <= 6'h00;
+        image_palette[ 2] <= 6'h0E;
+        image_palette[ 3] <= 6'h19;
+        image_palette[ 4] <= 6'h00;
+        image_palette[ 5] <= 6'h00;
+        image_palette[ 6] <= 6'h00;
+        image_palette[ 7] <= 6'h00;
+        image_palette[ 8] <= 6'h00;
+        image_palette[ 9] <= 6'h00;
+        image_palette[10] <= 6'h00;
+        image_palette[11] <= 6'h00;
+        image_palette[12] <= 6'h01;
+        image_palette[13] <= 6'h00;
+        image_palette[14] <= 6'h01;
+        image_palette[15] <= 6'h21;
       end
   end
 
@@ -94,11 +140,17 @@ assign border      = (x >= NES_W) || (y >= NES_H);
 //
 // Derive output color (system palette index).
 //
-always @(q_tile_name[0] or q_tile_name[1] or tile_x or tile_y or next_tile_x or din)
+always @(q_tile_name or q_attribute[0] or q_attribute[1] or q_tile_bit0[0] or q_tile_bit0[1] or
+         q_tile_bit1[0] or q_tile_bit1[1] or tile_x or tile_y or next_tile_x or x or y or din)
   begin
     // Default registers to their current values.
-    d_tile_name[0] = q_tile_name[0];
-    d_tile_name[1] = q_tile_name[1];
+    d_tile_name    = q_tile_name;
+    d_attribute[0] = q_attribute[0];
+    d_attribute[1] = q_attribute[1];
+    d_tile_bit0[0] = q_tile_bit0[0];
+    d_tile_bit0[1] = q_tile_bit0[1];
+    d_tile_bit1[0] = q_tile_bit1[0];
+    d_tile_bit1[1] = q_tile_bit1[1];
 
     a = 14'h0000;
 
@@ -107,14 +159,39 @@ always @(q_tile_name[0] or q_tile_name[1] or tile_x or tile_y or next_tile_x or 
         begin
           // Stage 0.  Load next tile's name.
           a = { NAME_TABLE[13:10], tile_y[4:0], next_tile_x[4:0] };
-          d_tile_name[~tile_x[0]] = din;
+          d_tile_name = din;
+        end
+      3'b001:
+        begin
+          // Stage 1.  Load next tile's attrib byte.
+          a = { ATTRIBUTE_TABLE[13:6], tile_y[4:2], next_tile_x[4:2] };
+          d_attribute[~tile_x[0]] = din;
+        end
+      3'b010:
+        begin
+          // Stage 2.  Load bit0 pattern data based on tile name.
+          a = { PATTERN_TABLE[13:12], q_tile_name, 1'b0, y[2:0] };
+          d_tile_bit0[~tile_x[0]] = din;
+        end
+      3'b011:
+        begin
+          // Stage 3.  Load bit1 pattern data based on tile name.
+          a = { PATTERN_TABLE[13:12], q_tile_name, 1'b1, y[2:0] };
+          d_tile_bit1[~tile_x[0]] = din;
         end
     endcase
   end
 
-
+//
+// Final image composition.
+//
+wire [3:0] image_palette_idx;
 wire [5:0] sys_palette_idx;
-assign sys_palette_idx = q_tile_name[tile_x[0]][5:0];
+
+assign image_palette_idx = { q_attribute[tile_x[0]] >> { tile_y[1], tile_x[1], 1'b0 },
+                             q_tile_bit1[tile_x[0]][~x],
+                             q_tile_bit0[tile_x[0]][~x] };
+assign sys_palette_idx = image_palette[image_palette_idx];
 
 //
 // Lookup RGB values based on sys_palette_idx.
