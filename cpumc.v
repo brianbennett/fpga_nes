@@ -11,12 +11,11 @@
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 module cpumc
 (
-  input  wire        clk,         // 50MHz system clock signal
-  input  wire        wr,          // write enable signal
-  input  wire [15:0] addr,        // 16-bit memory address
-  input  wire [ 7:0] din,         // data input bus
-  output reg  [ 7:0] dout,        // data output bus
-  output reg         invalid_req  // invalid request signal (1 on error, 0 on success)
+  input  wire        clk,   // 50MHz system clock signal
+  input  wire        wr,    // write enable signal
+  input  wire [15:0] addr,  // 16-bit memory address
+  input  wire [ 7:0] din,   // data input bus
+  output reg  [ 7:0] dout   // data output bus
 );
 
 wire [10:0] ram_addr;
@@ -35,8 +34,8 @@ reg         prgrom_hi_wr;
 //   0x8000 - 0xBFFF PRG-ROM LO    (currently mirrors PRG-ROM HI)
 //   0xC000 - 0xFFFF PRG-ROM HI
 
-// Block ram instance for "RAM" memory range (0x0000 - 0x1FFF).  0x0800 - 0x1FFF mirrors 0x0000 -
-// 0x07FF, so we only need 2048 bytes of physical block ram.
+// Block ram instance for "RAM" memory range (0x0000 - 0x1FFF).  0x0800 - 0x1FFF mirrors
+// 0x0000 - 0x07FF, so we only need 2048 bytes of physical block ram.
 single_port_ram_sync #(.ADDR_WIDTH(11),
                        .DATA_WIDTH(8)) ram(
   .clk(clk),
@@ -62,10 +61,9 @@ assign prgrom_hi_addr = addr[13:0];
 
 always @*
   begin
+    dout         = 8'h00;
     ram_wr       = 1'b0;
     prgrom_hi_wr = 1'b0;
-
-    invalid_req  = 1'b0;
 
     if (addr[15:13] == 0)
       begin
@@ -78,11 +76,6 @@ always @*
         // PRG-ROM HI range (0xC000 - 0xFFFF).
         dout         = prgrom_hi_rd_data;
         prgrom_hi_wr = wr;
-      end
-    else
-      begin
-        dout        = 8'hcd;
-        invalid_req = 1'b1;
       end
   end
 

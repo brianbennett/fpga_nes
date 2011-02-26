@@ -60,34 +60,54 @@ wire [ 7:0] cpumc_din;   // D[ 7:0] (data bus [input])
 wire [ 7:0] cpumc_dout;  // D[ 7:0] (data bus [output])
 wire [15:0] cpumc_a;     // A[15:0] (address bus)
 wire        cpumc_r_nw;  // R/!W
-wire        cpumc_err;   // Error signal for cpumc block
 
 cpumc cpumc_blk(
   .clk(CLK_50MHZ),
   .wr(~cpumc_r_nw),
   .addr(cpumc_a),
   .din(cpumc_din),
-  .dout(cpumc_dout),
-  .invalid_req(cpumc_err)
+  .dout(cpumc_dout)
 );
 
 //
 // PPU: picture processing unit block
 //
-wire [ 7:0] ppu_din;  // D[ 7:0] (data bus [input])
-wire [13:0] ppu_a;    // A[13:0] (address bus)
+wire [ 2:0] ppu_ri_sel;     // ppu register interface reg select
+wire        ppu_ri_ncs;     // ppu register interface enable
+wire        ppu_ri_r_nw;    // ppu register interface read/write select
+wire [ 7:0] ppu_ri_din;     // ppu register interface data input
+wire [ 7:0] ppu_ri_dout;    // ppu register interface data output
+
+wire [13:0] ppu_vram_a;     // ppu video ram address bus
+wire        ppu_vram_wr;    // ppu video ram read/write select
+wire [ 7:0] ppu_vram_din;   // ppu video ram data bus (input)
+wire [ 7:0] ppu_vram_dout;  // ppu video ram data bus (output)
+
+// PPU snoops the CPU address bus for register reads/writes.  Addresses 0x2000-0x2007
+// are mapped to the PPU register space, with every 8 bytes mirrored through 0x3FFF.
+assign ppu_ri_sel  = cpumc_a[2:0];
+assign ppu_ri_ncs  = (cpumc_a[15:13] == 3'b001) ? 1'b0 : 1'b1;
+assign ppu_ri_r_nw = cpumc_r_nw;
+assign ppu_ri_din  = cpumc_din;
 
 ppu ppu_blk(
   .clk(CLK_50MHZ),
   .rst(BTN_SOUTH),
   .dbl(SW0),
-  .din(ppu_din),
+  .ri_sel(ppu_ri_sel),
+  .ri_ncs(ppu_ri_ncs),
+  .ri_r_nw(ppu_ri_r_nw),
+  .ri_din(ppu_ri_din),
+  .vram_din(ppu_vram_din),
   .hsync(VGA_HSYNC),
   .vsync(VGA_VSYNC),
   .r(VGA_RED),
   .g(VGA_GREEN),
   .b(VGA_BLUE),
-  .a(ppu_a)
+  .ri_dout(ppu_ri_dout),
+  .vram_a(ppu_vram_a),
+  .vram_dout(ppu_vram_dout),
+  .vram_wr(ppu_vram_wr)
 );
 
 //
@@ -109,24 +129,23 @@ ppumc ppumc_blk(
 //
 // DBG: debug block.  Interacts with debugger through serial connection.
 //
-wire [ 7:0] dbg_cpu_din;   // CPU: D[ 7:0] (data bus [input])
-wire [ 7:0] dbg_cpu_dout;  // CPU: D[ 7:0] (data bus [output])
-wire [15:0] dbg_cpu_a;     // CPU: A[15:0] (address bus)
-wire        dbg_cpu_r_nw;  // CPU: R/!W
-wire [ 7:0] dbg_ppu_din;   // PPU: D[ 7:0] (data bus [input])
-wire [ 7:0] dbg_ppu_dout;  // PPU: D[ 7:0] (data bus [output])
-wire [15:0] dbg_ppu_a;     // PPU: A[15:0] (address bus)
-wire        dbg_ppu_wr;    // PPU: WR
+wire [ 7:0] dbg_cpu_din;        // CPU: D[ 7:0] (data bus [input])
+wire [ 7:0] dbg_cpu_dout;       // CPU: D[ 7:0] (data bus [output])
+wire [15:0] dbg_cpu_a;          // CPU: A[15:0] (address bus)
+wire        dbg_cpu_r_nw;       // CPU: R/!W
+wire [ 7:0] dbg_ppu_vram_din;   // PPU: D[ 7:0] (data bus [input])
+wire [ 7:0] dbg_ppu_vram_dout;  // PPU: D[ 7:0] (data bus [output])
+wire [15:0] dbg_ppu_vram_a;     // PPU: A[15:0] (address bus)
+wire        dbg_ppu_vram_wr;    // PPU: WR
 
 dbg dbg_blk(
   .clk(CLK_50MHZ),
   .rst(BTN_SOUTH),
   .rx(RS232_DCE_RXD),
-  .cpumc_err(cpumc_err),
   .brk(cpu_brk),
   .cpu_din(dbg_cpu_din),
   .cpu_dbgreg_in(cpu_dbgreg_out),
-  .ppu_din(dbg_ppu_din),
+  .ppu_vram_din(dbg_ppu_vram_din),
   .tx(RS232_DCE_TXD),
   .cpu_r_nw(dbg_cpu_r_nw),
   .cpu_a(dbg_cpu_a),
@@ -135,24 +154,28 @@ dbg dbg_blk(
   .cpu_dbgreg_sel(cpu_dbgreg_sel),
   .cpu_dbgreg_out(cpu_dbgreg_in),
   .cpu_dbgreg_wr(cpu_dbgreg_wr),
-  .ppu_wr(dbg_ppu_wr),
-  .ppu_a(dbg_ppu_a),
-  .ppu_dout(dbg_ppu_dout)
+  .ppu_vram_wr(dbg_ppu_vram_wr),
+  .ppu_vram_a(dbg_ppu_vram_a),
+  .ppu_vram_dout(dbg_ppu_vram_dout)
 );
 
 // Mux cpumc signals from cpu or dbg blk, depending on debug break state (cpu_ready).
 assign cpumc_a     = (cpu_ready) ? cpu_a    : dbg_cpu_a;
 assign cpumc_r_nw  = (cpu_ready) ? cpu_r_nw : dbg_cpu_r_nw;
 assign cpumc_din   = (cpu_ready) ? cpu_dout : dbg_cpu_dout;
-assign cpu_din     = cpumc_dout;
-assign dbg_cpu_din = cpumc_dout;
+
+// CPUMC and PPU return 0 for reads that don't hit an appropriate region of memory.  The final
+// D bus value can be derived by ORing together the output of all blocks that can service a
+// memory read.
+assign cpu_din     = cpumc_dout | ppu_ri_dout;
+assign dbg_cpu_din = cpumc_dout | ppu_ri_dout;
 
 // Mux ppumc signals from ppu or dbg blk, depending on debug break state (cpu_ready).
-assign ppumc_a     = (cpu_ready) ? ppu_a : dbg_ppu_a[13:0];
-assign ppumc_wr    = dbg_ppu_wr;
-assign ppumc_din   = dbg_ppu_dout;
-assign ppu_din     = ppumc_dout;
-assign dbg_ppu_din = ppumc_dout;
+assign ppumc_a          = (cpu_ready) ? ppu_vram_a    : dbg_ppu_vram_a[13:0];
+assign ppumc_wr         = (cpu_ready) ? ppu_vram_wr   : dbg_ppu_vram_wr;
+assign ppumc_din        = (cpu_ready) ? ppu_vram_dout : dbg_ppu_vram_dout;
+assign ppu_vram_din     = ppumc_dout;
+assign dbg_ppu_vram_din = ppumc_dout;
 
 endmodule
 

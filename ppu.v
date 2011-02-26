@@ -11,33 +11,102 @@
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 module ppu
 (
-  input  wire        clk,    // 50MHz system clock signal
-  input  wire        rst,    // reset signal
-  input  wire        dbl,    // request nes resolution doubler
-  input  wire [ 7:0] din,    // video memory data bus (input)
-  output wire        hsync,  // vga hsync signal
-  output wire        vsync,  // vga vsync signal
-  output wire [ 3:0] r,      // vga red signal
-  output wire [ 3:0] g,      // vga green signal
-  output wire [ 3:0] b,      // vga blue signal
-  output reg  [13:0] a       // video memory address bus
+  input  wire        clk,        // 50MHz system clock signal
+  input  wire        rst,        // reset signal
+  input  wire        dbl,        // request nes resolution doubler
+  input  wire [ 2:0] ri_sel,     // register interface reg select
+  input  wire        ri_ncs,     // register interface enable
+  input  wire        ri_r_nw,    // register interface read/write select
+  input  wire [ 7:0] ri_din,     // register interface data in
+  input  wire [ 7:0] vram_din,   // video memory data bus (input)
+  output wire        hsync,      // vga hsync signal
+  output wire        vsync,      // vga vsync signal
+  output wire [ 3:0] r,          // vga red signal
+  output wire [ 3:0] g,          // vga green signal
+  output wire [ 3:0] b,          // vga blue signal
+  output wire [ 7:0] ri_dout,    // register interface data out
+  output wire [13:0] vram_a,     // video memory address bus
+  output wire [ 7:0] vram_dout,  // video memory data bus (output)
+  output reg         vram_wr     // video memory read/write select
 );
 
 // Display dimensions (640x480).
-localparam [9:0] DISPLAY_W = 10'h280,
-                 DISPLAY_H = 10'h1E0;
+localparam [ 9:0] DISPLAY_W          = 10'h280,
+                  DISPLAY_H          = 10'h1E0;
 
 // NES screen dimensions (256x240).
-localparam [9:0] NES_W = 10'h100,
-                 NES_H = 10'h0F0;
+localparam [ 9:0] NES_W              = 10'h100,
+                  NES_H              = 10'h0F0;
 
 // Border color (surrounding NES screen).
-localparam [11:0] BORDER_COLOR = 12'h888;
+localparam [11:0] BORDER_COLOR       = 12'h888;
 
 // PPU memory segment base addresses.
-localparam [13:0] PATTERN_TABLE   = 14'h0000;
-localparam [13:0] NAME_TABLE      = 14'h2000;
-localparam [13:0] ATTRIBUTE_TABLE = 14'h23C0;
+localparam [13:0] PATTERN_TABLE      = 14'h0000;
+localparam [13:0] NAME_TABLE         = 14'h2000;
+localparam [13:0] ATTRIBUTE_TABLE    = 14'h23C0;
+localparam [13:0] IMAGE_PALETTE      = 14'h3F00;
+localparam [13:0] SPRITE_PALETTE     = 14'h3F10;
+
+// Register interface buffered memory command ids.
+//    bit[0]: 0 = invalid req, 1 = valid req
+//    bit[1]: 0 = read,        1 = write
+localparam [ 1:0] RI_MEM_CMD_NOP     = 2'b00,
+                  RI_MEM_CMD_RD      = 2'b01,
+                  RI_MEM_CMD_WR      = 2'b11;
+
+// VRAM bus owner select values.
+localparam        SEL_VRAM_A_DISPLAY = 1'b0,
+                  SEL_VRAM_A_RI      = 1'b1;
+
+//
+// PPU registers.
+//
+reg [11:0] q_rgb;               // output color latch (required by vga_sync)
+reg [11:0] d_rgb;
+reg [ 7:0] q_tile_name;         // name for next tile (index for pattern bytes)
+reg [ 7:0] d_tile_name;
+reg [ 7:0] q_attribute [1:0];   // attribute byte (ping/pong per tile)
+reg [ 7:0] d_attribute [1:0];
+reg [ 7:0] q_tile_bit0 [1:0];   // pattern bit0 byte (ping/pong per tile)
+reg [ 7:0] d_tile_bit0 [1:0];
+reg [ 7:0] q_tile_bit1 [1:0];   // pattern bit1 byte (ping/pong per tile)
+reg [ 7:0] d_tile_bit1 [1:0];
+
+reg [13:0] q_ri_addr;           // reg interface addr (updated by writing 0x2006)
+reg [13:0] d_ri_addr;
+reg        q_ri_addr_byte_sel;  // reg interface tracking if next 0x2006 write is high or low byte
+reg        d_ri_addr_byte_sel;
+reg [ 7:0] q_ri_dout;           // reg interface output data bus latch (source for 0x2007 reads)
+reg [ 7:0] d_ri_dout;
+reg [13:0] q_ri_addr_buf;       // reg interface addr buffer (for buffered mem reads/writes)
+reg [13:0] d_ri_addr_buf;
+reg [ 7:0] q_ri_rd_data_buf;    // reg interface read data buffer (dst for buffered mem reads)
+reg [ 7:0] d_ri_rd_data_buf;
+reg [ 7:0] q_ri_wr_data_buf;    // reg interface write data buffer (src for buffered mem writes)
+reg [ 7:0] d_ri_wr_data_buf;
+reg [ 1:0] q_ri_mem_cmd;        // reg interface buffered memory command
+reg [ 1:0] d_ri_mem_cmd;
+reg        q_ri_mem_rd_rdy;     // reg interface mem command complete signal
+reg        d_ri_mem_rd_rdy;
+reg        q_ri_ncs;            // reg interface last ncs signal - used for detecting ncs edges
+
+reg        q_bg_en;             // tracks whether user has enabled/disabled background display
+reg        d_bg_en;
+
+//
+// PPU internal RAM.
+//
+reg [5:0] palette_ram [31:0];
+
+//
+// Control signals.
+//
+reg         sel_vram_a;       // selects vram address bus driver (0 = display, 1 = ri)
+reg  [13:0] display_a;        // display address request
+reg  [13:0] ri_a;             // register interface address request
+reg         wr_palette_ram;   // enable palette ram write
+wire [ 5:0] palette_ram_din;  // vram_din equivalent for palette_ram reads
 
 //
 // VGA_SYNC: VGA synchronization control block.
@@ -55,70 +124,158 @@ vga_sync vga_sync_blk(
 );
 
 //
-// PPU registers.
+// Update PPU internal RAM.
 //
-reg [11:0] q_rgb;              // output color latch (required by vga_sync)
-reg [11:0] d_rgb;
-reg [ 7:0] q_tile_name;        // name for current and next tile
-reg [ 7:0] d_tile_name;
-reg [ 7:0] q_attribute [1:0];  // attribute byte for current and next tile
-reg [ 7:0] d_attribute [1:0];
-reg [ 7:0] q_tile_bit0 [1:0];  // pattern table data with bit0 data for current and next tile
-reg [ 7:0] d_tile_bit0 [1:0];
-reg [ 7:0] q_tile_bit1 [1:0];  // pattern table data with bit1 data for current and next tile
-reg [ 7:0] d_tile_bit1 [1:0];
+always @(posedge clk)
+  begin
+    if (wr_palette_ram)
+      palette_ram[q_ri_addr_buf[4:0]] <= q_ri_wr_data_buf;
+  end
 
+//
+// Update internal PPU registers.
+//
 always @(posedge clk)
   begin
     if (rst)
       begin
-        q_rgb          = 12'h000;
-        q_tile_name    = 8'h00;
-        q_attribute[0] = 8'h00;
-        q_attribute[1] = 8'h00;
-        q_tile_bit0[0] = 8'h00;
-        q_tile_bit0[1] = 8'h00;
-        q_tile_bit1[0] = 8'h00;
-        q_tile_bit1[1] = 8'h00;
+        q_rgb              <= 12'h000;
+        q_tile_name        <= 8'h00;
+        q_attribute[0]     <= 8'h00;
+        q_attribute[1]     <= 8'h00;
+        q_tile_bit0[0]     <= 8'h00;
+        q_tile_bit0[1]     <= 8'h00;
+        q_tile_bit1[0]     <= 8'h00;
+        q_tile_bit1[1]     <= 8'h00;
+        q_ri_addr          <= 14'h0000;
+        q_ri_addr_byte_sel <= 1'b1;
+        q_ri_dout          <= 8'h00;
+        q_ri_addr_buf      <= 14'h0200;
+        q_ri_rd_data_buf   <= 8'h00;
+        q_ri_wr_data_buf   <= 8'h00;
+        q_ri_mem_cmd       <= 2'b00;
+        q_ri_mem_rd_rdy    <= 1'b0;
+        q_ri_ncs           <= 1'b1;
+        q_bg_en            <= 1'b0;
       end
     else
       begin
-        q_rgb          = d_rgb;
-        q_tile_name    = d_tile_name;
-        q_attribute[0] = d_attribute[0];
-        q_attribute[1] = d_attribute[1];
-        q_tile_bit0[0] = d_tile_bit0[0];
-        q_tile_bit0[1] = d_tile_bit0[1];
-        q_tile_bit1[0] = d_tile_bit1[0];
-        q_tile_bit1[1] = d_tile_bit1[1];
+        q_rgb              <= d_rgb;
+        q_tile_name        <= d_tile_name;
+        q_attribute[0]     <= d_attribute[0];
+        q_attribute[1]     <= d_attribute[1];
+        q_tile_bit0[0]     <= d_tile_bit0[0];
+        q_tile_bit0[1]     <= d_tile_bit0[1];
+        q_tile_bit1[0]     <= d_tile_bit1[0];
+        q_tile_bit1[1]     <= d_tile_bit1[1];
+        q_ri_addr          <= d_ri_addr;
+        q_ri_addr_byte_sel <= d_ri_addr_byte_sel;
+        q_ri_dout          <= d_ri_dout;
+        q_ri_addr_buf      <= d_ri_addr_buf;
+        q_ri_rd_data_buf   <= d_ri_rd_data_buf;
+        q_ri_wr_data_buf   <= d_ri_wr_data_buf;
+        q_ri_mem_cmd       <= d_ri_mem_cmd;
+        q_ri_mem_rd_rdy    <= d_ri_mem_rd_rdy;
+        q_ri_ncs           <= ri_ncs;
+        q_bg_en            <= d_bg_en;
       end
   end
 
 //
-// PPU internal RAM.
+// External register interface.
 //
-reg [5:0] image_palette [15:0];
+assign palette_ram_din = palette_ram[q_ri_addr_buf[4:0]];
 
-always @(posedge clk)
+always @*
   begin
-    if (rst)
+    // Default RI registers to their original values.
+    d_ri_addr          = q_ri_addr;
+    d_ri_addr_byte_sel = q_ri_addr_byte_sel;
+    d_ri_dout          = q_ri_dout;
+    d_ri_addr_buf      = q_ri_addr_buf;
+    d_ri_rd_data_buf   = q_ri_rd_data_buf;
+    d_ri_wr_data_buf   = q_ri_wr_data_buf;
+    d_ri_mem_cmd       = q_ri_mem_cmd;
+    d_bg_en            = q_bg_en;
+
+    d_ri_mem_rd_rdy    = 1'b0;
+
+    ri_a               = q_ri_addr_buf;
+    vram_wr            = 1'b0;
+    wr_palette_ram     = 1'b0;
+
+    // Only evaluate RI reads/writes on /CS falling edges.  This prevents executing the same
+    // command multiple times because the CPU runs at a slower clock rate than the PPU.
+    if (!ri_ncs && q_ri_ncs)
       begin
-        image_palette[ 0] <= 6'h0E;
-        image_palette[ 1] <= 6'h00;
-        image_palette[ 2] <= 6'h0E;
-        image_palette[ 3] <= 6'h19;
-        image_palette[ 4] <= 6'h00;
-        image_palette[ 5] <= 6'h00;
-        image_palette[ 6] <= 6'h00;
-        image_palette[ 7] <= 6'h00;
-        image_palette[ 8] <= 6'h00;
-        image_palette[ 9] <= 6'h00;
-        image_palette[10] <= 6'h00;
-        image_palette[11] <= 6'h00;
-        image_palette[12] <= 6'h01;
-        image_palette[13] <= 6'h00;
-        image_palette[14] <= 6'h01;
-        image_palette[15] <= 6'h21;
+        if (ri_r_nw)
+          begin
+            // External register read.
+            case (ri_sel)
+              3'h7:  // 0x2007
+                begin
+                  // Setup buffered read command.
+                  d_ri_mem_cmd  = RI_MEM_CMD_RD;
+                  d_ri_addr_buf = q_ri_addr;
+
+                  // Move previous read result to output, and update addr for next ri op.
+                  d_ri_dout     = q_ri_rd_data_buf;
+                  d_ri_addr     = q_ri_addr + 16'h0001;
+                end
+            endcase
+          end
+        else
+          begin
+            // External register write.
+            case (ri_sel)
+              3'h1:  // 0x2001
+                begin
+                  d_bg_en = ri_din[3];
+                end
+              3'h6:  // 0x2006
+                begin
+                  d_ri_addr_byte_sel = ~q_ri_addr_byte_sel;
+                  if (q_ri_addr_byte_sel)
+                    d_ri_addr = (ri_din << 8) | (q_ri_addr & 16'h00FF);
+                  else
+                    d_ri_addr = (q_ri_addr & 16'hFF00) | ri_din;
+                end
+              3'h7:  // 0x2007
+                begin
+                  // Setup buffered write command.
+                  d_ri_mem_cmd     = RI_MEM_CMD_WR;
+                  d_ri_addr_buf    = q_ri_addr;
+                  d_ri_wr_data_buf = ri_din;
+
+                  // Update addr for next ri op.
+                  d_ri_addr        = q_ri_addr + 16'h0001;
+                end
+            endcase
+          end
+      end
+
+    if ((sel_vram_a == SEL_VRAM_A_RI) && (q_ri_mem_cmd[0]))
+      begin
+        d_ri_mem_cmd = RI_MEM_CMD_NOP;
+
+        d_ri_mem_rd_rdy = ~q_ri_mem_cmd[1];
+
+        // Palette RAM writes.
+        if (q_ri_addr_buf[13:8] == 6'h3F)
+          wr_palette_ram = q_ri_mem_cmd[1];
+        // VRAM writes.
+        else
+          vram_wr = q_ri_mem_cmd[1];
+      end
+
+    if (q_ri_mem_rd_rdy)
+      begin
+        // Palette RAM reads.
+        if (q_ri_addr_buf[13:8] == 6'h3F)
+          d_ri_rd_data_buf = { 2'b00, palette_ram_din };
+        // VRAM reads.
+        else
+          d_ri_rd_data_buf = vram_din;
       end
   end
 
@@ -141,7 +298,8 @@ assign border      = (x >= NES_W) || (y >= NES_H);
 // Derive output color (system palette index).
 //
 always @(q_tile_name or q_attribute[0] or q_attribute[1] or q_tile_bit0[0] or q_tile_bit0[1] or
-         q_tile_bit1[0] or q_tile_bit1[1] or tile_x or tile_y or next_tile_x or x or y or din)
+         q_tile_bit1[0] or q_tile_bit1[1] or tile_x or tile_y or next_tile_x or x or y or
+         vram_din or vsync)
   begin
     // Default registers to their current values.
     d_tile_name    = q_tile_name;
@@ -152,38 +310,46 @@ always @(q_tile_name or q_attribute[0] or q_attribute[1] or q_tile_bit0[0] or q_
     d_tile_bit1[0] = q_tile_bit1[0];
     d_tile_bit1[1] = q_tile_bit1[1];
 
-    a = 14'h0000;
+    sel_vram_a = SEL_VRAM_A_DISPLAY;
+    display_a  = 14'h0000;
 
-    case (x[2:0])
-      3'b000:
-        begin
-          // Stage 0.  Load next tile's name.
-          a = { NAME_TABLE[13:10], tile_y[4:0], next_tile_x[4:0] };
-          d_tile_name = din;
-        end
-      3'b001:
-        begin
-          // Stage 1.  Load next tile's attrib byte.
-          a = { ATTRIBUTE_TABLE[13:6], tile_y[4:2], next_tile_x[4:2] };
-          d_attribute[~tile_x[0]] = din;
-        end
-      3'b010:
-        begin
-          // Stage 2.  Load bit0 pattern data based on tile name.
-          a = { PATTERN_TABLE[13:12], q_tile_name, 1'b0, y[2:0] };
-          d_tile_bit0[~tile_x[0]] = din;
-        end
-      3'b011:
-        begin
-          // Stage 3.  Load bit1 pattern data based on tile name.
-          a = { PATTERN_TABLE[13:12], q_tile_name, 1'b1, y[2:0] };
-          d_tile_bit1[~tile_x[0]] = din;
-        end
-    endcase
+    if (q_bg_en && !vsync)
+      case (x[2:0])
+        3'b000:
+          begin
+            // Stage 0.  Load next tile's name.
+            display_a = { NAME_TABLE[13:10], tile_y[4:0], next_tile_x[4:0] };
+            d_tile_name = vram_din;
+          end
+        3'b001:
+          begin
+            // Stage 1.  Load next tile's attrib byte.
+            display_a = { ATTRIBUTE_TABLE[13:6], tile_y[4:2], next_tile_x[4:2] };
+            d_attribute[~tile_x[0]] = vram_din;
+          end
+        3'b010:
+          begin
+            // Stage 2.  Load bit0 pattern data based on tile name.
+            display_a = { PATTERN_TABLE[13:12], q_tile_name, 1'b0, y[2:0] };
+            d_tile_bit0[~tile_x[0]] = vram_din;
+          end
+        3'b011:
+          begin
+            // Stage 3.  Load bit1 pattern data based on tile name.
+            display_a = { PATTERN_TABLE[13:12], q_tile_name, 1'b1, y[2:0] };
+            d_tile_bit1[~tile_x[0]] = vram_din;
+          end
+        default:
+          begin
+            sel_vram_a = SEL_VRAM_A_RI;
+          end
+      endcase
+    else
+      sel_vram_a = SEL_VRAM_A_RI;
   end
 
 //
-// Final image composition.
+// Image composition.
 //
 wire [3:0] image_palette_idx;
 wire [5:0] sys_palette_idx;
@@ -191,7 +357,7 @@ wire [5:0] sys_palette_idx;
 assign image_palette_idx = { q_attribute[tile_x[0]] >> { tile_y[1], tile_x[1], 1'b0 },
                              q_tile_bit1[tile_x[0]][~x],
                              q_tile_bit0[tile_x[0]][~x] };
-assign sys_palette_idx = image_palette[image_palette_idx];
+assign sys_palette_idx = (q_bg_en) ? palette_ram[{1'b0, image_palette_idx}] : 6'h00;
 
 //
 // Lookup RGB values based on sys_palette_idx.
@@ -284,6 +450,9 @@ always @*
 
 // Assign output signals.
 assign { r, g, b } = q_rgb;
+assign ri_dout     = (!ri_ncs && ri_r_nw) ? q_ri_dout : 8'h00;
+assign vram_a      = (sel_vram_a == SEL_VRAM_A_DISPLAY) ? display_a : ri_a;
+assign vram_dout   = q_ri_wr_data_buf;
 
 endmodule
 
