@@ -28,8 +28,7 @@ reg         name_tbl_wr;
 
 // PPU Memory Map
 //   0x0000 - 0x1FFF Pattern Tables
-//   0x2000 - 0x27FF Name / Attribute Tables
-//   0x2800 - 0x2FFF Configurable Mirror (0x2000 - 0x27FF)
+//   0x2000 - 0x2FFF Name / Attribute Tables (configurable mirror)
 //   0x3000 - 0x3FFF Mirrors 0x2000 - 0x2FFF
 //   0x4000 - 0xFFFF Mirrors 0x0000 - 0x3FFF
 
@@ -45,7 +44,7 @@ single_port_ram_sync #(.ADDR_WIDTH(13),
 
 assign pattern_tbl_addr = addr[12:0];
 
-// Block ram instance for "Name Table" memory range (0x2000 - 0x27FF).
+// Block ram instance for "Name Table" memory range (0x2000 - 0x2FFF).
 single_port_ram_sync #(.ADDR_WIDTH(11),
                        .DATA_WIDTH(8)) name_tbl(
   .clk(clk),
@@ -55,7 +54,9 @@ single_port_ram_sync #(.ADDR_WIDTH(11),
   .dout_a(name_tbl_rd_data)
 );
 
-assign name_tbl_addr = addr[10:0];
+// Hard code horizontal mirorring for now.  0x2000 and 0x2400 address the first table, 0x2800 and
+// 0x2C00 address the second table.
+assign name_tbl_addr = { addr[11], addr[9:0] };
 
 always @*
   begin
