@@ -107,6 +107,7 @@ reg  [13:0] display_a;        // display address request
 reg  [13:0] ri_a;             // register interface address request
 reg         wr_palette_ram;   // enable palette ram write
 wire [ 5:0] palette_ram_din;  // vram_din equivalent for palette_ram reads
+wire        vblank;           // indicates VRAM not being read by display at end of frame
 
 //
 // VGA_SYNC: VGA synchronization control block.
@@ -212,6 +213,10 @@ always @*
           begin
             // External register read.
             case (ri_sel)
+              3'h2:  // 0x2002
+                begin
+                  d_ri_dout = { vblank, 7'h00 };
+                end
               3'h7:  // 0x2007
                 begin
                   // Setup buffered read command.
@@ -293,6 +298,7 @@ assign tile_x      = x >> 3;
 assign tile_y      = y >> 3;
 assign next_tile_x = tile_x + 5'h01;
 assign border      = (x >= NES_W) || (y >= NES_H);
+assign vblank      = (y >= NES_H);
 
 //
 // Derive output color (system palette index).
@@ -313,7 +319,7 @@ always @(q_tile_name or q_attribute[0] or q_attribute[1] or q_tile_bit0[0] or q_
     sel_vram_a = SEL_VRAM_A_DISPLAY;
     display_a  = 14'h0000;
 
-    if (q_bg_en && !vsync)
+    if (q_bg_en && !vblank)
       case (x[2:0])
         3'b000:
           begin
