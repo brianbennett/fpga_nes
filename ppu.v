@@ -27,7 +27,8 @@ module ppu
   output wire [ 7:0] ri_dout,    // register interface data out
   output wire [13:0] vram_a,     // video memory address bus
   output wire [ 7:0] vram_dout,  // video memory data bus (output)
-  output reg         vram_wr     // video memory read/write select
+  output reg         vram_wr,    // video memory read/write select
+  output wire        nvbl        // /VBL (low during vertical blank)
 );
 
 // Display dimensions (640x480).
@@ -93,6 +94,12 @@ reg        q_ri_ncs;            // reg interface last ncs signal - used for dete
 
 reg        q_bg_en;             // tracks whether user has enabled/disabled background display
 reg        d_bg_en;
+reg        q_nvbl_en;           // enables /VBL output signal (CPU NMI interrupt)
+reg        d_nvbl_en;
+reg [ 1:0] q_name_tbl_addr;     // name table address
+reg [ 1:0] d_name_tbl_addr;
+reg        q_pattern_tbl_addr;  // pattern table address
+reg        d_pattern_tbl_addr;
 
 //
 // PPU internal RAM.
@@ -158,6 +165,9 @@ always @(posedge clk)
         q_ri_mem_rd_rdy    <= 1'b0;
         q_ri_ncs           <= 1'b1;
         q_bg_en            <= 1'b0;
+        q_nvbl_en          <= 1'b0;
+        q_name_tbl_addr    <= 2'b00;
+        q_pattern_tbl_addr <= 1'b0;       
       end
     else
       begin
@@ -179,6 +189,9 @@ always @(posedge clk)
         q_ri_mem_rd_rdy    <= d_ri_mem_rd_rdy;
         q_ri_ncs           <= ri_ncs;
         q_bg_en            <= d_bg_en;
+        q_nvbl_en          <= d_nvbl_en;
+        q_name_tbl_addr    <= d_name_tbl_addr;
+        q_pattern_tbl_addr <= d_pattern_tbl_addr;
       end
   end
 
@@ -198,6 +211,9 @@ always @*
     d_ri_wr_data_buf   = q_ri_wr_data_buf;
     d_ri_mem_cmd       = q_ri_mem_cmd;
     d_bg_en            = q_bg_en;
+    d_nvbl_en          = q_nvbl_en;
+    d_name_tbl_addr    = q_name_tbl_addr;
+    d_pattern_tbl_addr = q_pattern_tbl_addr;
 
     d_ri_mem_rd_rdy    = 1'b0;
 
@@ -233,6 +249,12 @@ always @*
           begin
             // External register write.
             case (ri_sel)
+              3'h0:  // 0x2000
+                begin
+                  d_name_tbl_addr    = ri_din[1:0];
+                  d_pattern_tbl_addr = ri_din[4];
+                  d_nvbl_en          = ri_din[7];
+                end
               3'h1:  // 0x2001
                 begin
                   d_bg_en = ri_din[3];
@@ -303,9 +325,10 @@ assign vblank      = (y >= NES_H);
 //
 // Derive output color (system palette index).
 //
-always @(q_tile_name or q_attribute[0] or q_attribute[1] or q_tile_bit0[0] or q_tile_bit0[1] or
-         q_tile_bit1[0] or q_tile_bit1[1] or tile_x or tile_y or next_tile_x or x or y or
-         vram_din or vsync)
+always @(vram_din        or q_tile_name    or q_attribute[0] or q_attribute[1] or q_tile_bit0[0] or
+         q_tile_bit0[1]  or q_tile_bit1[0] or q_tile_bit1[1] or x              or y              or
+         tile_x          or tile_y         or next_tile_x    or vblank         or q_bg_en        or
+         q_name_tbl_addr or q_pattern_tbl_addr)
   begin
     // Default registers to their current values.
     d_tile_name    = q_tile_name;
@@ -324,25 +347,40 @@ always @(q_tile_name or q_attribute[0] or q_attribute[1] or q_tile_bit0[0] or q_
         3'b000:
           begin
             // Stage 0.  Load next tile's name.
-            display_a = { NAME_TABLE[13:10], tile_y[4:0], next_tile_x[4:0] };
+            display_a = { NAME_TABLE[13:12],
+                          q_name_tbl_addr,
+                          tile_y[4:0],
+                          next_tile_x[4:0] };
             d_tile_name = vram_din;
           end
         3'b001:
           begin
             // Stage 1.  Load next tile's attrib byte.
-            display_a = { ATTRIBUTE_TABLE[13:6], tile_y[4:2], next_tile_x[4:2] };
+            display_a = { ATTRIBUTE_TABLE[13:12],
+                          q_name_tbl_addr,
+                          ATTRIBUTE_TABLE[9:6],
+                          tile_y[4:2],
+                          next_tile_x[4:2] };
             d_attribute[~tile_x[0]] = vram_din;
           end
         3'b010:
           begin
             // Stage 2.  Load bit0 pattern data based on tile name.
-            display_a = { PATTERN_TABLE[13:12], q_tile_name, 1'b0, y[2:0] };
+            display_a = { PATTERN_TABLE[13],
+                          q_pattern_tbl_addr,
+                          q_tile_name,
+                          1'b0,
+                          y[2:0] };
             d_tile_bit0[~tile_x[0]] = vram_din;
           end
         3'b011:
           begin
             // Stage 3.  Load bit1 pattern data based on tile name.
-            display_a = { PATTERN_TABLE[13:12], q_tile_name, 1'b1, y[2:0] };
+            display_a = { PATTERN_TABLE[13],
+                          q_pattern_tbl_addr,
+                          q_tile_name,
+                          1'b1,
+                          y[2:0] };
             d_tile_bit1[~tile_x[0]] = vram_din;
           end
         default:
@@ -459,6 +497,7 @@ assign { r, g, b } = q_rgb;
 assign ri_dout     = (!ri_ncs && ri_r_nw) ? q_ri_dout : 8'h00;
 assign vram_a      = (sel_vram_a == SEL_VRAM_A_DISPLAY) ? display_a : ri_a;
 assign vram_dout   = q_ri_wr_data_buf;
+assign nvbl        = ~(vblank & q_nvbl_en);
 
 endmodule
 

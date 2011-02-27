@@ -14,6 +14,7 @@ module nes
 (
   input  wire       CLK_50MHZ,      // 50MHz system clock signal
   input  wire       BTN_SOUTH,      // reset push button
+  input  wire       BTN_EAST,       // console reset
   input  wire       RS232_DCE_RXD,  // rs-232 rx signal
   input  wire       SW0,            // switch 0
   output wire       RS232_DCE_TXD,  // rs-232 tx signal
@@ -37,6 +38,7 @@ wire [ 3:0] cpu_dbgreg_sel;  // CPU input for debugger register read/write selec
 wire [ 7:0] cpu_dbgreg_out;  // CPU output for debugger register reads
 wire [ 7:0] cpu_dbgreg_in;   // CPU input for debugger register writes
 wire        cpu_dbgreg_wr;   // CPU input for debugger register writen enable
+wire        cpu_nnmi;        // Non-Maskable Interrupt signal (active low)
 
 cpu cpu_blk(
   .clk(CLK_50MHZ),
@@ -46,6 +48,8 @@ cpu cpu_blk(
   .dbgreg_in(cpu_dbgreg_in),
   .dbgreg_wr(cpu_dbgreg_wr),
   .din(cpu_din),
+  .nnmi(cpu_nnmi),
+  .nres(~BTN_EAST),
   .dout(cpu_dout),
   .a(cpu_a),
   .r_nw(cpu_r_nw),
@@ -83,6 +87,8 @@ wire        ppu_vram_wr;    // ppu video ram read/write select
 wire [ 7:0] ppu_vram_din;   // ppu video ram data bus (input)
 wire [ 7:0] ppu_vram_dout;  // ppu video ram data bus (output)
 
+wire        ppu_nvbl;       // ppu /VBL signal.
+
 // PPU snoops the CPU address bus for register reads/writes.  Addresses 0x2000-0x2007
 // are mapped to the PPU register space, with every 8 bytes mirrored through 0x3FFF.
 assign ppu_ri_sel  = cpumc_a[2:0];
@@ -107,7 +113,8 @@ ppu ppu_blk(
   .ri_dout(ppu_ri_dout),
   .vram_a(ppu_vram_a),
   .vram_dout(ppu_vram_dout),
-  .vram_wr(ppu_vram_wr)
+  .vram_wr(ppu_vram_wr),
+  .nvbl(ppu_nvbl)
 );
 
 //
@@ -176,6 +183,9 @@ assign ppumc_wr         = (cpu_ready) ? ppu_vram_wr   : dbg_ppu_vram_wr;
 assign ppumc_din        = (cpu_ready) ? ppu_vram_dout : dbg_ppu_vram_dout;
 assign ppu_vram_din     = ppumc_dout;
 assign dbg_ppu_vram_din = ppumc_dout;
+
+// Issue NMI interupt on PPU vertical blank.
+assign cpu_nnmi = ppu_nvbl;
 
 endmodule
 
