@@ -100,6 +100,8 @@ reg [ 1:0] q_name_tbl_addr;     // name table address
 reg [ 1:0] d_name_tbl_addr;
 reg        q_pattern_tbl_addr;  // pattern table address
 reg        d_pattern_tbl_addr;
+reg        q_addr_incr;         // address increment for register access (0=1, 1=32)
+reg        d_addr_incr;
 
 //
 // PPU internal RAM.
@@ -168,6 +170,7 @@ always @(posedge clk)
         q_nvbl_en          <= 1'b0;
         q_name_tbl_addr    <= 2'b00;
         q_pattern_tbl_addr <= 1'b0;       
+        q_addr_incr        <= 1'b0;
       end
     else
       begin
@@ -192,6 +195,7 @@ always @(posedge clk)
         q_nvbl_en          <= d_nvbl_en;
         q_name_tbl_addr    <= d_name_tbl_addr;
         q_pattern_tbl_addr <= d_pattern_tbl_addr;
+        q_addr_incr        <= d_addr_incr;
       end
   end
 
@@ -214,6 +218,7 @@ always @*
     d_nvbl_en          = q_nvbl_en;
     d_name_tbl_addr    = q_name_tbl_addr;
     d_pattern_tbl_addr = q_pattern_tbl_addr;
+    d_addr_incr        = q_addr_incr;
 
     d_ri_mem_rd_rdy    = 1'b0;
 
@@ -240,8 +245,8 @@ always @*
                   d_ri_addr_buf = q_ri_addr;
 
                   // Move previous read result to output, and update addr for next ri op.
-                  d_ri_dout     = q_ri_rd_data_buf;
-                  d_ri_addr     = q_ri_addr + 16'h0001;
+                  d_ri_dout = q_ri_rd_data_buf;
+                  d_ri_addr = q_ri_addr + ((q_addr_incr) ? 16'h0020 : 16'h0001);
                 end
             endcase
           end
@@ -252,6 +257,7 @@ always @*
               3'h0:  // 0x2000
                 begin
                   d_name_tbl_addr    = ri_din[1:0];
+                  d_addr_incr        = ri_din[2];
                   d_pattern_tbl_addr = ri_din[4];
                   d_nvbl_en          = ri_din[7];
                 end
@@ -275,7 +281,7 @@ always @*
                   d_ri_wr_data_buf = ri_din;
 
                   // Update addr for next ri op.
-                  d_ri_addr        = q_ri_addr + 16'h0001;
+                  d_ri_addr = q_ri_addr + ((q_addr_incr) ? 16'h0020 : 16'h0001);
                 end
             endcase
           end
