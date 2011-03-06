@@ -22,7 +22,7 @@ module dbg
   output wire        tx,             // rs-232 tx signal
   output reg         cpu_r_nw,       // cpu R/!W pin
   output wire [15:0] cpu_a,          // cpu A bus (A)
-  output wire [ 7:0] cpu_dout,       // cpu data bus (D) [output]
+  output reg  [ 7:0] cpu_dout,       // cpu data bus (D) [output]
   output wire        cpu_ready,      // cpu READY signal
   output reg  [ 3:0] cpu_dbgreg_sel, // selects cpu register to read/write through cpu_dbgreg_in
   output reg  [ 7:0] cpu_dbgreg_out, // cpu register write value for debug reg writes
@@ -43,32 +43,34 @@ localparam [7:0] OP_ECHO           = 8'h00,
                  OP_QUERY_DBG_BRK  = 8'h07,
                  OP_QUERY_ERR_CODE = 8'h08,
                  OP_PPU_MEM_RD     = 8'h09,
-                 OP_PPU_MEM_WR     = 8'h0A;
+                 OP_PPU_MEM_WR     = 8'h0A,
+                 OP_PPU_DISABLE    = 8'h0B;
 
 // Error code bit positions.
 localparam DBG_UART_PARITY_ERR = 0,
            DBG_UNKNOWN_OPCODE  = 1;
 
 // Symbolic state representations.
-localparam [3:0] S_DISABLED         = 4'h0,
-                 S_DECODE           = 4'h1,
-                 S_ECHO_STG_0       = 4'h2,
-                 S_ECHO_STG_1       = 4'h3,
-                 S_CPU_MEM_RD_STG_0 = 4'h4,
-                 S_CPU_MEM_RD_STG_1 = 4'h5,
-                 S_CPU_MEM_WR_STG_0 = 4'h6,
-                 S_CPU_MEM_WR_STG_1 = 4'h7,
-                 S_CPU_REG_RD       = 4'h8,
-                 S_CPU_REG_WR_STG_0 = 4'h9,
-                 S_CPU_REG_WR_STG_1 = 4'hA,
-                 S_QUERY_ERR_CODE   = 4'hB,
-                 S_PPU_MEM_RD_STG_0 = 4'hC,
-                 S_PPU_MEM_RD_STG_1 = 4'hD,
-                 S_PPU_MEM_WR_STG_0 = 4'hE,
-                 S_PPU_MEM_WR_STG_1 = 4'hF;
+localparam [4:0] S_DISABLED          = 5'h00,
+                 S_DECODE            = 5'h01,
+                 S_ECHO_STG_0        = 5'h02,
+                 S_ECHO_STG_1        = 5'h03,
+                 S_CPU_MEM_RD_STG_0  = 5'h04,
+                 S_CPU_MEM_RD_STG_1  = 5'h05,
+                 S_CPU_MEM_WR_STG_0  = 5'h06,
+                 S_CPU_MEM_WR_STG_1  = 5'h07,
+                 S_CPU_REG_RD        = 5'h08,
+                 S_CPU_REG_WR_STG_0  = 5'h09,
+                 S_CPU_REG_WR_STG_1  = 5'h0A,
+                 S_QUERY_ERR_CODE    = 5'h0B,
+                 S_PPU_MEM_RD_STG_0  = 5'h0C,
+                 S_PPU_MEM_RD_STG_1  = 5'h0D,
+                 S_PPU_MEM_WR_STG_0  = 5'h0E,
+                 S_PPU_MEM_WR_STG_1  = 5'h0F,
+                 S_PPU_DISABLE       = 5'h10;
 
-reg [ 3:0] q_state,       d_state;
-reg [ 1:0] q_decode_cnt,  d_decode_cnt;
+reg [ 4:0] q_state,       d_state;
+reg [ 2:0] q_decode_cnt,  d_decode_cnt;
 reg [16:0] q_execute_cnt, d_execute_cnt;
 reg [15:0] q_addr,        d_addr;
 reg [ 1:0] q_err_code,    d_err_code;
@@ -143,6 +145,7 @@ always @*
 
     // Setup default output regs.
     cpu_r_nw       = 1'b1;
+    cpu_dout       = rd_data;
     cpu_dbgreg_sel = 0;
     cpu_dbgreg_out = 0;
     cpu_dbgreg_wr  = 1'b0;
@@ -192,6 +195,7 @@ always @*
                 OP_QUERY_ERR_CODE: d_state = S_QUERY_ERR_CODE;
                 OP_PPU_MEM_RD:     d_state = S_PPU_MEM_RD_STG_0;
                 OP_PPU_MEM_WR:     d_state = S_PPU_MEM_WR_STG_0;
+                OP_PPU_DISABLE:    d_state = S_PPU_DISABLE;
                 OP_DBG_RUN:
                   begin
                     d_state = S_DISABLED;
@@ -530,11 +534,58 @@ always @*
                 d_state = S_DECODE;
             end
         end
+
+      // --- PPU_DISABLE ---
+      //   OP_CODE
+      S_PPU_DISABLE:
+        begin
+          d_decode_cnt = q_decode_cnt + 1;  // advance to next decode stage
+
+          if (q_decode_cnt == 0)
+            begin
+              d_addr = 16'h2000;
+            end
+          else if (q_decode_cnt == 1)
+            begin
+              // Write 0x2000 to 0.
+              cpu_r_nw = 1'b0;
+              cpu_dout = 8'h00;
+
+              // Set addr to 0x0000 for one cycle (due to PPU quirk only recognizing register
+              // interface reads/writes when address bits [15-13] change from 3'b001 from another
+              // value.
+              d_addr   = 16'h0000;
+            end
+          else if (q_decode_cnt == 2)
+            begin
+              d_addr = 16'h2001;
+            end
+          else if (q_decode_cnt == 3)
+            begin
+              // Write 0x2000 to 0.
+              cpu_r_nw = 1'b0;
+              cpu_dout = 8'h00;
+
+              // Set addr to 0x0000 for one cycle (due to PPU quirk only recognizing register
+              // interface reads/writes when address bits [15-13] change from 3'b001 from another
+              // value.
+              d_addr   = 16'h0000;
+            end
+          else if (q_decode_cnt == 4)
+            begin
+              d_addr = 16'h2002;
+            end
+          else if (q_decode_cnt == 5)
+            begin
+              // Read 0x2002 to reset PPU byte pointer.
+              d_addr  = 16'h0000;
+              d_state = S_DECODE;
+            end
+        end
     endcase
   end
 
 assign cpu_a         = q_addr;
-assign cpu_dout      = rd_data;
 assign cpu_ready     = (q_state == S_DISABLED);
 assign ppu_vram_a    = q_addr;
 assign ppu_vram_dout = rd_data;
