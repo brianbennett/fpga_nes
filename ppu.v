@@ -102,6 +102,8 @@ reg        q_pattern_tbl_addr;  // pattern table address
 reg        d_pattern_tbl_addr;
 reg        q_addr_incr;         // address increment for register access (0=1, 1=32)
 reg        d_addr_incr;
+reg [ 1:0] q_vblank;            // vblank state: [1]=last clk vblank, [0]=user read state
+reg [ 1:0] d_vblank;
 
 //
 // PPU internal RAM.
@@ -171,6 +173,7 @@ always @(posedge clk)
         q_name_tbl_addr    <= 2'b00;
         q_pattern_tbl_addr <= 1'b0;       
         q_addr_incr        <= 1'b0;
+        q_vblank           <= 2'b00;
       end
     else
       begin
@@ -196,6 +199,7 @@ always @(posedge clk)
         q_name_tbl_addr    <= d_name_tbl_addr;
         q_pattern_tbl_addr <= d_pattern_tbl_addr;
         q_addr_incr        <= d_addr_incr;
+        q_vblank           <= d_vblank;
       end
   end
 
@@ -226,6 +230,13 @@ always @*
     vram_wr            = 1'b0;
     wr_palette_ram     = 1'b0;
 
+    // q_vblank[1] stores the vblank signal from the previous cycle, to detect vblank edges.
+    // q_vblank[0] is the register interface vblank bit (set on vblank rising edge, cleared on
+    // vblank falling edge or user read of 0x2000).
+    d_vblank[1] = vblank;
+    d_vblank[0] = (vblank & ~q_vblank[1]) ? 1'b1 :
+                  (~vblank)               ? 1'b0 : q_vblank;
+
     // Only evaluate RI reads/writes on /CS falling edges.  This prevents executing the same
     // command multiple times because the CPU runs at a slower clock rate than the PPU.
     if (!ri_ncs && q_ri_ncs)
@@ -236,7 +247,10 @@ always @*
             case (ri_sel)
               3'h2:  // 0x2002
                 begin
-                  d_ri_dout = { vblank, 7'h00 };
+                  d_ri_dout = { q_vblank[0], 7'h00 };
+
+                  d_ri_addr_byte_sel = 1'b1;
+                  d_vblank[0]        = 1'b0;
                 end
               3'h7:  // 0x2007
                 begin
