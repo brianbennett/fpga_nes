@@ -342,6 +342,11 @@ always @(posedge clk)
       q_clk_phase <= 2'b01;
     else if (rdy)
       q_clk_phase <= d_clk_phase;
+
+    // If the debugger writes a PC register, this is a partial reset: the/ cycle is set to
+    // T0, and the clock phase should be set to the beginning of the 4 clock cycle.
+    else if (dbgreg_wr && ((dbgreg_sel == `REGSEL_PCH) || (dbgreg_sel == `REGSEL_PCL)))
+      q_clk_phase <= 2'b01;
   end
 
 assign d_clk_phase = q_clk_phase + 1;
@@ -373,7 +378,7 @@ always @(posedge clk)
         q_nmi     <= 1'b0;
         q_nnmi    <= 1'b1;
       end
-    else
+    else if (q_clk_phase == 2'b00)
       begin
         q_irq_sel <= d_irq_sel;
         q_rst     <= d_rst;
@@ -453,14 +458,15 @@ always @(posedge clk)
             q_n    <= (dbgreg_sel == `REGSEL_P)   ? dbgreg_in[7] : q_n;
             q_v    <= (dbgreg_sel == `REGSEL_P)   ? dbgreg_in[6] : q_v;
             q_z    <= (dbgreg_sel == `REGSEL_P)   ? dbgreg_in[1] : q_z;
+
+            // Treat the debugger writing PC registers as a partial reset.  Set the cycle to T0,
+            // and setup the address bus so the first opcode fill be fetched as soon as rdy is
+            // asserted again.
             q_pchs <= (dbgreg_sel == `REGSEL_PCH) ? dbgreg_in    : q_pchs;
             q_pcls <= (dbgreg_sel == `REGSEL_PCL) ? dbgreg_in    : q_pcls;
-
-            // This handles a problem found when updating the PC during a BRK instruction.  Force
-            // AB reg to update to the new PC value immediately so T0 of the next instruction
-            // will fetch the correct op.
-            q_abl <= ((d_t == T0) && (dbgreg_sel == `REGSEL_PCL)) ? dbgreg_in : q_abl;
-            q_abh <= ((d_t == T0) && (dbgreg_sel == `REGSEL_PCH)) ? dbgreg_in : q_abh;
+            q_abh  <= (dbgreg_sel == `REGSEL_PCH) ? dbgreg_in : q_abh;
+            q_abl  <= (dbgreg_sel == `REGSEL_PCL) ? dbgreg_in : q_abl;
+            q_t    <= ((dbgreg_sel == `REGSEL_PCH) || (dbgreg_sel == `REGSEL_PCL)) ? T0 : q_t;
           end
       end
   end
@@ -662,6 +668,8 @@ always @*
           else
             d_t = 3'bxxx;
         end
+      default:
+        d_t = 3'bxxx;
     endcase
 
     // Update IR register on cycle 1, otherwise retain current IR.
