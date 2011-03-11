@@ -63,74 +63,120 @@ localparam        SEL_VRAM_A_DISPLAY = 1'b0,
 //
 // PPU registers.
 //
-reg [11:0] q_rgb;               // output color latch (required by vga_sync)
-reg [11:0] d_rgb;
-reg [ 7:0] q_tile_name;         // name for next tile (index for pattern bytes)
-reg [ 7:0] d_tile_name;
-reg [ 7:0] q_attribute [1:0];   // attribute byte (ping/pong per tile)
-reg [ 7:0] d_attribute [1:0];
-reg [ 7:0] q_tile_bit0 [1:0];   // pattern bit0 byte (ping/pong per tile)
-reg [ 7:0] d_tile_bit0 [1:0];
-reg [ 7:0] q_tile_bit1 [1:0];   // pattern bit1 byte (ping/pong per tile)
-reg [ 7:0] d_tile_bit1 [1:0];
+reg [11:0] q_rgb,            d_rgb;             // output color latch (required by vga_sync)
 
-reg [13:0] q_ri_addr;           // reg interface addr (updated by writing 0x2006)
-reg [13:0] d_ri_addr;
-reg        q_ri_addr_byte_sel;  // reg interface tracking if next 0x2006 write is high or low byte
-reg        d_ri_addr_byte_sel;
-reg [ 7:0] q_ri_dout;           // reg interface output data bus latch (source for 0x2007 reads)
-reg [ 7:0] d_ri_dout;
-reg [13:0] q_ri_addr_buf;       // reg interface addr buffer (for buffered mem reads/writes)
-reg [13:0] d_ri_addr_buf;
-reg [ 7:0] q_ri_rd_data_buf;    // reg interface read data buffer (dst for buffered mem reads)
-reg [ 7:0] d_ri_rd_data_buf;
-reg [ 7:0] q_ri_wr_data_buf;    // reg interface write data buffer (src for buffered mem writes)
-reg [ 7:0] d_ri_wr_data_buf;
-reg [ 1:0] q_ri_mem_cmd;        // reg interface buffered memory command
-reg [ 1:0] d_ri_mem_cmd;
-reg        q_ri_mem_rd_rdy;     // reg interface mem command complete signal
-reg        d_ri_mem_rd_rdy;
-reg        q_ri_ncs;            // reg interface last ncs signal - used for detecting ncs edges
+// Background fetch registers.
+reg [ 7:0] q_tile_name,      d_tile_name;       // name for next tile (index for pattern bytes)
+reg [15:0] q_attribute,      d_attribute;       // attribute bytes (next 2 tiles, shifted reg)
+reg [15:0] q_tile_bit0,      d_tile_bit0;       // pattern bit0 byte (next 2 tiles, shifted reg)
+reg [15:0] q_tile_bit1,      d_tile_bit1;       // pattern bit1 byte (next 2 tiles, shifted reg)
 
-reg        q_bg_en;             // tracks whether user has enabled/disabled background display
-reg        d_bg_en;
-reg        q_nvbl_en;           // enables /VBL output signal (CPU NMI interrupt)
-reg        d_nvbl_en;
-reg [ 1:0] q_name_tbl_addr;     // name table address
-reg [ 1:0] d_name_tbl_addr;
-reg        q_pattern_tbl_addr;  // pattern table address
-reg        d_pattern_tbl_addr;
-reg        q_addr_incr;         // address increment for register access (0=1, 1=32)
-reg        d_addr_incr;
-reg [ 1:0] q_vblank;            // vblank state: [1]=last clk vblank, [0]=user read state
-reg [ 1:0] d_vblank;
+// Register interface (RI) registers.
+reg [13:0] q_ri_addr,        d_ri_addr;         // ri: addr (updated by writing 0x2006)
+reg        q_ri_byte_sel,    d_ri_byte_sel;     // ri: tracks if next ri write is high or low byte
+reg [ 7:0] q_ri_dout,        d_ri_dout;         // ri: output data bus latch (for 0x2007 reads)
+reg [13:0] q_ri_addr_buf,    d_ri_addr_buf;     // ri: addr buffer (for buffered mem reads/writes)
+reg [ 7:0] q_ri_rd_data_buf, d_ri_rd_data_buf;  // ri: read data buffer (buffered mem read src)
+reg [ 7:0] q_ri_wr_data_buf, d_ri_wr_data_buf;  // ri: write data buffer (buffered mem write dst)
+reg [ 1:0] q_ri_mem_cmd,     d_ri_mem_cmd;      // ri: buffered memory command
+reg        q_ri_mem_rd_rdy,  d_ri_mem_rd_rdy;   // ri: mem command complete signal
+reg        q_ri_ncs;                            // ri: last ncs signal (to detect ncs edges)
 
 //
-// PPU internal RAM.
+// PPU Control Register 0
 //
-reg [5:0] palette_ram [31:0];
+// Bits  Desc
+// 0-1   Name table address, changes between the four name tables at 0x2000 (0), 0x2400 (1), 
+//       0x2800 (2), 0x2C000 (3).
+// 2     Specifies amount to increment address by, either 1 if this is 0 or 32 if this is 1.
+// 3     Identifies which pattern table sprites are stored in, either $0000 (0) or $1000 (1).
+// 4     Identifies which pattern table the background is stored in, either $0000 (0) or $1000 (1).
+// 5     Specifies the size of sprites in pixels, 8x8 if this is 0, otherwise 8x16.
+// 6     Changes PPU between master and slave modes. This is not used by the NES.
+// 7     Indicates whether a NMI should occur upon V-Blank.
+//       
+reg [7:0] q_ppu_cntl_0, d_ppu_cntl_0;
+
+`define NAME_TABLE_ADDR  (q_ppu_cntl_0[1:0])
+`define RI_ADDR_INCR     ((q_ppu_cntl_0[2]) ? 6'h20 : 6'h01)
+`define PATTERN_TBL_ADDR (q_ppu_cntl_0[4])
+`define NVBL_EN          (q_ppu_cntl_0[7])
+
+//
+// PPU Control Register 1
+// 
+// Bits  Desc
+// 0     Indicates whether the system is in color (0) or monochrome mode (1).
+// 1     Specifies whether to clip the background, that is whether to hide the background in the
+//       left 8 pixels on screen (0) or to show them (1).
+// 2     Specifies whether to clip the sprites, that is whether to hide sprites in the left 8
+//       pixels on screen (0) or to show them (1).
+// 3     If this is 0, the background should not be displayed.
+// 4     If this is 0, sprites should not be displayed.
+// 5-7   Indicates background colour in monochrome mode or colour intensity in colour mode.
+//
+reg [7:0] q_ppu_cntl_1, d_ppu_cntl_1;
+
+`define BG_EN (q_ppu_cntl_1[3])
+
+//
+// PPU Status Register
+// 
+// Bits  Desc
+// 4     If set, indicates that writes to VRAM should be ignored.
+// 5     Scanline sprite count, if set, indicates more than 8 sprites on the current scanline.
+// 6     Sprite 0 hit flag, set when a non-transparent pixel of sprite 0 overlaps a
+//       non-transparent background pixel.
+// 7     Indicates whether V-Blank is occurring.
+// 
+reg [7:0] q_ppu_status, d_ppu_status;
+
+`define D_VBLANK_STATUS d_ppu_status[7]
+`define Q_VBLANK_STATUS q_ppu_status[7]
+
+//
+// PPU internal RAM and control.
+//
+reg  [5:0] palette_ram [31:0];
+
+wire [5:0] palette_ram_din;  // vram_din equivalent for palette_ram reads
+reg        wr_palette_ram;   // enable palette ram write
 
 //
 // Control signals.
 //
-reg         sel_vram_a;       // selects vram address bus driver (0 = display, 1 = ri)
-reg  [13:0] display_a;        // display address request
-reg  [13:0] ri_a;             // register interface address request
-reg         wr_palette_ram;   // enable palette ram write
-wire [ 5:0] palette_ram_din;  // vram_din equivalent for palette_ram reads
-wire        vblank;           // indicates VRAM not being read by display at end of frame
+reg         sel_vram_a;      // selects vram address bus driver (0 = display, 1 = ri)
+reg  [13:0] display_a;       // display address request
+reg  [13:0] ri_a;            // register interface address request
+
+//
+// Display timing and coord control.
+//
+wire       vga_en;           // vga enable signal
+wire [9:0] vga_x, vga_y;     // vga x and y coordinates
+wire [9:0] x, y;             // nes x and y coordinates
+wire [4:0] tile_x, tile_y;   // nes x and y tile coordinates
+wire [4:0] next_tile_x;      // nes next x tile (tile_x + 1, with wrap)
+wire       border;           // indicates we are displaying a vga pixel outside the nes extents
+wire       vblank;           // vertical blank, VRAM not being read by display
+
+reg  [4:0] q_tile_x;         // last clock's tile_x, for new tile edge detection
+reg        q_vblank;         // last clock's vblank, for vblank edge detection
+
+//
+// Image composition signals.
+//
+wire [3:0] bg_palette_idx;   // final background palette index
+wire [5:0] sys_palette_idx;  // final composed system palette index
 
 //
 // VGA_SYNC: VGA synchronization control block.
 //
-wire       en;
-wire [9:0] vga_x, vga_y;
-
 vga_sync vga_sync_blk(
   .clk(clk),
   .hsync(hsync),
   .vsync(vsync),
-  .en(en),
+  .en(vga_en),
   .x(vga_x),
   .y(vga_y)
 );
@@ -153,14 +199,11 @@ always @(posedge clk)
       begin
         q_rgb              <= 12'h000;
         q_tile_name        <= 8'h00;
-        q_attribute[0]     <= 8'h00;
-        q_attribute[1]     <= 8'h00;
-        q_tile_bit0[0]     <= 8'h00;
-        q_tile_bit0[1]     <= 8'h00;
-        q_tile_bit1[0]     <= 8'h00;
-        q_tile_bit1[1]     <= 8'h00;
+        q_attribute        <= 16'h0000;
+        q_tile_bit0        <= 16'h0000;
+        q_tile_bit1        <= 16'h0000;
         q_ri_addr          <= 14'h0000;
-        q_ri_addr_byte_sel <= 1'b1;
+        q_ri_byte_sel      <= 1'b1;
         q_ri_dout          <= 8'h00;
         q_ri_addr_buf      <= 14'h0200;
         q_ri_rd_data_buf   <= 8'h00;
@@ -168,25 +211,21 @@ always @(posedge clk)
         q_ri_mem_cmd       <= 2'b00;
         q_ri_mem_rd_rdy    <= 1'b0;
         q_ri_ncs           <= 1'b1;
-        q_bg_en            <= 1'b0;
-        q_nvbl_en          <= 1'b0;
-        q_name_tbl_addr    <= 2'b00;
-        q_pattern_tbl_addr <= 1'b0;       
-        q_addr_incr        <= 1'b0;
-        q_vblank           <= 2'b00;
+        q_ppu_cntl_0       <= 8'h00;
+        q_ppu_cntl_1       <= 8'h00;
+        q_ppu_status       <= 8'h00;
+        q_tile_x           <= 5'h00;
+        q_vblank           <= 1'b0;
       end
     else
       begin
         q_rgb              <= d_rgb;
         q_tile_name        <= d_tile_name;
-        q_attribute[0]     <= d_attribute[0];
-        q_attribute[1]     <= d_attribute[1];
-        q_tile_bit0[0]     <= d_tile_bit0[0];
-        q_tile_bit0[1]     <= d_tile_bit0[1];
-        q_tile_bit1[0]     <= d_tile_bit1[0];
-        q_tile_bit1[1]     <= d_tile_bit1[1];
+        q_attribute        <= d_attribute;
+        q_tile_bit0        <= d_tile_bit0;
+        q_tile_bit1        <= d_tile_bit1;
         q_ri_addr          <= d_ri_addr;
-        q_ri_addr_byte_sel <= d_ri_addr_byte_sel;
+        q_ri_byte_sel      <= d_ri_byte_sel;
         q_ri_dout          <= d_ri_dout;
         q_ri_addr_buf      <= d_ri_addr_buf;
         q_ri_rd_data_buf   <= d_ri_rd_data_buf;
@@ -194,12 +233,11 @@ always @(posedge clk)
         q_ri_mem_cmd       <= d_ri_mem_cmd;
         q_ri_mem_rd_rdy    <= d_ri_mem_rd_rdy;
         q_ri_ncs           <= ri_ncs;
-        q_bg_en            <= d_bg_en;
-        q_nvbl_en          <= d_nvbl_en;
-        q_name_tbl_addr    <= d_name_tbl_addr;
-        q_pattern_tbl_addr <= d_pattern_tbl_addr;
-        q_addr_incr        <= d_addr_incr;
-        q_vblank           <= d_vblank;
+        q_ppu_cntl_0       <= d_ppu_cntl_0;
+        q_ppu_cntl_1       <= d_ppu_cntl_1;
+        q_ppu_status       <= d_ppu_status;
+        q_tile_x           <= tile_x;
+        q_vblank           <= vblank;
       end
   end
 
@@ -212,17 +250,15 @@ always @*
   begin
     // Default RI registers to their original values.
     d_ri_addr          = q_ri_addr;
-    d_ri_addr_byte_sel = q_ri_addr_byte_sel;
+    d_ri_byte_sel      = q_ri_byte_sel;
     d_ri_dout          = q_ri_dout;
     d_ri_addr_buf      = q_ri_addr_buf;
     d_ri_rd_data_buf   = q_ri_rd_data_buf;
     d_ri_wr_data_buf   = q_ri_wr_data_buf;
     d_ri_mem_cmd       = q_ri_mem_cmd;
-    d_bg_en            = q_bg_en;
-    d_nvbl_en          = q_nvbl_en;
-    d_name_tbl_addr    = q_name_tbl_addr;
-    d_pattern_tbl_addr = q_pattern_tbl_addr;
-    d_addr_incr        = q_addr_incr;
+    d_ppu_cntl_0       = q_ppu_cntl_0;
+    d_ppu_cntl_1       = q_ppu_cntl_1;
+    d_ppu_status       = q_ppu_status;
 
     d_ri_mem_rd_rdy    = 1'b0;
 
@@ -230,12 +266,10 @@ always @*
     vram_wr            = 1'b0;
     wr_palette_ram     = 1'b0;
 
-    // q_vblank[1] stores the vblank signal from the previous cycle, to detect vblank edges.
-    // q_vblank[0] is the register interface vblank bit (set on vblank rising edge, cleared on
-    // vblank falling edge or user read of 0x2000).
-    d_vblank[1] = vblank;
-    d_vblank[0] = (vblank & ~q_vblank[1]) ? 1'b1 :
-                  (~vblank)               ? 1'b0 : q_vblank;
+    // Set the vblank status bit on a rising vblank edge.  Clear it if vblank is false.  Can also
+    // be cleared by reading 0x2002.
+    `D_VBLANK_STATUS = (vblank & ~q_vblank) ? 1'b1 :
+                       (~vblank)             ? 1'b0 : `Q_VBLANK_STATUS;
 
     // Only evaluate RI reads/writes on /CS falling edges.  This prevents executing the same
     // command multiple times because the CPU runs at a slower clock rate than the PPU.
@@ -247,10 +281,10 @@ always @*
             case (ri_sel)
               3'h2:  // 0x2002
                 begin
-                  d_ri_dout = { q_vblank[0], 7'h00 };
+                  d_ri_dout = q_ppu_status;
 
-                  d_ri_addr_byte_sel = 1'b1;
-                  d_vblank[0]        = 1'b0;
+                  d_ri_byte_sel    = 1'b1;
+                  `D_VBLANK_STATUS = 1'b0;
                 end
               3'h7:  // 0x2007
                 begin
@@ -260,7 +294,7 @@ always @*
 
                   // Move previous read result to output, and update addr for next ri op.
                   d_ri_dout = q_ri_rd_data_buf;
-                  d_ri_addr = q_ri_addr + ((q_addr_incr) ? 16'h0020 : 16'h0001);
+                  d_ri_addr = q_ri_addr + `RI_ADDR_INCR;
                 end
             endcase
           end
@@ -269,20 +303,13 @@ always @*
             // External register write.
             case (ri_sel)
               3'h0:  // 0x2000
-                begin
-                  d_name_tbl_addr    = ri_din[1:0];
-                  d_addr_incr        = ri_din[2];
-                  d_pattern_tbl_addr = ri_din[4];
-                  d_nvbl_en          = ri_din[7];
-                end
+                d_ppu_cntl_0 = ri_din;
               3'h1:  // 0x2001
-                begin
-                  d_bg_en = ri_din[3];
-                end
+                d_ppu_cntl_1 = ri_din;
               3'h6:  // 0x2006
                 begin
-                  d_ri_addr_byte_sel = ~q_ri_addr_byte_sel;
-                  if (q_ri_addr_byte_sel)
+                  d_ri_byte_sel = ~q_ri_byte_sel;
+                  if (q_ri_byte_sel)
                     d_ri_addr = (ri_din << 8) | (q_ri_addr & 16'h00FF);
                   else
                     d_ri_addr = (q_ri_addr & 16'hFF00) | ri_din;
@@ -295,7 +322,7 @@ always @*
                   d_ri_wr_data_buf = ri_din;
 
                   // Update addr for next ri op.
-                  d_ri_addr = q_ri_addr + ((q_addr_incr) ? 16'h0020 : 16'h0001);
+                  d_ri_addr = q_ri_addr + `RI_ADDR_INCR;
                 end
             endcase
           end
@@ -330,10 +357,6 @@ always @*
 // Translate <vga_x, vga_y> to NES display coordinates.  Account for resolution doubling
 // if necessary.
 //
-wire [9:0] x, y;
-wire [4:0] tile_x, tile_y, next_tile_x;
-wire       border;
-
 assign x           = (vga_x - ((DISPLAY_W - (NES_W << dbl)) >> 1)) >> dbl;
 assign y           = (vga_y - ((DISPLAY_H - (NES_H << dbl)) >> 1)) >> dbl;
 assign tile_x      = x >> 3;
@@ -345,30 +368,32 @@ assign vblank      = (y >= NES_H);
 //
 // Derive output color (system palette index).
 //
-always @(vram_din        or q_tile_name    or q_attribute[0] or q_attribute[1] or q_tile_bit0[0] or
-         q_tile_bit0[1]  or q_tile_bit1[0] or q_tile_bit1[1] or x              or y              or
-         tile_x          or tile_y         or next_tile_x    or vblank         or q_bg_en        or
-         q_name_tbl_addr or q_pattern_tbl_addr)
+always @*
   begin
     // Default registers to their current values.
-    d_tile_name    = q_tile_name;
-    d_attribute[0] = q_attribute[0];
-    d_attribute[1] = q_attribute[1];
-    d_tile_bit0[0] = q_tile_bit0[0];
-    d_tile_bit0[1] = q_tile_bit0[1];
-    d_tile_bit1[0] = q_tile_bit1[0];
-    d_tile_bit1[1] = q_tile_bit1[1];
+    d_tile_name = q_tile_name;
+    d_attribute = q_attribute;
+    d_tile_bit0 = q_tile_bit0;
+    d_tile_bit1 = q_tile_bit1;
 
     sel_vram_a = SEL_VRAM_A_DISPLAY;
     display_a  = 14'h0000;
 
-    if (q_bg_en && !vblank)
+    // Shift attribute and pattern bit registers on a new tile.  New tile will be stored in 7:0.
+    if (tile_x != q_tile_x)
+      begin
+        d_attribute = q_attribute << 8;
+        d_tile_bit0 = q_tile_bit0 << 8;
+        d_tile_bit1 = q_tile_bit1 << 8;
+      end
+
+    if (`BG_EN && !vblank)
       case (x[2:0])
         3'b000:
           begin
             // Stage 0.  Load next tile's name.
             display_a = { NAME_TABLE[13:12],
-                          q_name_tbl_addr,
+                          `NAME_TABLE_ADDR,
                           tile_y[4:0],
                           next_tile_x[4:0] };
             d_tile_name = vram_din;
@@ -377,31 +402,31 @@ always @(vram_din        or q_tile_name    or q_attribute[0] or q_attribute[1] o
           begin
             // Stage 1.  Load next tile's attrib byte.
             display_a = { ATTRIBUTE_TABLE[13:12],
-                          q_name_tbl_addr,
+                          `NAME_TABLE_ADDR,
                           ATTRIBUTE_TABLE[9:6],
                           tile_y[4:2],
                           next_tile_x[4:2] };
-            d_attribute[~tile_x[0]] = vram_din;
+            d_attribute[7:0] = vram_din;
           end
         3'b010:
           begin
             // Stage 2.  Load bit0 pattern data based on tile name.
             display_a = { PATTERN_TABLE[13],
-                          q_pattern_tbl_addr,
+                          `PATTERN_TBL_ADDR,
                           q_tile_name,
                           1'b0,
                           y[2:0] };
-            d_tile_bit0[~tile_x[0]] = vram_din;
+            d_tile_bit0[7:0] = vram_din;
           end
         3'b011:
           begin
             // Stage 3.  Load bit1 pattern data based on tile name.
             display_a = { PATTERN_TABLE[13],
-                          q_pattern_tbl_addr,
+                          `PATTERN_TBL_ADDR,
                           q_tile_name,
                           1'b1,
                           y[2:0] };
-            d_tile_bit1[~tile_x[0]] = vram_din;
+            d_tile_bit1[7:0] = vram_din;
           end
         default:
           begin
@@ -415,20 +440,17 @@ always @(vram_din        or q_tile_name    or q_attribute[0] or q_attribute[1] o
 //
 // Image composition.
 //
-wire [3:0] image_palette_idx;
-wire [5:0] sys_palette_idx;
-
-assign image_palette_idx = { q_attribute[tile_x[0]] >> { tile_y[1], tile_x[1], 1'b0 },
-                             q_tile_bit1[tile_x[0]][~x],
-                             q_tile_bit0[tile_x[0]][~x] };
-assign sys_palette_idx = (q_bg_en) ? palette_ram[{1'b0, image_palette_idx}] : 6'h00;
+assign bg_palette_idx = { q_attribute[15:8] >> { tile_y[1], tile_x[1], 1'b0 },
+                          q_tile_bit1[4'hF - { 1'b0, x[2:0] }],
+                          q_tile_bit0[4'hF - { 1'b0, x[2:0] }] };
+assign sys_palette_idx = (`BG_EN) ? palette_ram[{1'b0, bg_palette_idx}] : 6'h00;
 
 //
 // Lookup RGB values based on sys_palette_idx.
 //
 always @*
   begin
-    if (!en)
+    if (!vga_en)
       begin
         d_rgb = 12'h000;
       end
@@ -517,7 +539,7 @@ assign { r, g, b } = q_rgb;
 assign ri_dout     = (!ri_ncs && ri_r_nw) ? q_ri_dout : 8'h00;
 assign vram_a      = (sel_vram_a == SEL_VRAM_A_DISPLAY) ? display_a : ri_a;
 assign vram_dout   = q_ri_wr_data_buf;
-assign nvbl        = ~(vblank & q_nvbl_en);
+assign nvbl        = ~(vblank & `NVBL_EN);
 
 endmodule
 
