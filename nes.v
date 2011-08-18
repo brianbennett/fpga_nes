@@ -12,17 +12,21 @@
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 module nes
 (
-  input  wire       CLK_50MHZ,      // 50MHz system clock signal
-  input  wire       BTN_SOUTH,      // reset push button
-  input  wire       BTN_EAST,       // console reset
-  input  wire       RS232_DCE_RXD,  // rs-232 rx signal
-  input  wire       SW0,            // switch 0
-  output wire       RS232_DCE_TXD,  // rs-232 tx signal
-  output wire       VGA_HSYNC,      // vga hsync signal
-  output wire       VGA_VSYNC,      // vga vsync signal
-  output wire [3:0] VGA_RED,        // vga red signal
-  output wire [3:0] VGA_GREEN,      // vga green signal
-  output wire [3:0] VGA_BLUE        // vga blue signal
+  input  wire       CLK_50MHZ,         // 50MHz system clock signal
+  input  wire       BTN_SOUTH,         // reset push button
+  input  wire       BTN_EAST,          // console reset
+  input  wire       RS232_DCE_RXD,     // rs-232 rx signal
+  input  wire       SW0,               // switch 0
+  input  wire       NES_JOYPAD_DATA1,  // joypad 1 input signal
+  input  wire       NES_JOYPAD_DATA2,  // joypad 2 input signal
+  output wire       RS232_DCE_TXD,     // rs-232 tx signal
+  output wire       VGA_HSYNC,         // vga hsync signal
+  output wire       VGA_VSYNC,         // vga vsync signal
+  output wire [3:0] VGA_RED,           // vga red signal
+  output wire [3:0] VGA_GREEN,         // vga green signal
+  output wire [3:0] VGA_BLUE,          // vga blue signal
+  output wire       NES_JOYPAD_CLK,    // joypad output clk signal
+  output wire       NES_JOYPAD_LATCH   // joypad output latch signal
 );
 
 //
@@ -134,6 +138,27 @@ ppumc ppumc_blk(
 );
 
 //
+// JP: joypad controller block
+//
+wire [ 7:0] jp_din;
+wire [ 7:0] jp_dout;
+wire [15:0] jp_a;
+wire        jp_wr;
+
+jp jp_blk(
+  .clk(CLK_50MHZ),
+  .rst(BTN_SOUTH),
+  .wr(jp_wr),
+  .addr(jp_a),
+  .din(jp_din),
+  .jp_data1(NES_JOYPAD_DATA1),
+  .jp_data2(NES_JOYPAD_DATA2),
+  .jp_clk(NES_JOYPAD_CLK),
+  .jp_latch(NES_JOYPAD_LATCH),
+  .dout(jp_dout)
+);
+
+//
 // DBG: debug block.  Interacts with debugger through serial connection.
 //
 wire [ 7:0] dbg_cpu_din;        // CPU: D[ 7:0] (data bus [input])
@@ -171,11 +196,16 @@ assign cpumc_a     = (cpu_ready) ? cpu_a    : dbg_cpu_a;
 assign cpumc_r_nw  = (cpu_ready) ? cpu_r_nw : dbg_cpu_r_nw;
 assign cpumc_din   = (cpu_ready) ? cpu_dout : dbg_cpu_dout;
 
-// CPUMC and PPU return 0 for reads that don't hit an appropriate region of memory.  The final
+// Mux jp signals from cpu or dbg blk, depending on debug break state (cpu_ready).
+assign jp_a   = (cpu_ready) ? cpu_a     : dbg_cpu_a;
+assign jp_wr  = (cpu_ready) ? ~cpu_r_nw : ~dbg_cpu_r_nw;
+assign jp_din = (cpu_ready) ? cpu_dout  : dbg_cpu_dout;
+
+// CPUMC, PPU, and JP return 0 for reads that don't hit an appropriate region of memory.  The final
 // D bus value can be derived by ORing together the output of all blocks that can service a
 // memory read.
-assign cpu_din     = cpumc_dout | ppu_ri_dout;
-assign dbg_cpu_din = cpumc_dout | ppu_ri_dout;
+assign cpu_din     = cpumc_dout | ppu_ri_dout | jp_dout;
+assign dbg_cpu_din = cpumc_dout | ppu_ri_dout | jp_dout;
 
 // Mux ppumc signals from ppu or dbg blk, depending on debug break state (cpu_ready).
 assign ppumc_a          = (cpu_ready) ? ppu_vram_a    : dbg_ppu_vram_a[13:0];
