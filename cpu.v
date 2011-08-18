@@ -343,7 +343,7 @@ always @(posedge clk)
     else if (rdy)
       q_clk_phase <= d_clk_phase;
 
-    // If the debugger writes a PC register, this is a partial reset: the/ cycle is set to
+    // If the debugger writes a PC register, this is a partial reset: the cycle is set to
     // T0, and the clock phase should be set to the beginning of the 4 clock cycle.
     else if (dbgreg_wr && ((dbgreg_sel == `REGSEL_PCH) || (dbgreg_sel == `REGSEL_PCL)))
       q_clk_phase <= 2'b01;
@@ -462,8 +462,8 @@ always @(posedge clk)
             // Treat the debugger writing PC registers as a partial reset.  Set the cycle to T0,
             // and setup the address bus so the first opcode fill be fetched as soon as rdy is
             // asserted again.
-            q_pchs <= (dbgreg_sel == `REGSEL_PCH) ? dbgreg_in    : q_pchs;
-            q_pcls <= (dbgreg_sel == `REGSEL_PCL) ? dbgreg_in    : q_pcls;
+            q_pchs <= (dbgreg_sel == `REGSEL_PCH) ? dbgreg_in : q_pchs;
+            q_pcls <= (dbgreg_sel == `REGSEL_PCL) ? dbgreg_in : q_pcls;
             q_abh  <= (dbgreg_sel == `REGSEL_PCH) ? dbgreg_in : q_abh;
             q_abl  <= (dbgreg_sel == `REGSEL_PCL) ? dbgreg_in : q_abl;
             q_t    <= ((dbgreg_sel == `REGSEL_PCH) || (dbgreg_sel == `REGSEL_PCL)) ? T0 : q_t;
@@ -2089,21 +2089,21 @@ assign adl[7:3] = (add_adl)   ? q_add[7:3] :
                   (dl_adl)    ? q_dl[7:3]  :
                   (pcl_adl)   ? q_pcl[7:3] :
                   (s_adl)     ? q_s[7:3]   : 5'h1F;
-assign adl[2]   = (add_adl)   ? q_add[2]  :
-                  (dl_adl)    ? q_dl[2]   :
-                  (pcl_adl)   ? q_pcl[2]  :
-                  (s_adl)     ? q_s[2]    :
-                  (zero_adl2) ? 1'b0      : 1'b1;
-assign adl[1]   = (add_adl)   ? q_add[1]  :
-                  (dl_adl)    ? q_dl[1]   :
-                  (pcl_adl)   ? q_pcl[1]  :
-                  (s_adl)     ? q_s[1]    :
-                  (zero_adl1) ? 1'b0      : 1'b1;
-assign adl[0]   = (add_adl)   ? q_add[0]  :
-                  (dl_adl)    ? q_dl[0]   :
-                  (pcl_adl)   ? q_pcl[0]  :
-                  (s_adl)     ? q_s[0]    :
-                  (zero_adl0) ? 1'b0      : 1'b1;
+assign adl[2]   = (add_adl)   ? q_add[2]   :
+                  (dl_adl)    ? q_dl[2]    :
+                  (pcl_adl)   ? q_pcl[2]   :
+                  (s_adl)     ? q_s[2]     :
+                  (zero_adl2) ? 1'b0       : 1'b1;
+assign adl[1]   = (add_adl)   ? q_add[1]   :
+                  (dl_adl)    ? q_dl[1]    :
+                  (pcl_adl)   ? q_pcl[1]   :
+                  (s_adl)     ? q_s[1]     :
+                  (zero_adl1) ? 1'b0       : 1'b1;
+assign adl[0]   = (add_adl)   ? q_add[0]   :
+                  (dl_adl)    ? q_dl[0]    :
+                  (pcl_adl)   ? q_pcl[0]   :
+                  (s_adl)     ? q_s[0]     :
+                  (zero_adl0) ? 1'b0       : 1'b1;
 
 assign db_in   = (ac_db)   ? q_ac  :
                  (dl_db)   ? q_dl  :
@@ -2163,7 +2163,7 @@ assign d_pcls           = (adl_pcl)   ? adl                           : q_pcl;
 assign { d_pch, d_pcl } = (i_pc)      ? { q_pchs, q_pcls } + 16'h0001 : { q_pchs, q_pcls };
 
 // Combine full processor status register.
-assign p = { q_n, q_v, 2'b00, q_d, q_i, q_z, q_c };
+assign p = { q_n, q_v, 2'b11, q_d, q_i, q_z, q_c };
 
 //
 // Assign output signals.
