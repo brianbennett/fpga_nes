@@ -140,7 +140,7 @@ ppumc ppumc_blk(
 //
 // JP: joypad controller block
 //
-wire [ 7:0] jp_din;
+wire        jp_din;
 wire [ 7:0] jp_dout;
 wire [15:0] jp_a;
 wire        jp_wr;
@@ -197,9 +197,9 @@ assign cpumc_r_nw  = (cpu_ready) ? cpu_r_nw : dbg_cpu_r_nw;
 assign cpumc_din   = (cpu_ready) ? cpu_dout : dbg_cpu_dout;
 
 // Mux jp signals from cpu or dbg blk, depending on debug break state (cpu_ready).
-assign jp_a   = (cpu_ready) ? cpu_a     : dbg_cpu_a;
-assign jp_wr  = (cpu_ready) ? ~cpu_r_nw : ~dbg_cpu_r_nw;
-assign jp_din = (cpu_ready) ? cpu_dout  : dbg_cpu_dout;
+assign jp_a   = (cpu_ready) ? cpu_a       : dbg_cpu_a;
+assign jp_wr  = (cpu_ready) ? ~cpu_r_nw   : ~dbg_cpu_r_nw;
+assign jp_din = (cpu_ready) ? cpu_dout[0] : dbg_cpu_dout[0];
 
 // CPUMC, PPU, and JP return 0 for reads that don't hit an appropriate region of memory.  The final
 // D bus value can be derived by ORing together the output of all blocks that can service a

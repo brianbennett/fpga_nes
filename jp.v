@@ -15,7 +15,7 @@ module jp
   input  wire        rst,       // reset signal
   input  wire        wr,        // write enable signal
   input  wire [15:0] addr,      // 16-bit memory address
-  input  wire [ 7:0] din,       // data input bus
+  input  wire        din,       // data input bus
   input  wire        jp_data1,  // joypad 1 input signal
   input  wire        jp_data2,  // joypad 2 input signal
   output wire        jp_clk,    // joypad output clk signal
@@ -52,8 +52,8 @@ always @(posedge clk)
       end
   end
 
-reg [2:0] state_idx;
-  
+wire [2:0] state_idx;
+
 always @*
   begin
     // Default most FFs to current state.
@@ -68,8 +68,6 @@ always @*
     // clock 7 more times to read other 7 buttons.  Controller states are active low.
     if (q_cnt[4:0] == 5'h00)
       begin
-        state_idx = q_cnt[7:5] - 3'h1;
-
         d_jp1_state[state_idx] = ~jp_data1;
         d_jp2_state[state_idx] = ~jp_data2;
 
@@ -85,8 +83,9 @@ always @*
       end
   end
 
-assign jp_latch = q_jp_latch;
-assign jp_clk   = q_jp_clk;
+assign state_idx = q_cnt[7:5] - 3'h1;
+assign jp_latch  = q_jp_latch;
+assign jp_clk    = q_jp_clk;
 
 localparam [15:0] JOYPAD1_MMR_ADDR = 16'h4016;
 localparam [15:0] JOYPAD2_MMR_ADDR = 16'h4017;
@@ -140,11 +139,11 @@ always @*
             // state.
             if (wr && !addr[0])
               begin
-                if ((q_strobe_state == S_STROBE_WROTE_0) && (din[0] == 1'b1))
+                if ((q_strobe_state == S_STROBE_WROTE_0) && (din == 1'b1))
                   begin
                     d_strobe_state = S_STROBE_WROTE_1;
                   end
-                else if ((q_strobe_state == S_STROBE_WROTE_1) && (din[0] == 1'b0))
+                else if ((q_strobe_state == S_STROBE_WROTE_1) && (din == 1'b0))
                   begin
                     d_strobe_state = S_STROBE_WROTE_0;
                     d_jp1_read_state = { q_jp1_state, 1'b0 };
