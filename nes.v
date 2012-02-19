@@ -101,24 +101,24 @@ assign ppu_ri_r_nw = cpumc_r_nw;
 assign ppu_ri_din  = cpumc_din;
 
 ppu ppu_blk(
-  .clk(CLK_50MHZ),
-  .rst(BTN_SOUTH),
-  .dbl(SW0),
-  .ri_sel(ppu_ri_sel),
-  .ri_ncs(ppu_ri_ncs),
-  .ri_r_nw(ppu_ri_r_nw),
-  .ri_din(ppu_ri_din),
-  .vram_din(ppu_vram_din),
-  .hsync(VGA_HSYNC),
-  .vsync(VGA_VSYNC),
-  .r(VGA_RED),
-  .g(VGA_GREEN),
-  .b(VGA_BLUE),
-  .ri_dout(ppu_ri_dout),
-  .vram_a(ppu_vram_a),
-  .vram_dout(ppu_vram_dout),
-  .vram_wr(ppu_vram_wr),
-  .nvbl(ppu_nvbl)
+  .clk_in(CLK_50MHZ),
+  .rst_in(BTN_SOUTH),
+  .dbl_in(SW0),
+  .ri_sel_in(ppu_ri_sel),
+  .ri_ncs_in(ppu_ri_ncs),
+  .ri_r_nw_in(ppu_ri_r_nw),
+  .ri_d_in(ppu_ri_din),
+  .vram_d_in(ppu_vram_din),
+  .hsync_out(VGA_HSYNC),
+  .vsync_out(VGA_VSYNC),
+  .r_out(VGA_RED),
+  .g_out(VGA_GREEN),
+  .b_out(VGA_BLUE),
+  .ri_d_out(ppu_ri_dout),
+  .nvbl_out(ppu_nvbl),
+  .vram_a_out(ppu_vram_a),
+  .vram_d_out(ppu_vram_dout),
+  .vram_wr_out(ppu_vram_wr)
 );
 
 //
