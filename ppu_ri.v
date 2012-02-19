@@ -19,6 +19,7 @@ module ppu_ri
   input  wire [7:0] cpu_d_in,          // register interface data in from cpu
   input  wire [7:0] vram_d_in,         // data in from vram
   input  wire       vblank_in,         // high during vertical blank
+  input  wire [7:0] spr_ram_d_in,      // sprite ram data (for 0x2004 reads)
   output wire [7:0] cpu_d_out,         // register interface data out to cpu
   output reg  [7:0] vram_d_out,        // data out to vram
   output reg        vram_wr_out,       // rd/wr select for vram ops
@@ -33,7 +34,10 @@ module ppu_ri
   output wire       inc_addr_amt_out,  // amount to increment vmem addr by (0x2002.7)
   output wire       nvbl_en_out,       // enable nmi on vertical blank
   output wire       bg_en_out,         // enable background rendering
-  output wire       upd_cntrs_out      // copy PPU registers to PPU counters
+  output wire       upd_cntrs_out,     // copy PPU registers to PPU counters
+  output wire [7:0] spr_ram_a_out,     // sprite ram address (for 0x2004 reads/writes)
+  output reg  [7:0] spr_ram_d_out,     // sprite ram data (for 0x2004 writes)
+  output reg        spr_ram_wr_out     // sprite ram write enable (for 0x2004 writes)
 );
 
 //
@@ -65,10 +69,11 @@ reg q_vblank,    d_vblank;     // 0x2002[7]: indicates a vblank is occurring
 //
 // Internal State Registers
 //
-reg       q_byte_sel, d_byte_sel;  // tracks if next 0x2005/0x2006 write is high or low byte
-reg [7:0] q_rd_buf,   d_rd_buf;    // internal latch for buffered 0x2007 reads
-reg       q_rd_rdy,   d_rd_rdy;    // controls q_rd_buf updates
-reg       q_ncs;                   // last ncs signal (to detect falling edges)
+reg       q_byte_sel,  d_byte_sel;   // tracks if next 0x2005/0x2006 write is high or low byte
+reg [7:0] q_rd_buf,    d_rd_buf;     // internal latch for buffered 0x2007 reads
+reg       q_rd_rdy,    d_rd_rdy;     // controls q_rd_buf updates
+reg [7:0] q_spr_ram_a, d_spr_ram_a;  // sprite ram pointer (set on 0x2003 write)
+reg       q_ncs;                     // last ncs signal (to detect falling edges)
 
 always @(posedge clk_in)
   begin
@@ -90,6 +95,7 @@ always @(posedge clk_in)
         q_byte_sel      <= 1'h0;
         q_rd_buf        <= 8'h00;
         q_rd_rdy        <= 1'h0;
+        q_spr_ram_a     <= 8'h00;
         q_ncs           <= 1'h1;
       end
     else
@@ -110,6 +116,7 @@ always @(posedge clk_in)
         q_byte_sel      <= d_byte_sel;
         q_rd_buf        <= d_rd_buf;
         q_rd_rdy        <= d_rd_rdy;
+        q_spr_ram_a     <= d_spr_ram_a;
         q_ncs           <= ncs_in;
       end
   end
@@ -129,6 +136,7 @@ always @*
     d_nvbl_en   = q_nvbl_en;
     d_bg_en     = q_bg_en;
     d_byte_sel  = q_byte_sel;
+    d_spr_ram_a = q_spr_ram_a;
 
     // Update the read buffer if a new read request is ready.  This happens one cycle after a read
     // of 0x2007. 
@@ -150,6 +158,9 @@ always @*
     // Only request VRAM addr increment on access of 0x2007.
     inc_addr_out = 1'b0;
 
+    spr_ram_d_out  = 8'h00;
+    spr_ram_wr_out = 1'b0;
+
     // Only evaluate RI reads/writes on /CS falling edges.  This prevents executing the same
     // command multiple times because the CPU runs at a slower clock rate than the PPU.  
     if (q_ncs & ~ncs_in)
@@ -163,6 +174,11 @@ always @*
                   d_cpu_d_out = { q_vblank, 7'b0000000 };
                   d_byte_sel  = 1'b0;
                   d_vblank    = 1'b0;
+                end
+              3'h4:  // 0x2004
+                begin
+                  d_cpu_d_out = spr_ram_d_in;
+                  d_spr_ram_a = q_spr_ram_a + 8'h01;
                 end
               3'h7:  // 0x2007
                 begin
@@ -187,6 +203,16 @@ always @*
               3'h1:  // 0x2001
                 begin
                   d_bg_en = cpu_d_in[3];
+                end
+              3'h3:  // 0x2003
+                begin
+                  d_spr_ram_a = cpu_d_in;
+                end
+              3'h4:  // 0x2004
+                begin
+                  spr_ram_d_out  = cpu_d_in;
+                  spr_ram_wr_out = 1'b1;
+                  d_spr_ram_a    = q_spr_ram_a + 8'h01;
                 end
               3'h5:  // 0x2005
                 begin
@@ -246,5 +272,6 @@ assign inc_addr_amt_out = q_addr_incr;
 assign nvbl_en_out      = q_nvbl_en;
 assign bg_en_out        = q_bg_en;
 assign upd_cntrs_out    = q_upd_cntrs_out;
+assign spr_ram_a_out    = q_spr_ram_a;
 
 endmodule

@@ -62,6 +62,7 @@ ppu_vga ppu_vga_blk(
 // PPU_RI: PPU register interface block.
 //
 wire [7:0] ri_vram_din;
+wire [7:0] ri_spr_ram_din;
 wire [7:0] ri_vram_dout;
 wire       ri_vram_wr;
 wire [2:0] ri_fv;
@@ -76,6 +77,9 @@ wire       ri_inc_addr_amt;
 wire       ri_nvbl_en;
 wire       ri_bg_en;
 wire       ri_upd_cntrs;
+wire [7:0] ri_spr_ram_a;
+wire [7:0] ri_spr_ram_dout;
+wire       ri_spr_ram_wr;
 
 ppu_ri ppu_ri_blk(
   .clk_in(clk_in),
@@ -86,6 +90,7 @@ ppu_ri ppu_ri_blk(
   .cpu_d_in(ri_d_in),
   .vram_d_in(ri_vram_din),
   .vblank_in(vga_vblank),
+  .spr_ram_d_in(ri_spr_ram_din),
   .cpu_d_out(ri_d_out),
   .vram_d_out(ri_vram_dout),
   .vram_wr_out(ri_vram_wr),
@@ -100,7 +105,10 @@ ppu_ri ppu_ri_blk(
   .inc_addr_amt_out(ri_inc_addr_amt),
   .nvbl_en_out(ri_nvbl_en),
   .bg_en_out(ri_bg_en),
-  .upd_cntrs_out(ri_upd_cntrs)
+  .upd_cntrs_out(ri_upd_cntrs),
+  .spr_ram_a_out(ri_spr_ram_a),
+  .spr_ram_d_out(ri_spr_ram_dout),
+  .spr_ram_wr_out(ri_spr_ram_wr)
 );
 
 //
@@ -133,9 +141,20 @@ ppu_bg ppu_bg_blk(
 );
 
 //
+// PPU_SPR: PPU sprite generator block.
+//
+ppu_spr ppu_spr_blk(
+  .clk_in(clk_in),
+  .rst_in(rst_in),
+  .spr_ram_a_in(ri_spr_ram_a),
+  .spr_ram_d_in(ri_spr_ram_dout),
+  .spr_ram_wr_in(ri_spr_ram_wr),
+  .spr_ram_d_out(ri_spr_ram_din)
+);
+
+//
 // Vidmem interface.
 //
-
 reg  [5:0] palette_ram [31:0];  // internal palette RAM.  32 entries, 6-bits per entry.
 reg [10:0] q_vram_a;            // last clock's vram_a (so palette ram reads behave like vidmem)
 
