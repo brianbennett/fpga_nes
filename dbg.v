@@ -20,10 +20,10 @@ module dbg
   input  wire [ 7:0] cpu_dbgreg_in,  // cpu debug register read bus
   input  wire [ 7:0] ppu_vram_din,   // ppu data bus [input]
   output wire        tx,             // rs-232 tx signal
+  output wire        active,         // dbg block is active (disable CPU)
   output reg         cpu_r_nw,       // cpu R/!W pin
   output wire [15:0] cpu_a,          // cpu A bus (A)
   output reg  [ 7:0] cpu_dout,       // cpu data bus (D) [output]
-  output wire        cpu_ready,      // cpu READY signal
   output reg  [ 3:0] cpu_dbgreg_sel, // selects cpu register to read/write through cpu_dbgreg_in
   output reg  [ 7:0] cpu_dbgreg_out, // cpu register write value for debug reg writes
   output reg         cpu_dbgreg_wr,  // selects cpu register read/write mode
@@ -586,7 +586,7 @@ always @*
   end
 
 assign cpu_a         = q_addr;
-assign cpu_ready     = (q_state == S_DISABLED);
+assign active        = (q_state != S_DISABLED);
 assign ppu_vram_a    = q_addr;
 assign ppu_vram_dout = rd_data;
 

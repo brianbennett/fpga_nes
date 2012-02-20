@@ -36,7 +36,7 @@ wire [ 7:0] cpu_din;         // D[ 7:0] (data bus [input]), split to prevent int
 wire [ 7:0] cpu_dout;        // D[ 7:0] (data bus [output])
 wire [15:0] cpu_a;           // A[15:0] (address bus)
 wire        cpu_r_nw;        // R/!W
-wire        cpu_ready;       // READY
+reg         cpu_ready;       // READY
 wire        cpu_brk;         // signals CPU-intiated debug break
 wire [ 3:0] cpu_dbgreg_sel;  // CPU input for debugger register read/write select
 wire [ 7:0] cpu_dbgreg_out;  // CPU output for debugger register reads
@@ -64,10 +64,10 @@ cpu cpu_blk(
 //
 // CPUMC: cpu memory controller block.
 //
-wire [ 7:0] cpumc_din;   // D[ 7:0] (data bus [input])
+reg  [ 7:0] cpumc_din;   // D[ 7:0] (data bus [input])
 wire [ 7:0] cpumc_dout;  // D[ 7:0] (data bus [output])
-wire [15:0] cpumc_a;     // A[15:0] (address bus)
-wire        cpumc_r_nw;  // R/!W
+reg  [15:0] cpumc_a;     // A[15:0] (address bus)
+reg         cpumc_r_nw;  // R/!W
 
 cpumc cpumc_blk(
   .clk(CLK_50MHZ),
@@ -78,7 +78,7 @@ cpumc cpumc_blk(
 );
 
 //
-// PPU: picture processing unit block
+// PPU: picture processing unit block.
 //
 wire [ 2:0] ppu_ri_sel;     // ppu register interface reg select
 wire        ppu_ri_ncs;     // ppu register interface enable
@@ -138,7 +138,7 @@ ppumc ppumc_blk(
 );
 
 //
-// JP: joypad controller block
+// JP: joypad controller block.
 //
 wire        jp_din;
 wire [ 7:0] jp_dout;
@@ -159,8 +159,30 @@ jp jp_blk(
 );
 
 //
+// SPRDMA: sprite dma controller block.
+//
+wire        sprdma_active;
+wire [15:0] sprdma_a;
+wire [ 7:0] sprdma_dout;
+wire        sprdma_r_nw;
+
+sprdma sprdma_blk(
+  .clk_in(CLK_50MHZ),
+  .rst_in(BTN_SOUTH),
+  .cpumc_a_in(cpumc_a),
+  .cpumc_din_in(cpumc_din),
+  .cpumc_dout_in(cpumc_dout),
+  .cpu_r_nw_in(cpumc_r_nw),
+  .active_out(sprdma_active),
+  .cpumc_a_out(sprdma_a),
+  .cpumc_d_out(sprdma_dout),
+  .cpumc_r_nw_out(sprdma_r_nw)
+);
+
+//
 // DBG: debug block.  Interacts with debugger through serial connection.
 //
+wire        dbg_active;
 wire [ 7:0] dbg_cpu_din;        // CPU: D[ 7:0] (data bus [input])
 wire [ 7:0] dbg_cpu_dout;       // CPU: D[ 7:0] (data bus [output])
 wire [15:0] dbg_cpu_a;          // CPU: A[15:0] (address bus)
@@ -179,10 +201,10 @@ dbg dbg_blk(
   .cpu_dbgreg_in(cpu_dbgreg_out),
   .ppu_vram_din(dbg_ppu_vram_din),
   .tx(RS232_DCE_TXD),
+  .active(dbg_active),
   .cpu_r_nw(dbg_cpu_r_nw),
   .cpu_a(dbg_cpu_a),
   .cpu_dout(dbg_cpu_dout),
-  .cpu_ready(cpu_ready),
   .cpu_dbgreg_sel(cpu_dbgreg_sel),
   .cpu_dbgreg_out(cpu_dbgreg_in),
   .cpu_dbgreg_wr(cpu_dbgreg_wr),
@@ -191,15 +213,35 @@ dbg dbg_blk(
   .ppu_vram_dout(dbg_ppu_vram_dout)
 );
 
-// Mux cpumc signals from cpu or dbg blk, depending on debug break state (cpu_ready).
-assign cpumc_a     = (cpu_ready) ? cpu_a    : dbg_cpu_a;
-assign cpumc_r_nw  = (cpu_ready) ? cpu_r_nw : dbg_cpu_r_nw;
-assign cpumc_din   = (cpu_ready) ? cpu_dout : dbg_cpu_dout;
+always @*
+  begin
+    if (dbg_active)
+      begin
+        cpu_ready  = 1'b0;
+        cpumc_a    = dbg_cpu_a;
+        cpumc_r_nw = dbg_cpu_r_nw;
+        cpumc_din  = dbg_cpu_dout;
+      end
+    else if (sprdma_active)
+      begin
+        cpu_ready  = 1'b0;
+        cpumc_a    = sprdma_a;
+        cpumc_r_nw = sprdma_r_nw;
+        cpumc_din  = sprdma_dout;
+      end
+    else
+      begin
+        cpu_ready  = 1'b1;
+        cpumc_a    = cpu_a;
+        cpumc_r_nw = cpu_r_nw;
+        cpumc_din  = cpu_dout;
+      end
+  end
 
-// Mux jp signals from cpu or dbg blk, depending on debug break state (cpu_ready).
-assign jp_a   = (cpu_ready) ? cpu_a       : dbg_cpu_a;
-assign jp_wr  = (cpu_ready) ? ~cpu_r_nw   : ~dbg_cpu_r_nw;
-assign jp_din = (cpu_ready) ? cpu_dout[0] : dbg_cpu_dout[0];
+// Mux jp signals from cpu or dbg blk, depending on debug break state (dbg_active).
+assign jp_a   = (dbg_active) ? dbg_cpu_a       : cpu_a;
+assign jp_wr  = (dbg_active) ? ~dbg_cpu_r_nw   : ~cpu_r_nw;
+assign jp_din = (dbg_active) ? dbg_cpu_dout[0] : cpu_dout[0];
 
 // CPUMC, PPU, and JP return 0 for reads that don't hit an appropriate region of memory.  The final
 // D bus value can be derived by ORing together the output of all blocks that can service a
@@ -207,10 +249,10 @@ assign jp_din = (cpu_ready) ? cpu_dout[0] : dbg_cpu_dout[0];
 assign cpu_din     = cpumc_dout | ppu_ri_dout | jp_dout;
 assign dbg_cpu_din = cpumc_dout | ppu_ri_dout | jp_dout;
 
-// Mux ppumc signals from ppu or dbg blk, depending on debug break state (cpu_ready).
-assign ppumc_a          = (cpu_ready) ? ppu_vram_a    : dbg_ppu_vram_a[13:0];
-assign ppumc_wr         = (cpu_ready) ? ppu_vram_wr   : dbg_ppu_vram_wr;
-assign ppumc_din        = (cpu_ready) ? ppu_vram_dout : dbg_ppu_vram_dout;
+// Mux ppumc signals from ppu or dbg blk, depending on debug break state (dbg_active).
+assign ppumc_a          = (dbg_active) ? dbg_ppu_vram_a[13:0] : ppu_vram_a;
+assign ppumc_wr         = (dbg_active) ? dbg_ppu_vram_wr      : ppu_vram_wr;
+assign ppumc_din        = (dbg_active) ? dbg_ppu_vram_dout    : ppu_vram_dout;
 assign ppu_vram_din     = ppumc_dout;
 assign dbg_ppu_vram_din = ppumc_dout;
 
