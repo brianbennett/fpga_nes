@@ -63,6 +63,8 @@ ppu_vga ppu_vga_blk(
 //
 wire [7:0] ri_vram_din;
 wire [7:0] ri_spr_ram_din;
+wire       ri_spr_overflow;
+wire       ri_spr_pri_col;
 wire [7:0] ri_vram_dout;
 wire       ri_vram_wr;
 wire [2:0] ri_fv;
@@ -76,6 +78,9 @@ wire       ri_inc_addr;
 wire       ri_inc_addr_amt;
 wire       ri_nvbl_en;
 wire       ri_bg_en;
+wire       ri_spr_en;
+wire       ri_spr_h;
+wire       ri_spr_pt_sel;
 wire       ri_upd_cntrs;
 wire [7:0] ri_spr_ram_a;
 wire [7:0] ri_spr_ram_dout;
@@ -91,6 +96,8 @@ ppu_ri ppu_ri_blk(
   .vram_d_in(ri_vram_din),
   .vblank_in(vga_vblank),
   .spr_ram_d_in(ri_spr_ram_din),
+  .spr_overflow_in(ri_spr_overflow),
+  .spr_pri_col_in(ri_spr_pri_col),
   .cpu_d_out(ri_d_out),
   .vram_d_out(ri_vram_dout),
   .vram_wr_out(ri_vram_wr),
@@ -105,6 +112,9 @@ ppu_ri ppu_ri_blk(
   .inc_addr_amt_out(ri_inc_addr_amt),
   .nvbl_en_out(ri_nvbl_en),
   .bg_en_out(ri_bg_en),
+  .spr_en_out(ri_spr_en),
+  .spr_h_out(ri_spr_h),
+  .spr_pt_sel_out(ri_spr_pt_sel),
   .upd_cntrs_out(ri_upd_cntrs),
   .spr_ram_a_out(ri_spr_ram_a),
   .spr_ram_d_out(ri_spr_ram_dout),
@@ -143,13 +153,33 @@ ppu_bg ppu_bg_blk(
 //
 // PPU_SPR: PPU sprite generator block.
 //
+wire  [3:0] spr_palette_idx;
+wire        spr_primary;
+wire        spr_priority;
+wire [13:0] spr_vram_a;
+wire        spr_vram_req;
+
 ppu_spr ppu_spr_blk(
   .clk_in(clk_in),
   .rst_in(rst_in),
-  .spr_ram_a_in(ri_spr_ram_a),
-  .spr_ram_d_in(ri_spr_ram_dout),
-  .spr_ram_wr_in(ri_spr_ram_wr),
-  .spr_ram_d_out(ri_spr_ram_din)
+  .en_in(ri_spr_en),
+  .spr_h_in(ri_spr_h),
+  .spr_pt_sel_in(ri_spr_pt_sel),
+  .oam_a_in(ri_spr_ram_a),
+  .oam_d_in(ri_spr_ram_dout),
+  .oam_wr_in(ri_spr_ram_wr),
+  .nes_x_in(vga_nes_x),
+  .nes_y_in(vga_nes_y),
+  .nes_y_next_in(vga_nes_y_next),
+  .pix_pulse_in(vga_pix_pulse),
+  .vram_d_in(vram_d_in),
+  .oam_d_out(ri_spr_ram_din),
+  .overflow_out(ri_spr_overflow),
+  .palette_idx_out(spr_palette_idx),
+  .primary_out(spr_primary),
+  .priority_out(spr_priority),
+  .vram_a_out(spr_vram_a),
+  .vram_req_out(spr_vram_req)
 );
 
 //
@@ -171,14 +201,43 @@ always @(posedge clk_in)
 
 assign ri_vram_din = (q_vram_a[10:5] == 6'h3F) ? palette_ram[q_vram_a[4:0]] : vram_d_in;
 
-assign vram_a_out  = bg_vram_a;
+assign vram_a_out  = (spr_vram_req) ? spr_vram_a : bg_vram_a;
 assign vram_d_out  = ri_vram_dout;
 assign vram_wr_out = ri_vram_wr && (vram_a_out[13:8] != 6'h3F);
 
 //
-// Final system palette index derivation.
+// Multiplexer.  Final system palette index derivation.
 //
-assign vga_sys_palette_idx = palette_ram[{1'b0, bg_palette_idx}];
+reg  q_pri_obj_col;
+wire d_pri_obj_col;
+
+always @(posedge clk_in)
+  begin
+    if (rst_in)
+      q_pri_obj_col = 1'b0;
+    else
+      q_pri_obj_col = d_pri_obj_col;
+  end
+
+wire spr_foreground;
+wire spr_transparent;
+wire bg_transparent;
+
+assign spr_foreground  = ~spr_priority;
+assign spr_transparent = ~|spr_palette_idx[1:0];
+assign bg_transparent  = ~|bg_palette_idx[1:0];
+
+assign d_pri_obj_col =
+  (vga_nes_y_next == 0)                                ? 1'b0 :
+  (spr_primary && !spr_transparent && !bg_transparent) ? 1'b1 : 
+                                                         q_pri_obj_col;
+
+assign vga_sys_palette_idx = 
+  ((spr_foreground || bg_transparent) && !spr_transparent) ? palette_ram[{ 1'b1, spr_palette_idx }] :
+  (!bg_transparent)                                        ? palette_ram[{ 1'b0, bg_palette_idx }]  :
+                                                             palette_ram[5'b00000];
+
+assign ri_spr_pri_col = q_pri_obj_col;
 
 //
 // Assign miscellaneous output signals.
