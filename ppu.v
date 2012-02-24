@@ -62,11 +62,13 @@ ppu_vga ppu_vga_blk(
 // PPU_RI: PPU register interface block.
 //
 wire [7:0] ri_vram_din;
+wire [7:0] ri_pram_din;
 wire [7:0] ri_spr_ram_din;
 wire       ri_spr_overflow;
 wire       ri_spr_pri_col;
 wire [7:0] ri_vram_dout;
 wire       ri_vram_wr;
+wire       ri_pram_wr;
 wire [2:0] ri_fv;
 wire [4:0] ri_vt;
 wire       ri_v;
@@ -93,7 +95,9 @@ ppu_ri ppu_ri_blk(
   .ncs_in(ri_ncs_in),
   .r_nw_in(ri_r_nw_in),
   .cpu_d_in(ri_d_in),
+  .vram_a_in(vram_a_out),
   .vram_d_in(ri_vram_din),
+  .pram_d_in(ri_pram_din),
   .vblank_in(vga_vblank),
   .spr_ram_d_in(ri_spr_ram_din),
   .spr_overflow_in(ri_spr_overflow),
@@ -101,6 +105,7 @@ ppu_ri ppu_ri_blk(
   .cpu_d_out(ri_d_out),
   .vram_d_out(ri_vram_dout),
   .vram_wr_out(ri_vram_wr),
+  .pram_wr_out(ri_pram_wr),
   .fv_out(ri_fv),
   .vt_out(ri_vt),
   .v_out(ri_v),
@@ -186,24 +191,19 @@ ppu_spr ppu_spr_blk(
 // Vidmem interface.
 //
 reg  [5:0] palette_ram [31:0];  // internal palette RAM.  32 entries, 6-bits per entry.
-reg [10:0] q_vram_a;            // last clock's vram_a (so palette ram reads behave like vidmem)
 
 always @(posedge clk_in)
   begin
-    if (ri_vram_wr && (vram_a_out[13:8] == 6'h3F))
+    if (ri_pram_wr)
       palette_ram[vram_a_out[4:0]] <= ri_vram_dout;
-
-    if (rst_in)
-      q_vram_a <= 10'h000;
-    else
-      q_vram_a <= { vram_a_out[13:8], vram_a_out[4:0] };
   end
 
-assign ri_vram_din = (q_vram_a[10:5] == 6'h3F) ? palette_ram[q_vram_a[4:0]] : vram_d_in;
+assign ri_vram_din = vram_d_in;
+assign ri_pram_din = palette_ram[vram_a_out[4:0]];
 
 assign vram_a_out  = (spr_vram_req) ? spr_vram_a : bg_vram_a;
 assign vram_d_out  = ri_vram_dout;
-assign vram_wr_out = ri_vram_wr && (vram_a_out[13:8] != 6'h3F);
+assign vram_wr_out = ri_vram_wr;
 
 //
 // Multiplexer.  Final system palette index derivation.

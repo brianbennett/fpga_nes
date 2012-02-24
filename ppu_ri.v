@@ -11,38 +11,41 @@
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 module ppu_ri
 (
-  input  wire       clk_in,            // 50MHz system clock signal
-  input  wire       rst_in,            // reset signal
-  input  wire [2:0] sel_in,            // register interface reg select
-  input  wire       ncs_in,            // register interface enable (active low)
-  input  wire       r_nw_in,           // register interface read/write select
-  input  wire [7:0] cpu_d_in,          // register interface data in from cpu
-  input  wire [7:0] vram_d_in,         // data in from vram
-  input  wire       vblank_in,         // high during vertical blank
-  input  wire [7:0] spr_ram_d_in,      // sprite ram data (for 0x2004 reads)
-  input  wire       spr_overflow_in,   // more than 8 sprites hit on a scanline during last frame
-  input  wire       spr_pri_col_in,    // primary object collision in last frame
-  output wire [7:0] cpu_d_out,         // register interface data out to cpu
-  output reg  [7:0] vram_d_out,        // data out to vram
-  output reg        vram_wr_out,       // rd/wr select for vram ops
-  output wire [2:0] fv_out,            // fine vertical scroll register
-  output wire [4:0] vt_out,            // vertical tile scroll register
-  output wire       v_out,             // vertical name table selection register
-  output wire [2:0] fh_out,            // fine horizontal scroll register
-  output wire [4:0] ht_out,            // horizontal tile scroll register
-  output wire       h_out,             // horizontal name table selection register
-  output wire       s_out,             // playfield pattern table selection register
-  output reg        inc_addr_out,      // increment vmem addr (due to ri mem access)
-  output wire       inc_addr_amt_out,  // amount to increment vmem addr by (0x2002.7)
-  output wire       nvbl_en_out,       // enable nmi on vertical blank
-  output wire       bg_en_out,         // enable background rendering
-  output wire       spr_en_out,        // enable sprite rendering
-  output wire       spr_h_out,         // 8/16 scanline sprites
-  output wire       spr_pt_sel_out,    // pattern table select for sprites (0x2000.3)
-  output wire       upd_cntrs_out,     // copy PPU registers to PPU counters
-  output wire [7:0] spr_ram_a_out,     // sprite ram address (for 0x2004 reads/writes)
-  output reg  [7:0] spr_ram_d_out,     // sprite ram data (for 0x2004 writes)
-  output reg        spr_ram_wr_out     // sprite ram write enable (for 0x2004 writes)
+  input  wire        clk_in,            // 50MHz system clock signal
+  input  wire        rst_in,            // reset signal
+  input  wire [ 2:0] sel_in,            // register interface reg select
+  input  wire        ncs_in,            // register interface enable (active low)
+  input  wire        r_nw_in,           // register interface read/write select
+  input  wire [ 7:0] cpu_d_in,          // register interface data in from cpu
+  input  wire [13:0] vram_a_in,         // current vram address
+  input  wire [ 7:0] vram_d_in,         // data in from vram
+  input  wire [ 7:0] pram_d_in,         // data in from palette ram
+  input  wire        vblank_in,         // high during vertical blank
+  input  wire [ 7:0] spr_ram_d_in,      // sprite ram data (for 0x2004 reads)
+  input  wire        spr_overflow_in,   // more than 8 sprites hit on a scanline during last frame
+  input  wire        spr_pri_col_in,    // primary object collision in last frame
+  output wire [ 7:0] cpu_d_out,         // register interface data out to cpu
+  output reg  [ 7:0] vram_d_out,        // data out to vram
+  output reg         vram_wr_out,       // rd/wr select for vram ops
+  output reg         pram_wr_out,       // rd/wr select for palette ram ops
+  output wire [ 2:0] fv_out,            // fine vertical scroll register
+  output wire [ 4:0] vt_out,            // vertical tile scroll register
+  output wire        v_out,             // vertical name table selection register
+  output wire [ 2:0] fh_out,            // fine horizontal scroll register
+  output wire [ 4:0] ht_out,            // horizontal tile scroll register
+  output wire        h_out,             // horizontal name table selection register
+  output wire        s_out,             // playfield pattern table selection register
+  output reg         inc_addr_out,      // increment vmem addr (due to ri mem access)
+  output wire        inc_addr_amt_out,  // amount to increment vmem addr by (0x2002.7)
+  output wire        nvbl_en_out,       // enable nmi on vertical blank
+  output wire        bg_en_out,         // enable background rendering
+  output wire        spr_en_out,        // enable sprite rendering
+  output wire        spr_h_out,         // 8/16 scanline sprites
+  output wire        spr_pt_sel_out,    // pattern table select for sprites (0x2000.3)
+  output wire        upd_cntrs_out,     // copy PPU registers to PPU counters
+  output wire [ 7:0] spr_ram_a_out,     // sprite ram address (for 0x2004 reads/writes)
+  output reg  [ 7:0] spr_ram_d_out,     // sprite ram data (for 0x2004 writes)
+  output reg         spr_ram_wr_out     // sprite ram write enable (for 0x2004 writes)
 );
 
 //
@@ -168,9 +171,10 @@ always @*
     d_vblank = (vblank_in & ~q_vblank) ? 1'b1 :
                (~vblank_in)            ? 1'b0 : q_vblank;
 
-    // Only request VRAM write on write of 0x2007.
+    // Only request memory writes on write of 0x2007.
     vram_wr_out = 1'b0;
     vram_d_out  = 8'h00;
+    pram_wr_out = 1'b0;
 
     // Only request VRAM addr increment on access of 0x2007.
     inc_addr_out = 1'b0;
@@ -198,7 +202,7 @@ always @*
                 end
               3'h7:  // 0x2007
                 begin
-                  d_cpu_d_out  = q_rd_buf;
+                  d_cpu_d_out  = (vram_a_in[13:8] == 6'h3F) ? pram_d_in : q_rd_buf;
                   d_rd_rdy     = 1'b1;
                   inc_addr_out = 1'b1;
                 end
@@ -270,7 +274,11 @@ always @*
                 end
               3'h7:  // 0x2007
                 begin
-                  vram_wr_out  = 1'b1;
+                  if (vram_a_in[13:8] == 6'h3F)
+                    pram_wr_out = 1'b1;
+                  else
+                    vram_wr_out = 1'b1;
+
                   vram_d_out   = cpu_d_in;
                   inc_addr_out = 1'b1;
                 end
