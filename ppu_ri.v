@@ -195,7 +195,6 @@ always @*
               3'h4:  // 0x2004
                 begin
                   d_cpu_d_out = spr_ram_d_in;
-                  d_spr_ram_a = q_spr_ram_a + 8'h01;
                 end
               3'h7:  // 0x2007
                 begin

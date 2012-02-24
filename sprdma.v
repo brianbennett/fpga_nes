@@ -25,9 +25,8 @@ module sprdma
 
 // Symbolic state representations.
 localparam [1:0] S_READY    = 2'h0,
-                 S_SETUP    = 2'h1,
-                 S_ACTIVE   = 2'h2,
-                 S_COOLDOWN = 2'h3;
+                 S_ACTIVE   = 2'h1,
+                 S_COOLDOWN = 2'h2;
 
 reg [ 1:0] q_state, d_state; // current fsm state
 reg [15:0] q_addr,  d_addr;  // current cpu address to be copied to sprite ram
@@ -71,19 +70,9 @@ always @*
         // Detect write to 0x4014 to begin DMA.
         if ((cpumc_a_in == 16'h4014) && !cpu_r_nw_in)
           begin
-            d_state = S_SETUP;
+            d_state = S_ACTIVE;
             d_addr  = { cpumc_din_in, 8'h00 };
           end
-      end
-    else if (q_state == S_SETUP)
-    begin
-        // Write 0x2003 to reset the SPRRAM pointer to 0.
-        cpumc_a_out    = 16'h2003;
-        cpumc_d_out    = 8'h00;
-        cpumc_r_nw_out = 1'b0;
-
-        d_state = S_ACTIVE;
-        d_cnt   = 2'h0;
       end
     else if (q_state == S_ACTIVE)
       begin
@@ -120,7 +109,7 @@ always @*
       end
   end
 
-assign active_out = (q_state == S_SETUP) || (q_state == S_ACTIVE);
+assign active_out = (q_state == S_ACTIVE);
 
 endmodule
 
