@@ -11,12 +11,16 @@
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 module ppumc
 (
-  input  wire        clk,   // 50MHz system clock signal
-  input  wire        wr,    // write enable signal
-  input  wire [13:0] addr,  // 16-bit memory address
-  input  wire [ 7:0] din,   // data input bus
-  output reg  [ 7:0] dout   // data output bus
+  input  wire        clk,         // 50MHz system clock signal
+  input  wire        wr,          // write enable signal
+  input  wire [13:0] addr,        // 16-bit memory address
+  input  wire [ 7:0] din,         // data input bus
+  input  wire [ 7:0] mirror_cfg,  // memory mirroring config
+  output reg  [ 7:0] dout         // data output bus
 );
+
+localparam MIR_HORIZONTAL = 1'b0,
+           MIR_VERTICAL   = 1'b1;
 
 wire [12:0] pattern_tbl_addr;
 wire [ 7:0] pattern_tbl_rd_data;
@@ -56,7 +60,8 @@ single_port_ram_sync #(.ADDR_WIDTH(11),
 
 // Hard code horizontal mirorring for now.  0x2000 and 0x2400 address the first table, 0x2800 and
 // 0x2C00 address the second table.
-assign name_tbl_addr = { addr[11], addr[9:0] };
+assign name_tbl_addr = (mirror_cfg == MIR_HORIZONTAL) ? { addr[11], addr[9:0] } :
+                       (mirror_cfg == MIR_VERTICAL)   ? { addr[10:0] }          : 11'h000;
 
 always @*
   begin

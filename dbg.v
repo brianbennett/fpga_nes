@@ -12,68 +12,72 @@
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 module dbg
 (
-  input  wire        clk,            // 50MHz system clock signal
-  input  wire        rst,            // reset signal
-  input  wire        rx,             // rs-232 rx signal
-  input  wire        brk,            // signal for cpu-intiated debug break
-  input  wire [ 7:0] cpu_din,        // cpu data bus (D) [input]
-  input  wire [ 7:0] cpu_dbgreg_in,  // cpu debug register read bus
-  input  wire [ 7:0] ppu_vram_din,   // ppu data bus [input]
-  output wire        tx,             // rs-232 tx signal
-  output wire        active,         // dbg block is active (disable CPU)
-  output reg         cpu_r_nw,       // cpu R/!W pin
-  output wire [15:0] cpu_a,          // cpu A bus (A)
-  output reg  [ 7:0] cpu_dout,       // cpu data bus (D) [output]
-  output reg  [ 3:0] cpu_dbgreg_sel, // selects cpu register to read/write through cpu_dbgreg_in
-  output reg  [ 7:0] cpu_dbgreg_out, // cpu register write value for debug reg writes
-  output reg         cpu_dbgreg_wr,  // selects cpu register read/write mode
-  output reg         ppu_vram_wr,    // ppu memory write enable signal
-  output wire [15:0] ppu_vram_a,     // ppu memory address
-  output wire [ 7:0] ppu_vram_dout   // ppu data bus [output]
+  input  wire        clk,              // 50MHz system clock signal
+  input  wire        rst,              // reset signal
+  input  wire        rx,               // rs-232 rx signal
+  input  wire        brk,              // signal for cpu-intiated debug break
+  input  wire [ 7:0] cpu_din,          // cpu data bus (D) [input]
+  input  wire [ 7:0] cpu_dbgreg_in,    // cpu debug register read bus
+  input  wire [ 7:0] ppu_vram_din,     // ppu data bus [input]
+  output wire        tx,               // rs-232 tx signal
+  output wire        active,           // dbg block is active (disable CPU)
+  output reg         cpu_r_nw,         // cpu R/!W pin
+  output wire [15:0] cpu_a,            // cpu A bus (A)
+  output reg  [ 7:0] cpu_dout,         // cpu data bus (D) [output]
+  output reg  [ 3:0] cpu_dbgreg_sel,   // selects cpu register to read/write through cpu_dbgreg_in
+  output reg  [ 7:0] cpu_dbgreg_out,   // cpu register write value for debug reg writes
+  output reg         cpu_dbgreg_wr,    // selects cpu register read/write mode
+  output reg         ppu_vram_wr,      // ppu memory write enable signal
+  output wire [15:0] ppu_vram_a,       // ppu memory address
+  output wire [ 7:0] ppu_vram_dout,    // ppu data bus [output]
+  output wire [ 7:0] ppumc_mirror_cfg  // ppu memory mirroring configuration
 );
 
 // Debug packet opcodes.
-localparam [7:0] OP_ECHO           = 8'h00,
-                 OP_CPU_MEM_RD     = 8'h01,
-                 OP_CPU_MEM_WR     = 8'h02,
-                 OP_DBG_BRK        = 8'h03,
-                 OP_DBG_RUN        = 8'h04,
-                 OP_CPU_REG_RD     = 8'h05,
-                 OP_CPU_REG_WR     = 8'h06,
-                 OP_QUERY_DBG_BRK  = 8'h07,
-                 OP_QUERY_ERR_CODE = 8'h08,
-                 OP_PPU_MEM_RD     = 8'h09,
-                 OP_PPU_MEM_WR     = 8'h0A,
-                 OP_PPU_DISABLE    = 8'h0B;
+localparam [7:0] OP_ECHO                 = 8'h00,
+                 OP_CPU_MEM_RD           = 8'h01,
+                 OP_CPU_MEM_WR           = 8'h02,
+                 OP_DBG_BRK              = 8'h03,
+                 OP_DBG_RUN              = 8'h04,
+                 OP_CPU_REG_RD           = 8'h05,
+                 OP_CPU_REG_WR           = 8'h06,
+                 OP_QUERY_DBG_BRK        = 8'h07,
+                 OP_QUERY_ERR_CODE       = 8'h08,
+                 OP_PPU_MEM_RD           = 8'h09,
+                 OP_PPU_MEM_WR           = 8'h0A,
+                 OP_PPU_DISABLE          = 8'h0B,
+                 OP_PPUMC_SET_MIRROR_CFG = 8'h0C;
 
 // Error code bit positions.
 localparam DBG_UART_PARITY_ERR = 0,
            DBG_UNKNOWN_OPCODE  = 1;
 
 // Symbolic state representations.
-localparam [4:0] S_DISABLED          = 5'h00,
-                 S_DECODE            = 5'h01,
-                 S_ECHO_STG_0        = 5'h02,
-                 S_ECHO_STG_1        = 5'h03,
-                 S_CPU_MEM_RD_STG_0  = 5'h04,
-                 S_CPU_MEM_RD_STG_1  = 5'h05,
-                 S_CPU_MEM_WR_STG_0  = 5'h06,
-                 S_CPU_MEM_WR_STG_1  = 5'h07,
-                 S_CPU_REG_RD        = 5'h08,
-                 S_CPU_REG_WR_STG_0  = 5'h09,
-                 S_CPU_REG_WR_STG_1  = 5'h0A,
-                 S_QUERY_ERR_CODE    = 5'h0B,
-                 S_PPU_MEM_RD_STG_0  = 5'h0C,
-                 S_PPU_MEM_RD_STG_1  = 5'h0D,
-                 S_PPU_MEM_WR_STG_0  = 5'h0E,
-                 S_PPU_MEM_WR_STG_1  = 5'h0F,
-                 S_PPU_DISABLE       = 5'h10;
+localparam [4:0] S_DISABLED             = 5'h00,
+                 S_DECODE               = 5'h01,
+                 S_ECHO_STG_0           = 5'h02,
+                 S_ECHO_STG_1           = 5'h03,
+                 S_CPU_MEM_RD_STG_0     = 5'h04,
+                 S_CPU_MEM_RD_STG_1     = 5'h05,
+                 S_CPU_MEM_WR_STG_0     = 5'h06,
+                 S_CPU_MEM_WR_STG_1     = 5'h07,
+                 S_CPU_REG_RD           = 5'h08,
+                 S_CPU_REG_WR_STG_0     = 5'h09,
+                 S_CPU_REG_WR_STG_1     = 5'h0A,
+                 S_QUERY_ERR_CODE       = 5'h0B,
+                 S_PPU_MEM_RD_STG_0     = 5'h0C,
+                 S_PPU_MEM_RD_STG_1     = 5'h0D,
+                 S_PPU_MEM_WR_STG_0     = 5'h0E,
+                 S_PPU_MEM_WR_STG_1     = 5'h0F,
+                 S_PPU_DISABLE          = 5'h10,
+                 S_PPUMC_SET_MIRROR_CFG = 5'h11;
 
-reg [ 4:0] q_state,       d_state;
-reg [ 2:0] q_decode_cnt,  d_decode_cnt;
-reg [16:0] q_execute_cnt, d_execute_cnt;
-reg [15:0] q_addr,        d_addr;
-reg [ 1:0] q_err_code,    d_err_code;
+reg [ 4:0] q_state,            d_state;
+reg [ 2:0] q_decode_cnt,       d_decode_cnt;
+reg [16:0] q_execute_cnt,      d_execute_cnt;
+reg [15:0] q_addr,             d_addr;
+reg [ 1:0] q_err_code,         d_err_code;
+reg [ 7:0] q_ppumc_mirror_cfg, d_ppumc_mirror_cfg;
 
 // UART output buffer FFs.
 reg  [7:0] q_tx_data, d_tx_data;
@@ -91,23 +95,25 @@ always @(posedge clk)
   begin
     if (rst)
       begin
-        q_state       <= S_DISABLED;
-        q_decode_cnt  <= 0;
-        q_execute_cnt <= 0;
-        q_addr        <= 16'h0000;
-        q_err_code    <= 0;
-        q_tx_data     <= 8'h00;
-        q_wr_en       <= 1'b0;
+        q_state            <= S_DISABLED;
+        q_decode_cnt       <= 0;
+        q_execute_cnt      <= 0;
+        q_addr             <= 16'h0000;
+        q_err_code         <= 0;
+        q_ppumc_mirror_cfg <= 8'h00;
+        q_tx_data          <= 8'h00;
+        q_wr_en            <= 1'b0;
       end
     else
       begin
-        q_state       <= d_state;
-        q_decode_cnt  <= d_decode_cnt;
-        q_execute_cnt <= d_execute_cnt;
-        q_addr        <= d_addr;
-        q_err_code    <= d_err_code;
-        q_tx_data     <= d_tx_data;
-        q_wr_en       <= d_wr_en;
+        q_state            <= d_state;
+        q_decode_cnt       <= d_decode_cnt;
+        q_execute_cnt      <= d_execute_cnt;
+        q_addr             <= d_addr;
+        q_err_code         <= d_err_code;
+        q_ppumc_mirror_cfg <= d_ppumc_mirror_cfg;
+        q_tx_data          <= d_tx_data;
+        q_wr_en            <= d_wr_en;
       end
   end
 
@@ -133,11 +139,12 @@ uart #(.BAUD_RATE(19200),
 always @*
   begin
     // Setup default FF updates.
-    d_state       = q_state;
-    d_decode_cnt  = q_decode_cnt;
-    d_execute_cnt = q_execute_cnt;
-    d_addr        = q_addr;
-    d_err_code    = q_err_code;
+    d_state            = q_state;
+    d_decode_cnt       = q_decode_cnt;
+    d_execute_cnt      = q_execute_cnt;
+    d_addr             = q_addr;
+    d_err_code         = q_err_code;
+    d_ppumc_mirror_cfg = q_ppumc_mirror_cfg;
 
     rd_en         = 1'b0;
     d_tx_data     = 8'h00;
@@ -186,16 +193,17 @@ always @*
 
               // Move to appropriate decode stage based on opcode.
               case (rd_data)
-                OP_ECHO:           d_state = S_ECHO_STG_0;
-                OP_CPU_MEM_RD:     d_state = S_CPU_MEM_RD_STG_0;
-                OP_CPU_MEM_WR:     d_state = S_CPU_MEM_WR_STG_0;
-                OP_DBG_BRK:        d_state = S_DECODE;
-                OP_CPU_REG_RD:     d_state = S_CPU_REG_RD;
-                OP_CPU_REG_WR:     d_state = S_CPU_REG_WR_STG_0;
-                OP_QUERY_ERR_CODE: d_state = S_QUERY_ERR_CODE;
-                OP_PPU_MEM_RD:     d_state = S_PPU_MEM_RD_STG_0;
-                OP_PPU_MEM_WR:     d_state = S_PPU_MEM_WR_STG_0;
-                OP_PPU_DISABLE:    d_state = S_PPU_DISABLE;
+                OP_ECHO:                 d_state = S_ECHO_STG_0;
+                OP_CPU_MEM_RD:           d_state = S_CPU_MEM_RD_STG_0;
+                OP_CPU_MEM_WR:           d_state = S_CPU_MEM_WR_STG_0;
+                OP_DBG_BRK:              d_state = S_DECODE;
+                OP_CPU_REG_RD:           d_state = S_CPU_REG_RD;
+                OP_CPU_REG_WR:           d_state = S_CPU_REG_WR_STG_0;
+                OP_QUERY_ERR_CODE:       d_state = S_QUERY_ERR_CODE;
+                OP_PPU_MEM_RD:           d_state = S_PPU_MEM_RD_STG_0;
+                OP_PPU_MEM_WR:           d_state = S_PPU_MEM_WR_STG_0;
+                OP_PPU_DISABLE:          d_state = S_PPU_DISABLE;
+                OP_PPUMC_SET_MIRROR_CFG: d_state = S_PPUMC_SET_MIRROR_CFG;
                 OP_DBG_RUN:
                   begin
                     d_state = S_DISABLED;
@@ -582,13 +590,28 @@ always @*
               d_state = S_DECODE;
             end
         end
+
+      // --- PPU_SET_MIRROR_CFG ---
+      //   OP_CODE
+      //   CONFIG
+      S_PPUMC_SET_MIRROR_CFG:
+        begin
+          if (!rx_empty)
+            begin
+              rd_en              = 1'b1;
+              d_ppumc_mirror_cfg = rd_data;
+
+              d_state = S_DECODE;
+            end
+        end
     endcase
   end
 
-assign cpu_a         = q_addr;
-assign active        = (q_state != S_DISABLED);
-assign ppu_vram_a    = q_addr;
-assign ppu_vram_dout = rd_data;
+assign cpu_a            = q_addr;
+assign active           = (q_state != S_DISABLED);
+assign ppu_vram_a       = q_addr;
+assign ppu_vram_dout    = rd_data;
+assign ppumc_mirror_cfg = q_ppumc_mirror_cfg;
 
 endmodule
 

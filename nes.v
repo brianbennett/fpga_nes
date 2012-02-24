@@ -124,16 +124,18 @@ ppu ppu_blk(
 //
 // PPUMC: ppu memory controller block.
 //
-wire [ 7:0] ppumc_din;   // D[ 7:0] (data bus [input])
-wire [ 7:0] ppumc_dout;  // D[ 7:0] (data bus [output])
-wire [13:0] ppumc_a;     // A[13:0] (address bus)
-wire        ppumc_wr;    // WR
+wire [ 7:0] ppumc_din;         // D[ 7:0] (data bus [input])
+wire [ 7:0] ppumc_dout;        // D[ 7:0] (data bus [output])
+wire [13:0] ppumc_a;           // A[13:0] (address bus)
+wire        ppumc_wr;          // WR
+wire [ 7:0] ppumc_mirror_cfg;  // select horizontal/vertical mirroring
 
 ppumc ppumc_blk(
   .clk(CLK_50MHZ),
   .wr(ppumc_wr),
   .addr(ppumc_a),
   .din(ppumc_din),
+  .mirror_cfg(ppumc_mirror_cfg),
   .dout(ppumc_dout)
 );
 
@@ -210,7 +212,8 @@ dbg dbg_blk(
   .cpu_dbgreg_wr(cpu_dbgreg_wr),
   .ppu_vram_wr(dbg_ppu_vram_wr),
   .ppu_vram_a(dbg_ppu_vram_a),
-  .ppu_vram_dout(dbg_ppu_vram_dout)
+  .ppu_vram_dout(dbg_ppu_vram_dout),
+  .ppumc_mirror_cfg(ppumc_mirror_cfg)
 );
 
 always @*
