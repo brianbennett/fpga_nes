@@ -192,14 +192,16 @@ ppu_spr ppu_spr_blk(
 //
 reg  [5:0] palette_ram [31:0];  // internal palette RAM.  32 entries, 6-bits per entry.
 
+`define PRAM_A(addr) ((addr & 5'h03) ? addr : 5'h00)
+
 always @(posedge clk_in)
   begin
     if (ri_pram_wr)
-      palette_ram[vram_a_out[4:0]] <= ri_vram_dout;
+      palette_ram[`PRAM_A(vram_a_out[4:0])] <= ri_vram_dout;
   end
 
 assign ri_vram_din = vram_d_in;
-assign ri_pram_din = palette_ram[vram_a_out[4:0]];
+assign ri_pram_din = palette_ram[`PRAM_A(vram_a_out[4:0])];
 
 assign vram_a_out  = (spr_vram_req) ? spr_vram_a : bg_vram_a;
 assign vram_d_out  = ri_vram_dout;
@@ -224,18 +226,16 @@ wire spr_transparent;
 wire bg_transparent;
 
 assign spr_foreground  = ~spr_priority;
-assign spr_transparent = ~|spr_palette_idx[1:0];
-assign bg_transparent  = ~|bg_palette_idx[1:0];
+assign spr_trans       = ~|spr_palette_idx[1:0];
+assign bg_trans        = ~|bg_palette_idx[1:0];
 
-assign d_pri_obj_col =
-  (vga_nes_y_next == 0)                                ? 1'b0 :
-  (spr_primary && !spr_transparent && !bg_transparent) ? 1'b1 : 
-                                                         q_pri_obj_col;
+assign d_pri_obj_col = (vga_nes_y_next == 0)                    ? 1'b0 :
+                       (spr_primary && !spr_trans && !bg_trans) ? 1'b1 : q_pri_obj_col;
 
 assign vga_sys_palette_idx = 
-  ((spr_foreground || bg_transparent) && !spr_transparent) ? palette_ram[{ 1'b1, spr_palette_idx }] :
-  (!bg_transparent)                                        ? palette_ram[{ 1'b0, bg_palette_idx }]  :
-                                                             palette_ram[5'b00000];
+  ((spr_foreground || bg_trans) && !spr_trans) ? palette_ram[`PRAM_A(({ 1'b1, spr_palette_idx }))] :
+  (!bg_trans)                                  ? palette_ram[`PRAM_A(({ 1'b0, bg_palette_idx }))]  :
+                                                 palette_ram[`PRAM_A(5'b00000)];
 
 assign ri_spr_pri_col = q_pri_obj_col;
 
