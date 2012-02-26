@@ -61,17 +61,22 @@ vga_sync vga_sync_blk(
 //
 // Registers.
 //
-reg [11:0] q_rgb, d_rgb;  // output color latch (1 clk delay required by vga_sync)
+reg  [11:0] q_rgb;         // output color latch (1 clk delay required by vga_sync)
+reg  [11:0] d_rgb;
+reg  [13:0] q_vblank_cnt;  // counter to generator vblank signal of correct length
+wire [13:0] d_vblank_cnt;
 
 always @(posedge clk_in)
   begin
     if (rst_in)
       begin
-        q_rgb <= 12'h000;
+        q_rgb        <= 12'h000;
+        q_vblank_cnt <= 14'h0000;
       end
     else
       begin
-        q_rgb <= d_rgb;
+        q_rgb        <= d_rgb;
+        q_vblank_cnt <= d_vblank_cnt;
       end    
   end
 
@@ -178,6 +183,15 @@ always @*
 
 assign { r_out, g_out, b_out } = q_rgb;
 assign pix_pulse_out           = nes_x_next != nes_x_out;
-assign vblank_out              = (nes_y_out >= NES_H) && (nes_y_next_out != 0);
+
+// The vblank output signal should remain high for 2270 CPU cycles.  Based on the current CPU
+// frequency (12.5MHz) this is 9080 cycles at 50MHz.  This will need to be updated if the CPU
+// frequency changes.
+assign d_vblank_cnt = ((sync_x == 0) && (sync_y == DISPLAY_H)) ? 14'h2380         :
+                      (q_vblank_cnt != 0)                      ? q_vblank_cnt - 1 :
+                                                                 14'h0000;
+assign vblank_out = (q_vblank_cnt != 0);
 
 endmodule
+
+

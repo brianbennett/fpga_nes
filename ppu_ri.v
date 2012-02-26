@@ -38,6 +38,7 @@ module ppu_ri
   output reg         inc_addr_out,      // increment vmem addr (due to ri mem access)
   output wire        inc_addr_amt_out,  // amount to increment vmem addr by (0x2002.7)
   output wire        nvbl_en_out,       // enable nmi on vertical blank
+  output wire        vblank_out,        // current 2002.7 value for nmi
   output wire        bg_en_out,         // enable background rendering
   output wire        spr_en_out,        // enable sprite rendering
   output wire        spr_h_out,         // 8/16 scanline sprites
@@ -84,7 +85,9 @@ reg       q_byte_sel,  d_byte_sel;   // tracks if next 0x2005/0x2006 write is hi
 reg [7:0] q_rd_buf,    d_rd_buf;     // internal latch for buffered 0x2007 reads
 reg       q_rd_rdy,    d_rd_rdy;     // controls q_rd_buf updates
 reg [7:0] q_spr_ram_a, d_spr_ram_a;  // sprite ram pointer (set on 0x2003 write)
-reg       q_ncs;                     // last ncs signal (to detect falling edges)
+
+reg       q_ncs_in;                  // last ncs signal (to detect falling edges)
+reg       q_vblank_in;               // last vblank_in signal (to detect falling edges)
 
 always @(posedge clk_in)
   begin
@@ -110,7 +113,8 @@ always @(posedge clk_in)
         q_rd_buf        <= 8'h00;
         q_rd_rdy        <= 1'h0;
         q_spr_ram_a     <= 8'h00;
-        q_ncs           <= 1'h1;
+        q_ncs_in        <= 1'h1;
+        q_vblank_in     <= 1'h0;
       end
     else
       begin
@@ -134,7 +138,8 @@ always @(posedge clk_in)
         q_rd_buf        <= d_rd_buf;
         q_rd_rdy        <= d_rd_rdy;
         q_spr_ram_a     <= d_spr_ram_a;
-        q_ncs           <= ncs_in;
+        q_ncs_in        <= ncs_in;
+        q_vblank_in     <= vblank_in;
       end
   end
 
@@ -168,8 +173,8 @@ always @*
 
     // Set the vblank status bit on a rising vblank edge.  Clear it if vblank is false.  Can also
     // be cleared by reading 0x2002.
-    d_vblank = (vblank_in & ~q_vblank) ? 1'b1 :
-               (~vblank_in)            ? 1'b0 : q_vblank;
+    d_vblank = (~q_vblank_in & vblank_in) ? 1'b1 :
+               (~vblank_in)               ? 1'b0 : q_vblank;
 
     // Only request memory writes on write of 0x2007.
     vram_wr_out = 1'b0;
@@ -184,7 +189,7 @@ always @*
 
     // Only evaluate RI reads/writes on /CS falling edges.  This prevents executing the same
     // command multiple times because the CPU runs at a slower clock rate than the PPU.
-    if (q_ncs & ~ncs_in)
+    if (q_ncs_in & ~ncs_in)
       begin
         if (r_nw_in)
           begin
@@ -192,7 +197,10 @@ always @*
             case (sel_in)
               3'h2:  // 0x2002
                 begin
-                  d_cpu_d_out = { q_vblank, spr_pri_col_in, spr_overflow_in, 5'b00000 };
+                  d_cpu_d_out = { q_vblank | (~q_vblank_in & vblank_in),
+                                  spr_pri_col_in,
+                                  spr_overflow_in,
+                                  5'b00000 };
                   d_byte_sel  = 1'b0;
                   d_vblank    = 1'b0;
                 end
@@ -297,6 +305,7 @@ assign h_out            = q_h;
 assign s_out            = q_s;
 assign inc_addr_amt_out = q_addr_incr;
 assign nvbl_en_out      = q_nvbl_en;
+assign vblank_out       = q_vblank;
 assign bg_en_out        = q_bg_en;
 assign spr_en_out       = q_spr_en;
 assign spr_h_out        = q_spr_h;

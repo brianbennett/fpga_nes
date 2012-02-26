@@ -79,6 +79,7 @@ wire       ri_s;
 wire       ri_inc_addr;
 wire       ri_inc_addr_amt;
 wire       ri_nvbl_en;
+wire       ri_vblank;
 wire       ri_bg_en;
 wire       ri_spr_en;
 wire       ri_spr_h;
@@ -116,6 +117,7 @@ ppu_ri ppu_ri_blk(
   .inc_addr_out(ri_inc_addr),
   .inc_addr_amt_out(ri_inc_addr_amt),
   .nvbl_en_out(ri_nvbl_en),
+  .vblank_out(ri_vblank),
   .bg_en_out(ri_bg_en),
   .spr_en_out(ri_spr_en),
   .spr_h_out(ri_spr_h),
@@ -192,11 +194,42 @@ ppu_spr ppu_spr_blk(
 //
 reg  [5:0] palette_ram [31:0];  // internal palette RAM.  32 entries, 6-bits per entry.
 
-`define PRAM_A(addr) ((addr & 5'h03) ? addr : 5'h00)
+`define PRAM_A(addr) ((addr & 5'h03) ? addr :  (addr & 5'h0f))
 
 always @(posedge clk_in)
   begin
-    if (ri_pram_wr)
+    if (rst_in)
+      begin
+        palette_ram[`PRAM_A(5'h00)] <= 6'h09;
+        palette_ram[`PRAM_A(5'h01)] <= 6'h01;
+        palette_ram[`PRAM_A(5'h02)] <= 6'h00;
+        palette_ram[`PRAM_A(5'h03)] <= 6'h01;
+        palette_ram[`PRAM_A(5'h04)] <= 6'h00;
+        palette_ram[`PRAM_A(5'h05)] <= 6'h02;
+        palette_ram[`PRAM_A(5'h06)] <= 6'h02;
+        palette_ram[`PRAM_A(5'h07)] <= 6'h0d;
+        palette_ram[`PRAM_A(5'h08)] <= 6'h08;
+        palette_ram[`PRAM_A(5'h09)] <= 6'h10;
+        palette_ram[`PRAM_A(5'h0a)] <= 6'h08;
+        palette_ram[`PRAM_A(5'h0b)] <= 6'h24;
+        palette_ram[`PRAM_A(5'h0c)] <= 6'h00;
+        palette_ram[`PRAM_A(5'h0d)] <= 6'h00;
+        palette_ram[`PRAM_A(5'h0e)] <= 6'h04;
+        palette_ram[`PRAM_A(5'h0f)] <= 6'h2c;
+        palette_ram[`PRAM_A(5'h11)] <= 6'h01;
+        palette_ram[`PRAM_A(5'h12)] <= 6'h34;
+        palette_ram[`PRAM_A(5'h13)] <= 6'h03;
+        palette_ram[`PRAM_A(5'h15)] <= 6'h04;
+        palette_ram[`PRAM_A(5'h16)] <= 6'h00;
+        palette_ram[`PRAM_A(5'h17)] <= 6'h14;
+        palette_ram[`PRAM_A(5'h19)] <= 6'h3a;
+        palette_ram[`PRAM_A(5'h1a)] <= 6'h00;
+        palette_ram[`PRAM_A(5'h1b)] <= 6'h02;
+        palette_ram[`PRAM_A(5'h1d)] <= 6'h20;
+        palette_ram[`PRAM_A(5'h1e)] <= 6'h2c;
+        palette_ram[`PRAM_A(5'h1f)] <= 6'h08;
+      end
+    else if (ri_pram_wr)
       palette_ram[`PRAM_A(vram_a_out[4:0])] <= ri_vram_dout;
   end
 
@@ -222,8 +255,8 @@ always @(posedge clk_in)
   end
 
 wire spr_foreground;
-wire spr_transparent;
-wire bg_transparent;
+wire spr_trans;
+wire bg_trans;
 
 assign spr_foreground  = ~spr_priority;
 assign spr_trans       = ~|spr_palette_idx[1:0];
@@ -233,16 +266,16 @@ assign d_pri_obj_col = (vga_nes_y_next == 0)                    ? 1'b0 :
                        (spr_primary && !spr_trans && !bg_trans) ? 1'b1 : q_pri_obj_col;
 
 assign vga_sys_palette_idx = 
-  ((spr_foreground || bg_trans) && !spr_trans) ? palette_ram[`PRAM_A(({ 1'b1, spr_palette_idx }))] :
-  (!bg_trans)                                  ? palette_ram[`PRAM_A(({ 1'b0, bg_palette_idx }))]  :
-                                                 palette_ram[`PRAM_A(5'b00000)];
+  ((spr_foreground || bg_trans) && !spr_trans) ? palette_ram[{ 1'b1, spr_palette_idx }] :
+  (!bg_trans)                                  ? palette_ram[{ 1'b0, bg_palette_idx }]  :
+                                                 palette_ram[5'h00];
 
 assign ri_spr_pri_col = q_pri_obj_col;
 
 //
 // Assign miscellaneous output signals.
 //
-assign nvbl_out = ~(vga_vblank & ri_nvbl_en);
+assign nvbl_out = ~(ri_vblank & ri_nvbl_en);
 
 endmodule
 
