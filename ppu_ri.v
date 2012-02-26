@@ -41,6 +41,8 @@ module ppu_ri
   output wire        vblank_out,        // current 2002.7 value for nmi
   output wire        bg_en_out,         // enable background rendering
   output wire        spr_en_out,        // enable sprite rendering
+  output wire        bg_ls_clip_out,    // clip playfield from left screen column (8 pixels)
+  output wire        spr_ls_clip_out,   // clip sprites from left screen column (8 pixels)
   output wire        spr_h_out,         // 8/16 scanline sprites
   output wire        spr_pt_sel_out,    // pattern table select for sprites (0x2000.3)
   output wire        upd_cntrs_out,     // copy PPU registers to PPU counters
@@ -69,14 +71,16 @@ reg       q_upd_cntrs_out, d_upd_cntrs_out;  // output latch for upd_cntrs_out
 //
 // External State Registers
 //
-reg q_nvbl_en,    d_nvbl_en;     // 0x2000[7]: enables an NMI interrupt on vblank
-reg q_spr_h,      d_spr_h;       // 0x2000[5]: select 8/16 scanline high sprites
-reg q_spr_pt_sel, d_spr_pt_sel;  // 0x2000[3]: sprite pattern table select
-reg q_addr_incr,  d_addr_incr;   // 0x2000[2]: amount to increment addr on 0x2007 access.
-                                 //            0: 1 byte, 1: 32 bytes.
-reg q_spr_en,     d_spr_en;      // 0x2001[4]: enables sprite rendering
-reg q_bg_en,      d_bg_en;       // 0x2001[3]: enables background rendering
-reg q_vblank,     d_vblank;      // 0x2002[7]: indicates a vblank is occurring
+reg q_nvbl_en,     d_nvbl_en;     // 0x2000[7]: enables an NMI interrupt on vblank
+reg q_spr_h,       d_spr_h;       // 0x2000[5]: select 8/16 scanline high sprites
+reg q_spr_pt_sel,  d_spr_pt_sel;  // 0x2000[3]: sprite pattern table select
+reg q_addr_incr,   d_addr_incr;   // 0x2000[2]: amount to increment addr on 0x2007 access.
+                                  //            0: 1 byte, 1: 32 bytes.
+reg q_spr_en,      d_spr_en;      // 0x2001[4]: enables sprite rendering
+reg q_bg_en,       d_bg_en;       // 0x2001[3]: enables background rendering
+reg q_spr_ls_clip, d_spr_ls_clip; // 0x2001[2]: left side screen column (8 pixel) object clipping
+reg q_bg_ls_clip,  d_bg_ls_clip;  // 0x2001[1]: left side screen column (8 pixel) bg clipping
+reg q_vblank,      d_vblank;      // 0x2002[7]: indicates a vblank is occurring
 
 //
 // Internal State Registers
@@ -108,6 +112,8 @@ always @(posedge clk_in)
         q_addr_incr     <= 1'h0;
         q_spr_en        <= 1'h0;
         q_bg_en         <= 1'h0;
+        q_spr_ls_clip   <= 1'h0;
+        q_bg_ls_clip    <= 1'h0;
         q_vblank        <= 1'h0;
         q_byte_sel      <= 1'h0;
         q_rd_buf        <= 8'h00;
@@ -133,6 +139,8 @@ always @(posedge clk_in)
         q_addr_incr     <= d_addr_incr;
         q_spr_en        <= d_spr_en;
         q_bg_en         <= d_bg_en;
+        q_spr_ls_clip   <= d_spr_ls_clip;
+        q_bg_ls_clip    <= d_bg_ls_clip;
         q_vblank        <= d_vblank;
         q_byte_sel      <= d_byte_sel;
         q_rd_buf        <= d_rd_buf;
@@ -146,22 +154,24 @@ always @(posedge clk_in)
 always @*
   begin
     // Default most state to its original value.
-    d_fv         = q_fv;
-    d_vt         = q_vt;
-    d_v          = q_v;
-    d_fh         = q_fh;
-    d_ht         = q_ht;
-    d_h          = q_h;
-    d_s          = q_s;
-    d_cpu_d_out  = q_cpu_d_out;
-    d_nvbl_en    = q_nvbl_en;
-    d_spr_h      = q_spr_h;
-    d_spr_pt_sel = q_spr_pt_sel;
-    d_addr_incr  = q_addr_incr;
-    d_spr_en     = q_spr_en;
-    d_bg_en      = q_bg_en;
-    d_byte_sel   = q_byte_sel;
-    d_spr_ram_a  = q_spr_ram_a;
+    d_fv          = q_fv;
+    d_vt          = q_vt;
+    d_v           = q_v;
+    d_fh          = q_fh;
+    d_ht          = q_ht;
+    d_h           = q_h;
+    d_s           = q_s;
+    d_cpu_d_out   = q_cpu_d_out;
+    d_nvbl_en     = q_nvbl_en;
+    d_spr_h       = q_spr_h;
+    d_spr_pt_sel  = q_spr_pt_sel;
+    d_addr_incr   = q_addr_incr;
+    d_spr_en      = q_spr_en;
+    d_bg_en       = q_bg_en;
+    d_spr_ls_clip = q_spr_ls_clip;
+    d_bg_ls_clip  = q_bg_ls_clip;
+    d_byte_sel    = q_byte_sel;
+    d_spr_ram_a   = q_spr_ram_a;
 
     // Update the read buffer if a new read request is ready.  This happens one cycle after a read
     // of 0x2007.
@@ -232,8 +242,10 @@ always @*
                 end
               3'h1:  // 0x2001
                 begin
-                  d_spr_en = cpu_d_in[4];
-                  d_bg_en  = cpu_d_in[3];
+                  d_spr_en      = cpu_d_in[4];
+                  d_bg_en       = cpu_d_in[3];
+                  d_spr_ls_clip = ~cpu_d_in[2];
+                  d_bg_ls_clip  = ~cpu_d_in[1];
                 end
               3'h3:  // 0x2003
                 begin
@@ -308,6 +320,8 @@ assign nvbl_en_out      = q_nvbl_en;
 assign vblank_out       = q_vblank;
 assign bg_en_out        = q_bg_en;
 assign spr_en_out       = q_spr_en;
+assign bg_ls_clip_out   = q_bg_ls_clip;
+assign spr_ls_clip_out  = q_spr_ls_clip;
 assign spr_h_out        = q_spr_h;
 assign spr_pt_sel_out   = q_spr_pt_sel;
 assign upd_cntrs_out    = q_upd_cntrs_out;

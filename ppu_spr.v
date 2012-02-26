@@ -14,6 +14,7 @@ module ppu_spr
   input  wire        clk_in,            // 50MHz system clock signal
   input  wire        rst_in,            // reset signal
   input  wire        en_in,             // enable sprites
+  input  wire        ls_clip_in,        // clip sprites in left 8 pixels
   input  wire        spr_h_in,          // select 8/16 pixel high sprites
   input  wire        spr_pt_sel_in,     // sprite palette table select
   input  wire [ 7:0] oam_a_in,          // sprite ram address
@@ -579,6 +580,8 @@ always @*
   end
 
 assign { primary_out, priority_out, palette_idx_out } =
+  (ls_clip_in && (nes_x_in >= 10'h000) && (nes_x_in < 10'h008)) ?
+      6'h00 :
   ({ q_obj0_pd1_shift[0], q_obj0_pd0_shift[0] } != 0) ?
       { sbm_rd_obj0_primary, sbm_rd_obj0_priority, sbm_rd_obj0_ps, q_obj0_pd1_shift[0], q_obj0_pd0_shift[0] } :
   ({ q_obj1_pd1_shift[0], q_obj1_pd0_shift[0] } != 0) ?
@@ -594,7 +597,7 @@ assign { primary_out, priority_out, palette_idx_out } =
   ({ q_obj6_pd1_shift[0], q_obj6_pd0_shift[0] } != 0) ?
       { sbm_rd_obj6_primary, sbm_rd_obj6_priority, sbm_rd_obj6_ps, q_obj6_pd1_shift[0], q_obj6_pd0_shift[0] } :
   ({ q_obj7_pd1_shift[0], q_obj7_pd0_shift[0] } != 0) ?
-      { sbm_rd_obj7_primary, sbm_rd_obj7_priority, sbm_rd_obj7_ps, q_obj7_pd1_shift[0], q_obj7_pd0_shift[0] } : 5'b0000;
+      { sbm_rd_obj7_primary, sbm_rd_obj7_priority, sbm_rd_obj7_ps, q_obj7_pd1_shift[0], q_obj7_pd0_shift[0] } : 6'b0000;
 
 assign oam_d_out    = m_oam[oam_a_in];
 assign overflow_out = q_spr_overflow;

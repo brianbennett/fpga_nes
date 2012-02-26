@@ -14,6 +14,7 @@ module ppu_bg
   input  wire        clk_in,             // 50MHz system clock signal
   input  wire        rst_in,             // reset signal
   input  wire        en_in,              // enable background
+  input  wire        ls_clip_in,         // clip background in left 8 pixels
   input  wire [ 2:0] fv_in,              // fine vertical scroll reg value
   input  wire [ 4:0] vt_in,              // vertical tile scroll reg value
   input  wire        v_in,               // vertical name table selection reg value
@@ -144,7 +145,7 @@ always @*
             { d_hc, d_htc } = { q_hc, q_htc } + 6'h01;
           end
 
-        // Counter loading. There are 2 conditions that update all 5 PPU scroll counters with the 
+        // Counter loading. There are 2 conditions that update all 5 PPU scroll counters with the
         // contents of the latches adjacent to them. The first is after a write to 2006/2. The
         // second, is at the beginning of scanline 20, when the PPU starts rendering data for the
         // first time in a frame (this update won't happen if all rendering is disabled via 2001.3
@@ -198,6 +199,8 @@ always @*
 //
 // Background palette index derivation logic.
 //
+wire clip;
+
 always @*
   begin
     // Default to original value.
@@ -289,12 +292,13 @@ always @*
                   vram_a_sel = VRAM_A_SEL_PT1_READ;
                   d_pd1      = vram_d_in;
                 end
-            endcase            
+            endcase
           end
       end
   end
 
-assign palette_idx_out  = { q_bg_bit3_shift[fh_in], q_bg_bit2_shift[fh_in], 
-                            q_bg_bit1_shift[fh_in], q_bg_bit0_shift[fh_in] };
-  
+assign clip            = ls_clip_in && (nes_x_in >= 10'h000) && (nes_x_in < 10'h008);
+assign palette_idx_out = (!clip) ? { q_bg_bit3_shift[fh_in], q_bg_bit2_shift[fh_in],
+                                     q_bg_bit1_shift[fh_in], q_bg_bit0_shift[fh_in] } : 4'h0;
+
 endmodule

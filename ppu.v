@@ -82,6 +82,8 @@ wire       ri_nvbl_en;
 wire       ri_vblank;
 wire       ri_bg_en;
 wire       ri_spr_en;
+wire       ri_bg_ls_clip;
+wire       ri_spr_ls_clip;
 wire       ri_spr_h;
 wire       ri_spr_pt_sel;
 wire       ri_upd_cntrs;
@@ -120,6 +122,8 @@ ppu_ri ppu_ri_blk(
   .vblank_out(ri_vblank),
   .bg_en_out(ri_bg_en),
   .spr_en_out(ri_spr_en),
+  .bg_ls_clip_out(ri_bg_ls_clip),
+  .spr_ls_clip_out(ri_spr_ls_clip),
   .spr_h_out(ri_spr_h),
   .spr_pt_sel_out(ri_spr_pt_sel),
   .upd_cntrs_out(ri_upd_cntrs),
@@ -138,6 +142,7 @@ ppu_bg ppu_bg_blk(
   .clk_in(clk_in),
   .rst_in(rst_in),
   .en_in(ri_bg_en),
+  .ls_clip_in(ri_bg_ls_clip),
   .fv_in(ri_fv),
   .vt_in(ri_vt),
   .v_in(ri_v),
@@ -170,6 +175,7 @@ ppu_spr ppu_spr_blk(
   .clk_in(clk_in),
   .rst_in(rst_in),
   .en_in(ri_spr_en),
+  .ls_clip_in(ri_spr_ls_clip),
   .spr_h_in(ri_spr_h),
   .spr_pt_sel_in(ri_spr_pt_sel),
   .oam_a_in(ri_spr_ram_a),
@@ -265,7 +271,7 @@ assign bg_trans        = ~|bg_palette_idx[1:0];
 assign d_pri_obj_col = (vga_nes_y_next == 0)                    ? 1'b0 :
                        (spr_primary && !spr_trans && !bg_trans) ? 1'b1 : q_pri_obj_col;
 
-assign vga_sys_palette_idx = 
+assign vga_sys_palette_idx =
   ((spr_foreground || bg_trans) && !spr_trans) ? palette_ram[{ 1'b1, spr_palette_idx }] :
   (!bg_trans)                                  ? palette_ram[{ 1'b0, bg_palette_idx }]  :
                                                  palette_ram[5'h00];
