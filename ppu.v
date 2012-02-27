@@ -255,9 +255,9 @@ wire d_pri_obj_col;
 always @(posedge clk_in)
   begin
     if (rst_in)
-      q_pri_obj_col = 1'b0;
+      q_pri_obj_col <= 1'b0;
     else
-      q_pri_obj_col = d_pri_obj_col;
+      q_pri_obj_col <= d_pri_obj_col;
   end
 
 wire spr_foreground;
