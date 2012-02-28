@@ -167,7 +167,7 @@ always @*
     stm_din[    4] = oam_rd_h_inv;
     stm_din[ 3: 0] = (oam_rd_v_inv) ? ~rng_cmp_res[3:0] : rng_cmp_res[3:0];
 
-    if (en_in && pix_pulse_in && (nes_y_next_in < 240))
+    if (en_in && pix_pulse_in && (nes_y_next_in < 239))
       begin
         if (nes_x_in == 320)
           begin
@@ -247,7 +247,7 @@ always @*
                      nes_x_in[1],
                      stm_rd_obj_row[2:0] };
 
-    if (en_in && (nes_y_next_in < 240) && (nes_x_in >= 256) && (nes_x_in < 320))
+    if (en_in && (nes_y_next_in < 239) && (nes_x_in >= 256) && (nes_x_in < 320))
       begin
         if (stm_rd_idx < q_in_rng_cnt)
           begin
@@ -487,7 +487,7 @@ always @*
     d_obj6_pd0_shift = q_obj6_pd0_shift;
     d_obj7_pd0_shift = q_obj7_pd0_shift;
 
-    if (en_in && (nes_y_in < 240))
+    if (en_in && (nes_y_in < 239))
       begin
         if (pix_pulse_in)
           begin

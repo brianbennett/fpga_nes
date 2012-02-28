@@ -24,7 +24,7 @@ module ppu_vga
   output wire [9:0] nes_y_out,           // nes y coordinate
   output wire [9:0] nes_y_next_out,      // next line's nes y coordinate
   output wire       pix_pulse_out,       // 1 clk pulse prior to nes_x update
-  output wire       vblank_out           // indicates a vblank is occuring (no PPU vram access)    
+  output wire       vblank_out           // indicates a vblank is occuring (no PPU vram access)
 );
 
 // Display dimensions (640x480).
@@ -44,7 +44,7 @@ localparam [11:0] BORDER_COLOR = 12'h444;
 wire       sync_en;      // vga enable signal
 wire [9:0] sync_x;       // current vga x coordinate
 wire [9:0] sync_y;       // current vga y coordinate
-wire [9:0] sync_x_next;  // vga x coordinate for next clock 
+wire [9:0] sync_x_next;  // vga x coordinate for next clock
 wire [9:0] sync_y_next;  // vga y coordinate for next line
 
 vga_sync vga_sync_blk(
@@ -61,23 +61,23 @@ vga_sync vga_sync_blk(
 //
 // Registers.
 //
-reg  [11:0] q_rgb;         // output color latch (1 clk delay required by vga_sync)
+reg  [11:0] q_rgb;     // output color latch (1 clk delay required by vga_sync)
 reg  [11:0] d_rgb;
-reg  [13:0] q_vblank_cnt;  // counter to generator vblank signal of correct length
-wire [13:0] d_vblank_cnt;
+reg         q_vblank;  // current vblank state
+wire        d_vblank;
 
 always @(posedge clk_in)
   begin
     if (rst_in)
       begin
-        q_rgb        <= 12'h000;
-        q_vblank_cnt <= 14'h0000;
+        q_rgb    <= 12'h000;
+        q_vblank <= 1'h0;
       end
     else
       begin
-        q_rgb        <= d_rgb;
-        q_vblank_cnt <= d_vblank_cnt;
-      end    
+        q_rgb    <= d_rgb;
+        q_vblank <= d_vblank;
+      end
   end
 
 //
@@ -184,14 +184,14 @@ always @*
 assign { r_out, g_out, b_out } = q_rgb;
 assign pix_pulse_out           = nes_x_next != nes_x_out;
 
-// The vblank output signal should remain high for 2270 CPU cycles.  Based on the current CPU
-// frequency (12.5MHz) this is 9080 cycles at 50MHz.  This will need to be updated if the CPU
-// frequency changes.
-assign d_vblank_cnt = ((sync_x == 0) && (sync_y == DISPLAY_H)) ? 14'h2380         :
-                      (q_vblank_cnt != 0)                      ? q_vblank_cnt - 1 :
-                                                                 14'h0000;
-assign vblank_out = (q_vblank_cnt != 0);
+// Clear the VBLANK signal immediately before starting processing of the pre-0 garbage line.  From
+// here.  Set the vblank approximately 2270 CPU cycles before it will be cleared.  This is done
+// in order to pass vbl_clear_time.nes.  It eats into the visible portion of the playfield, but we
+// currently hide that portion of the screen anyway.
+assign d_vblank = ((sync_x == 730) && (sync_y == 477)) ? 1'b1 :
+                  ((sync_x == 64) && (sync_y == 519))  ? 1'b0 : q_vblank;
+
+assign vblank_out = q_vblank;
 
 endmodule
-
 

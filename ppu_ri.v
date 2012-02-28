@@ -207,10 +207,7 @@ always @*
             case (sel_in)
               3'h2:  // 0x2002
                 begin
-                  d_cpu_d_out = { q_vblank | (~q_vblank_in & vblank_in),
-                                  spr_pri_col_in,
-                                  spr_overflow_in,
-                                  5'b00000 };
+                  d_cpu_d_out = { q_vblank, spr_pri_col_in, spr_overflow_in, 5'b00000 };
                   d_byte_sel  = 1'b0;
                   d_vblank    = 1'b0;
                 end

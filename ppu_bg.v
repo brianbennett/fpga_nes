@@ -220,7 +220,7 @@ always @*
 
     vram_a_sel = VRAM_A_SEL_RI;
 
-    if (en_in && ((nes_y_in < 240) || (nes_y_next_in == 0)))
+    if (en_in && ((nes_y_in < 239) || (nes_y_next_in == 0)))
       begin
         if (pix_pulse_in && (nes_x_in == 319))
           begin
