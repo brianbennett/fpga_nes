@@ -17,10 +17,12 @@ module sprdma
   input  wire [ 7:0] cpumc_din_in,   // cpumc din bus in (to snoop cpu writes of 0x4014)
   input  wire [ 7:0] cpumc_dout_in,  // cpumc dout bus in (to receive sprdma read data)
   input  wire        cpu_r_nw_in,    // cpu write enable (to snoop cpu writes of 0x4014)
+  input  wire        cpumc_rdy_in,   // indicates if the cpumc is rdy for mem requests
   output wire        active_out,     // high when sprdma is active (de-assert cpu ready signal)
   output reg  [15:0] cpumc_a_out,    // cpu address bus out (for dma cpu mem reads/writes)
   output reg  [ 7:0] cpumc_d_out,    // cpu data bus out (for dma mem writes)
-  output reg         cpumc_r_nw_out  // cpu r_nw signal out (for dma mem writes)
+  output reg         cpumc_r_nw_out, // cpu r_nw signal out (for dma mem writes)
+  output reg         cpumc_req       // initiate memory request to cpumc
 );
 
 // Symbolic state representations.
@@ -64,6 +66,7 @@ always @*
     cpumc_a_out    = 16'h00;
     cpumc_d_out    = 8'h00;
     cpumc_r_nw_out = 1'b1;
+    cpumc_req      = 1'b0;
 
     if (q_state == S_READY)
       begin
@@ -80,13 +83,16 @@ always @*
           2'h0:
             begin
               cpumc_a_out = q_addr;
+              cpumc_req   = 1'b1;
               d_cnt       = 2'h1;
             end
           2'h1:
             begin
               cpumc_a_out = q_addr;
               d_data      = cpumc_dout_in;
-              d_cnt       = 2'h2;
+
+              if (cpumc_rdy_in)
+                d_cnt     = 2'h2;
             end
           2'h2:
             begin
