@@ -98,7 +98,7 @@ reg         cpumc_req;   // memory request initiator
 reg         cpumc_r_nw;  // R/!W
 reg         cpumc_erase; // request erase operation
 wire        cpumc_rdy;   // indicates cpumc is ready for a request
-wire        cpumc_cfg;   // defines mapper configuration
+wire [ 7:0] cpumc_cfg;   // defines mapper configuration
 
 cpumc cpumc_blk(
   .clk(CLK_50MHZ),
