@@ -298,7 +298,9 @@ always @*
   end
 
 assign clip            = ls_clip_in && (nes_x_in >= 10'h000) && (nes_x_in < 10'h008);
-assign palette_idx_out = (!clip) ? { q_bg_bit3_shift[fh_in], q_bg_bit2_shift[fh_in],
-                                     q_bg_bit1_shift[fh_in], q_bg_bit0_shift[fh_in] } : 4'h0;
+assign palette_idx_out = (!clip && en_in) ? { q_bg_bit3_shift[fh_in],
+                                              q_bg_bit2_shift[fh_in],
+                                              q_bg_bit1_shift[fh_in],
+                                              q_bg_bit0_shift[fh_in] } : 4'h0;
 
 endmodule

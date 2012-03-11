@@ -580,7 +580,7 @@ always @*
   end
 
 assign { primary_out, priority_out, palette_idx_out } =
-  (ls_clip_in && (nes_x_in >= 10'h000) && (nes_x_in < 10'h008)) ?
+  (!en_in || (ls_clip_in && (nes_x_in >= 10'h000) && (nes_x_in < 10'h008))) ?
       6'h00 :
   ({ q_obj0_pd1_shift[0], q_obj0_pd0_shift[0] } != 0) ?
       { sbm_rd_obj0_primary, sbm_rd_obj0_priority, sbm_rd_obj0_ps, q_obj0_pd1_shift[0], q_obj0_pd0_shift[0] } :
