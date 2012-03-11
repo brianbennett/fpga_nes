@@ -38,125 +38,146 @@ module cpu
 `define REGSEL_S   6
 
 // Opcodes.
-localparam [7:0] ADC_ABS  = 8'h6D, ADC_ABSX = 8'h7D, ADC_ABSY = 8'h79, ADC_IMM  = 8'h69,
-                                   ADC_INDX = 8'h61, ADC_INDY = 8'h71, ADC_ZP   = 8'h65,
-                                   ADC_ZPX  = 8'h75,
-                 AND_ABS  = 8'h2D, AND_ABSX = 8'h3D, AND_ABSY = 8'h39, AND_IMM  = 8'h29,
-                                   AND_INDX = 8'h21, AND_INDY = 8'h31, AND_ZP   = 8'h25,
-                                   AND_ZPX  = 8'h35,
-                 ASL_ABS  = 8'h0E, ASL_ABSX = 8'h1E, ASL_ACC  = 8'h0A, ASL_ZP   = 8'h06,
-                                   ASL_ZPX  = 8'h16,
-                 BCC      = 8'h90,
-                 BCS      = 8'hB0,
-                 BEQ      = 8'hF0,
-                 BIT_ABS  = 8'h2C, BIT_ZP   = 8'h24,
-                 BMI      = 8'h30,
-                 BNE      = 8'hD0,
-                 BPL      = 8'h10,
-                 BRK      = 8'h00,
-                 BVC      = 8'h50,
-                 BVS      = 8'h70,
-                 CLC      = 8'h18,
-                 CLD      = 8'hD8,
-                 CLI      = 8'h58,
-                 CLV      = 8'hB8,
-                 CMP_ABS  = 8'hCD, CMP_ABSX = 8'hDD, CMP_ABSY = 8'hD9, CMP_IMM  = 8'hC9,
-                                   CMP_INDX = 8'hC1, CMP_INDY = 8'hD1, CMP_ZP   = 8'hC5,
-                                   CMP_ZPX  = 8'hD5,
-                 CPX_ABS  = 8'hEC, CPX_IMM  = 8'hE0, CPX_ZP   = 8'hE4,
-                 CPY_ABS  = 8'hCC, CPY_IMM  = 8'hC0, CPY_ZP   = 8'hC4,
-                 DEC_ABS  = 8'hCE, DEC_ABSX = 8'hDE, DEC_ZP   = 8'hC6, DEC_ZPX  = 8'hD6,
-                 DEX      = 8'hCA,
-                 DEY      = 8'h88,
-                 EOR_ABS  = 8'h4D, EOR_ABSX = 8'h5D, EOR_ABSY = 8'h59, EOR_IMM  = 8'h49,
-                                   EOR_INDX = 8'h41, EOR_INDY = 8'h51, EOR_ZP   = 8'h45,
-                                   EOR_ZPX  = 8'h55,
-                 INC_ABS  = 8'hEE, INC_ABSX = 8'hFE, INC_ZP   = 8'hE6, INC_ZPX  = 8'hF6,
-                 INX      = 8'hE8,
-                 INY      = 8'hC8,
-                 IRQ      = 8'h02,
-                 JMP_ABS  = 8'h4C, JMP_IND  = 8'h6C,
-                 JSR      = 8'h20,
-                 LDA_ABS  = 8'hAD, LDA_ABSX = 8'hBD, LDA_ABSY = 8'hB9, LDA_IMM  = 8'hA9,
-                                   LDA_INDX = 8'hA1, LDA_INDY = 8'hB1, LDA_ZP   = 8'hA5,
-                                   LDA_ZPX  = 8'hB5,
-                 LDX_ABS  = 8'hAE, LDX_ABSY = 8'hBE, LDX_IMM  = 8'hA2, LDX_ZP   = 8'hA6,
-                                   LDX_ZPY  = 8'hB6,
-                 LDY_ABS  = 8'hAC, LDY_ABSX = 8'hBC, LDY_IMM  = 8'hA0, LDY_ZP   = 8'hA4,
-                                   LDY_ZPX  = 8'hB4,
-                 LSR_ABS  = 8'h4E, LSR_ABSX = 8'h5E, LSR_ACC  = 8'h4A, LSR_ZP   = 8'h46,
-                                   LSR_ZPX  = 8'h56,
-                 NOP      = 8'hEA,
-                 ORA_ABS  = 8'h0D, ORA_ABSX = 8'h1D, ORA_ABSY = 8'h19, ORA_IMM  = 8'h09,
-                                   ORA_INDX = 8'h01, ORA_INDY = 8'h11, ORA_ZP   = 8'h05,
-                                   ORA_ZPX  = 8'h15,
-                 PHA      = 8'h48,
-                 PHP      = 8'h08,
-                 PLA      = 8'h68,
-                 PLP      = 8'h28,
-                 ROL_ABS  = 8'h2E, ROL_ABSX = 8'h3E, ROL_ACC  = 8'h2A, ROL_ZP   = 8'h26,
-                                   ROL_ZPX  = 8'h36,
-                 ROR_ABS  = 8'h6E, ROR_ABSX = 8'h7E, ROR_ACC  = 8'h6A, ROR_ZP   = 8'h66,
-                                   ROR_ZPX  = 8'h76,
-                 RTI      = 8'h40,
-                 RTS      = 8'h60,
-                 SBC_ABS  = 8'hED, SBC_ABSX = 8'hFD, SBC_ABSY = 8'hF9, SBC_IMM  = 8'hE9,
-                                   SBC_INDX = 8'hE1, SBC_INDY = 8'hF1, SBC_ZP   = 8'hE5,
-                                   SBC_ZPX  = 8'hF5,
-                 SEC      = 8'h38,
-                 SED      = 8'hF8,
-                 SEI      = 8'h78,
-                 STA_ABS  = 8'h8D, STA_ABSX = 8'h9D, STA_ABSY = 8'h99, STA_INDX = 8'h81,
-                                   STA_INDY = 8'h91, STA_ZP   = 8'h85, STA_ZPX  = 8'h95,
-                 STX_ABS  = 8'h8E, STX_ZP   = 8'h86, STX_ZPY  = 8'h96,
-                 STY_ABS  = 8'h8C, STY_ZP   = 8'h84, STY_ZPX  = 8'h94,
-                 TAX      = 8'hAA,
-                 TAY      = 8'hA8,
-                 TSX      = 8'hBA,
-                 TXA      = 8'h8A,
-                 TXS      = 8'h9A,
-                 TYA      = 8'h98;
+localparam [7:0] ADC_ABS   = 8'h6D, ADC_ABSX  = 8'h7D, ADC_ABSY  = 8'h79, ADC_IMM   = 8'h69,
+                                    ADC_INDX  = 8'h61, ADC_INDY  = 8'h71, ADC_ZP    = 8'h65,
+                                    ADC_ZPX   = 8'h75,
+                 AND_ABS   = 8'h2D, AND_ABSX  = 8'h3D, AND_ABSY  = 8'h39, AND_IMM   = 8'h29,
+                                    AND_INDX  = 8'h21, AND_INDY  = 8'h31, AND_ZP    = 8'h25,
+                                    AND_ZPX   = 8'h35,
+                 ASL_ABS   = 8'h0E, ASL_ABSX  = 8'h1E, ASL_ACC   = 8'h0A, ASL_ZP    = 8'h06,
+                                    ASL_ZPX   = 8'h16,
+                 BCC       = 8'h90,
+                 BCS       = 8'hB0,
+                 BEQ       = 8'hF0,
+                 BIT_ABS   = 8'h2C, BIT_ZP    = 8'h24,
+                 BMI       = 8'h30,
+                 BNE       = 8'hD0,
+                 BPL       = 8'h10,
+                 BRK       = 8'h00,
+                 BVC       = 8'h50,
+                 BVS       = 8'h70,
+                 CLC       = 8'h18,
+                 CLD       = 8'hD8,
+                 CLI       = 8'h58,
+                 CLV       = 8'hB8,
+                 CMP_ABS   = 8'hCD, CMP_ABSX  = 8'hDD, CMP_ABSY  = 8'hD9, CMP_IMM   = 8'hC9,
+                                    CMP_INDX  = 8'hC1, CMP_INDY  = 8'hD1, CMP_ZP    = 8'hC5,
+                                    CMP_ZPX   = 8'hD5,
+                 CPX_ABS   = 8'hEC, CPX_IMM   = 8'hE0, CPX_ZP    = 8'hE4,
+                 CPY_ABS   = 8'hCC, CPY_IMM   = 8'hC0, CPY_ZP    = 8'hC4,
+                 DEC_ABS   = 8'hCE, DEC_ABSX  = 8'hDE, DEC_ZP    = 8'hC6, DEC_ZPX   = 8'hD6,
+                 DEX       = 8'hCA,
+                 DEY       = 8'h88,
+                 DOP_IMM   = 8'h80, DOP_IMM2  = 8'h82, DOP_IMM3  = 8'h89, DOP_IMM4  = 8'hC2,
+                                    DOP_IMM5  = 8'hE2, DOP_ZP    = 8'h04, DOP_ZP2   = 8'h44,
+                                    DOP_ZP3   = 8'h64, DOP_ZPX   = 8'h14, DOP_ZPX2  = 8'h34,
+                                    DOP_ZPX3  = 8'h54, DOP_ZPX4  = 8'h74, DOP_ZPX5  = 8'hD4,
+                                    DOP_ZPX6  = 8'hF4,
+                 EOR_ABS   = 8'h4D, EOR_ABSX  = 8'h5D, EOR_ABSY  = 8'h59, EOR_IMM   = 8'h49,
+                                    EOR_INDX  = 8'h41, EOR_INDY  = 8'h51, EOR_ZP    = 8'h45,
+                                    EOR_ZPX   = 8'h55,
+                 INC_ABS   = 8'hEE, INC_ABSX  = 8'hFE, INC_ZP    = 8'hE6, INC_ZPX   = 8'hF6,
+                 INX       = 8'hE8,
+                 INY       = 8'hC8,
+                 IRQ       = 8'h02,
+                 JMP_ABS   = 8'h4C, JMP_IND   = 8'h6C,
+                 JSR       = 8'h20,
+                 LAX_ABS   = 8'hAF, LAX_ABSY  = 8'hBF, LAX_INDX  = 8'hA3, LAX_INDY  = 8'hB3,
+                                    LAX_ZP    = 8'hA7, LAX_ZPY   = 8'hB7,
+                 LDA_ABS   = 8'hAD, LDA_ABSX  = 8'hBD, LDA_ABSY  = 8'hB9, LDA_IMM   = 8'hA9,
+                                    LDA_INDX  = 8'hA1, LDA_INDY  = 8'hB1, LDA_ZP    = 8'hA5,
+                                    LDA_ZPX   = 8'hB5,
+                 LDX_ABS   = 8'hAE, LDX_ABSY  = 8'hBE, LDX_IMM   = 8'hA2, LDX_ZP    = 8'hA6,
+                                    LDX_ZPY   = 8'hB6,
+                 LDY_ABS   = 8'hAC, LDY_ABSX  = 8'hBC, LDY_IMM   = 8'hA0, LDY_ZP    = 8'hA4,
+                                    LDY_ZPX   = 8'hB4,
+                 LSR_ABS   = 8'h4E, LSR_ABSX  = 8'h5E, LSR_ACC   = 8'h4A, LSR_ZP    = 8'h46,
+                                    LSR_ZPX   = 8'h56,
+                 NOP       = 8'hEA, NOP_1A    = 8'h1A, NOP_3A    = 8'h3A, NOP_5A    = 8'h5A,
+                                    NOP_7A    = 8'h7A, NOP_DA    = 8'hDA, NOP_FA    = 8'hFA,
+                 ORA_ABS   = 8'h0D, ORA_ABSX  = 8'h1D, ORA_ABSY  = 8'h19, ORA_IMM   = 8'h09,
+                                    ORA_INDX  = 8'h01, ORA_INDY  = 8'h11, ORA_ZP    = 8'h05,
+                                    ORA_ZPX   = 8'h15,
+                 PHA       = 8'h48,
+                 PHP       = 8'h08,
+                 PLA       = 8'h68,
+                 PLP       = 8'h28,
+                 ROL_ABS   = 8'h2E, ROL_ABSX  = 8'h3E, ROL_ACC   = 8'h2A, ROL_ZP    = 8'h26,
+                                    ROL_ZPX   = 8'h36,
+                 ROR_ABS   = 8'h6E, ROR_ABSX  = 8'h7E, ROR_ACC   = 8'h6A, ROR_ZP    = 8'h66,
+                                    ROR_ZPX   = 8'h76,
+                 RTI       = 8'h40,
+                 RTS       = 8'h60,
+                 SAX_ABS   = 8'h8F, SAX_INDX  = 8'h83, SAX_ZP    = 8'h87, SAX_ZPY   = 8'h97,
+                 SBC_ABS   = 8'hED, SBC_ABSX  = 8'hFD, SBC_ABSY  = 8'hF9, SBC_IMM   = 8'hE9,
+                                    SBC_IMM2  = 8'hEB, SBC_INDX  = 8'hE1, SBC_INDY  = 8'hF1,
+                                    SBC_ZP    = 8'hE5, SBC_ZPX   = 8'hF5,
+                 SEC       = 8'h38,
+                 SED       = 8'hF8,
+                 SEI       = 8'h78,
+                 STA_ABS   = 8'h8D, STA_ABSX  = 8'h9D, STA_ABSY  = 8'h99, STA_INDX  = 8'h81,
+                                    STA_INDY  = 8'h91, STA_ZP    = 8'h85, STA_ZPX   = 8'h95,
+                 STX_ABS   = 8'h8E, STX_ZP    = 8'h86, STX_ZPY   = 8'h96,
+                 STY_ABS   = 8'h8C, STY_ZP    = 8'h84, STY_ZPX   = 8'h94,
+                 TAX       = 8'hAA,
+                 TAY       = 8'hA8,
+                 TOP_ABS   = 8'h0C, TOP_ABSX  = 8'h1C, TOP_ABSX2 = 8'h3C, TOP_ABSX3 = 8'h5C,
+                                    TOP_ABSX4 = 8'h7C, TOP_ABSX5 = 8'hDC, TOP_ABSX6 = 8'hFC,
+                 TSX       = 8'hBA,
+                 TXA       = 8'h8A,
+                 TXS       = 8'h9A,
+                 TYA       = 8'h98;
 
 // Macro to check if a value is a valid opcode.
 `define IS_VALID_OPCODE(op) \
-    (((op) == ADC_ABS ) || ((op) == ADC_ABSX) || ((op) == ADC_ABSY) || ((op) == ADC_IMM ) || \
-     ((op) == ADC_INDX) || ((op) == ADC_INDY) || ((op) == ADC_ZP  ) || ((op) == ADC_ZPX ) || \
-     ((op) == AND_ABS ) || ((op) == AND_ABSX) || ((op) == AND_ABSY) || ((op) == AND_IMM ) || \
-     ((op) == AND_INDX) || ((op) == AND_INDY) || ((op) == AND_ZP  ) || ((op) == AND_ZPX ) || \
-     ((op) == ASL_ABS ) || ((op) == ASL_ABSX) || ((op) == ASL_ACC ) || ((op) == ASL_ZP  ) || \
-     ((op) == ASL_ZPX ) || ((op) == BCC     ) || ((op) == BCS     ) || ((op) == BEQ     ) || \
-     ((op) == BIT_ABS ) || ((op) == BIT_ZP  ) || ((op) == BMI     ) || ((op) == BNE     ) || \
-     ((op) == BPL     ) || ((op) == BRK     ) || ((op) == BVC     ) || ((op) == BVS     ) || \
-     ((op) == CLC     ) || ((op) == CLD     ) || ((op) == CLI     ) || ((op) == CLV     ) || \
-     ((op) == CMP_ABS ) || ((op) == CMP_ABSX) || ((op) == CMP_ABSY) || ((op) == CMP_IMM ) || \
-     ((op) == CMP_INDX) || ((op) == CMP_INDY) || ((op) == CMP_ZP  ) || ((op) == CMP_ZPX ) || \
-     ((op) == CPX_ABS ) || ((op) == CPX_IMM ) || ((op) == CPX_ZP  ) || ((op) == CPY_ABS ) || \
-     ((op) == CPY_IMM ) || ((op) == CPY_ZP  ) || ((op) == DEC_ABS ) || ((op) == DEC_ABSX) || \
-     ((op) == DEC_ZP  ) || ((op) == DEC_ZPX ) || ((op) == DEX     ) || ((op) == DEY     ) || \
-     ((op) == EOR_ABS ) || ((op) == EOR_ABSX) || ((op) == EOR_ABSY) || ((op) == EOR_IMM ) || \
-     ((op) == EOR_INDX) || ((op) == EOR_INDY) || ((op) == EOR_ZP  ) || ((op) == EOR_ZPX ) || \
-     ((op) == INC_ABS ) || ((op) == INC_ABSX) || ((op) == INC_ZP  ) || ((op) == INC_ZPX ) || \
-     ((op) == INX     ) || ((op) == INY     ) || ((op) == IRQ     ) || ((op) == JMP_ABS ) || \
-     ((op) == JMP_IND ) || ((op) == JSR     ) || ((op) == LDA_ABS ) || ((op) == LDA_ABSX) || \
-     ((op) == LDA_ABSY) || ((op) == LDA_IMM ) || ((op) == LDA_INDX) || ((op) == LDA_INDY) || \
-     ((op) == LDA_ZP  ) || ((op) == LDA_ZPX ) || ((op) == LDX_ABS ) || ((op) == LDX_ABSY) || \
-     ((op) == LDX_IMM ) || ((op) == LDX_ZP  ) || ((op) == LDX_ZPY ) || ((op) == LDY_ABS ) || \
-     ((op) == LDY_ABSX) || ((op) == LDY_IMM ) || ((op) == LDY_ZP  ) || ((op) == LDY_ZPX ) || \
-     ((op) == LSR_ABS ) || ((op) == LSR_ABSX) || ((op) == LSR_ACC ) || ((op) == LSR_ZP  ) || \
-     ((op) == LSR_ZPX ) || ((op) == NOP     ) || ((op) == ORA_ABS ) || ((op) == ORA_ABSX) || \
-     ((op) == ORA_ABSY) || ((op) == ORA_IMM ) || ((op) == ORA_INDX) || ((op) == ORA_INDY) || \
-     ((op) == ORA_ZP  ) || ((op) == ORA_ZPX ) || ((op) == PHA     ) || ((op) == PHP     ) || \
-     ((op) == PLA     ) || ((op) == PLP     ) || ((op) == ROL_ABS ) || ((op) == ROL_ABSX) || \
-     ((op) == ROL_ACC ) || ((op) == ROL_ZP  ) || ((op) == ROL_ZPX ) || ((op) == ROR_ABS ) || \
-     ((op) == ROR_ABSX) || ((op) == ROR_ACC ) || ((op) == ROR_ZP  ) || ((op) == ROR_ZPX ) || \
-     ((op) == RTI     ) || ((op) == RTS     ) || ((op) == SBC_ABS ) || ((op) == SBC_ABSX) || \
-     ((op) == SBC_ABSY) || ((op) == SBC_IMM ) || ((op) == SBC_INDX) || ((op) == SBC_INDY) || \
-     ((op) == SBC_ZP  ) || ((op) == SBC_ZPX ) || ((op) == SEC     ) || ((op) == SED     ) || \
-     ((op) == SEI     ) || ((op) == STA_ABS ) || ((op) == STA_ABSX) || ((op) == STA_ABSY) || \
-     ((op) == STA_INDX) || ((op) == STA_INDY) || ((op) == STA_ZP  ) || ((op) == STA_ZPX ) || \
-     ((op) == STX_ABS ) || ((op) == STX_ZP  ) || ((op) == STX_ZPY ) || ((op) == STY_ABS ) || \
-     ((op) == STY_ZP  ) || ((op) == STY_ZPX ) || ((op) == TAX     ) || ((op) == TAY     ) || \
-     ((op) == TSX     ) || ((op) == TXA     ) || ((op) == TXS     ) || ((op) == TYA     ))
+    (((op) == ADC_ABS  ) || ((op) == ADC_ABSX ) || ((op) == ADC_ABSY ) || ((op) == ADC_IMM  ) || \
+     ((op) == ADC_INDX ) || ((op) == ADC_INDY ) || ((op) == ADC_ZP   ) || ((op) == ADC_ZPX  ) || \
+     ((op) == AND_ABS  ) || ((op) == AND_ABSX ) || ((op) == AND_ABSY ) || ((op) == AND_IMM  ) || \
+     ((op) == AND_INDX ) || ((op) == AND_INDY ) || ((op) == AND_ZP   ) || ((op) == AND_ZPX  ) || \
+     ((op) == ASL_ABS  ) || ((op) == ASL_ABSX ) || ((op) == ASL_ACC  ) || ((op) == ASL_ZP   ) || \
+     ((op) == ASL_ZPX  ) || ((op) == BCC      ) || ((op) == BCS      ) || ((op) == BEQ      ) || \
+     ((op) == BIT_ABS  ) || ((op) == BIT_ZP   ) || ((op) == BMI      ) || ((op) == BNE      ) || \
+     ((op) == BPL      ) || ((op) == BRK      ) || ((op) == BVC      ) || ((op) == BVS      ) || \
+     ((op) == CLC      ) || ((op) == CLD      ) || ((op) == CLI      ) || ((op) == CLV      ) || \
+     ((op) == CMP_ABS  ) || ((op) == CMP_ABSX ) || ((op) == CMP_ABSY ) || ((op) == CMP_IMM  ) || \
+     ((op) == CMP_INDX ) || ((op) == CMP_INDY ) || ((op) == CMP_ZP   ) || ((op) == CMP_ZPX  ) || \
+     ((op) == CPX_ABS  ) || ((op) == CPX_IMM  ) || ((op) == CPX_ZP   ) || ((op) == CPY_ABS  ) || \
+     ((op) == CPY_IMM  ) || ((op) == CPY_ZP   ) || ((op) == DEC_ABS  ) || ((op) == DEC_ABSX ) || \
+     ((op) == DEC_ZP   ) || ((op) == DEC_ZPX  ) || ((op) == DEX      ) || ((op) == DEY      ) || \
+     ((op) == DOP_IMM  ) || ((op) == DOP_IMM2 ) || ((op) == DOP_IMM3 ) || ((op) == DOP_IMM4 ) || \
+     ((op) == DOP_IMM5 ) || ((op) == DOP_ZP   ) || ((op) == DOP_ZP2  ) || ((op) == DOP_ZP3  ) || \
+     ((op) == DOP_ZPX  ) || ((op) == DOP_ZPX2 ) || ((op) == DOP_ZPX3 ) || ((op) == DOP_ZPX4 ) || \
+     ((op) == DOP_ZPX5 ) || ((op) == DOP_ZPX6 ) || ((op) == EOR_ABS  ) || ((op) == EOR_ABSX ) || \
+     ((op) == EOR_ABSY ) || ((op) == EOR_IMM  ) || ((op) == EOR_INDX ) || ((op) == EOR_INDY ) || \
+     ((op) == EOR_ZP   ) || ((op) == EOR_ZPX  ) || ((op) == INC_ABS  ) || ((op) == INC_ABSX ) || \
+     ((op) == INC_ZP   ) || ((op) == INC_ZPX  ) || ((op) == INX      ) || ((op) == INY      ) || \
+     ((op) == IRQ      ) || ((op) == JMP_ABS  ) || ((op) == JMP_IND  ) || ((op) == JSR      ) || \
+     ((op) == LAX_ABS  ) || ((op) == LAX_ABSY ) || ((op) == LAX_INDX ) || ((op) == LAX_INDY ) || \
+     ((op) == LAX_ZP   ) || ((op) == LAX_ZPY  ) || ((op) == LDA_ABS  ) || ((op) == LDA_ABSX ) || \
+     ((op) == LDA_ABSY ) || ((op) == LDA_IMM  ) || ((op) == LDA_INDX ) || ((op) == LDA_INDY ) || \
+     ((op) == LDA_ZP   ) || ((op) == LDA_ZPX  ) || ((op) == LDX_ABS  ) || ((op) == LDX_ABSY ) || \
+     ((op) == LDX_IMM  ) || ((op) == LDX_ZP   ) || ((op) == LDX_ZPY  ) || ((op) == LDY_ABS  ) || \
+     ((op) == LDY_ABSX ) || ((op) == LDY_IMM  ) || ((op) == LDY_ZP   ) || ((op) == LDY_ZPX  ) || \
+     ((op) == LSR_ABS  ) || ((op) == LSR_ABSX ) || ((op) == LSR_ACC  ) || ((op) == LSR_ZP   ) || \
+     ((op) == LSR_ZPX  ) || ((op) == NOP      ) || ((op) == NOP_1A   ) || ((op) == NOP_3A   ) || \
+     ((op) == NOP_5A   ) || ((op) == NOP_7A   ) || ((op) == NOP_DA   ) || ((op) == NOP_FA   ) || \
+     ((op) == ORA_ABS  ) || ((op) == ORA_ABSX ) || ((op) == ORA_ABSY ) || ((op) == ORA_IMM  ) || \
+     ((op) == ORA_INDX ) || ((op) == ORA_INDY ) || ((op) == ORA_ZP   ) || ((op) == ORA_ZPX  ) || \
+     ((op) == PHA      ) || ((op) == PHP      ) || ((op) == PLA      ) || ((op) == PLP      ) || \
+     ((op) == ROL_ABS  ) || ((op) == ROL_ABSX ) || ((op) == ROL_ACC  ) || ((op) == ROL_ZP   ) || \
+     ((op) == ROL_ZPX  ) || ((op) == ROR_ABS  ) || ((op) == ROR_ABSX ) || ((op) == ROR_ACC  ) || \
+     ((op) == ROR_ZP   ) || ((op) == ROR_ZPX  ) || ((op) == RTI      ) || ((op) == RTS      ) || \
+     ((op) == SAX_ABS  ) || ((op) == SAX_INDX ) || ((op) == SAX_ZP   ) || ((op) == SAX_ZPY  ) || \
+     ((op) == SBC_ABS  ) || ((op) == SBC_ABSX ) || ((op) == SBC_ABSY ) || ((op) == SBC_IMM  ) || \
+     ((op) == SBC_IMM2 ) || ((op) == SBC_INDX ) || ((op) == SBC_INDY ) || ((op) == SBC_ZP   ) || \
+     ((op) == SBC_ZPX  ) || ((op) == SEC      ) || ((op) == SED      ) || ((op) == SEI      ) || \
+     ((op) == STA_ABS  ) || ((op) == STA_ABSX ) || ((op) == STA_ABSY ) || ((op) == STA_INDX ) || \
+     ((op) == STA_INDY ) || ((op) == STA_ZP   ) || ((op) == STA_ZPX  ) || ((op) == STX_ABS  ) || \
+     ((op) == STX_ZP   ) || ((op) == STX_ZPY  ) || ((op) == STY_ABS  ) || ((op) == STY_ZP   ) || \
+     ((op) == STY_ZPX  ) || ((op) == TAX      ) || ((op) == TAY      ) || ((op) == TOP_ABS  ) || \
+     ((op) == TOP_ABSX ) || ((op) == TOP_ABSX2) || ((op) == TOP_ABSX3) || ((op) == TOP_ABSX4) || \
+     ((op) == TOP_ABSX5) || ((op) == TOP_ABSX6) || ((op) == TSX      ) || ((op) == TXA      ) || \
+     ((op) == TXS      ) || ((op) == TYA      ))
 
 // Timing generation cycle states.
 localparam [3:0] T0  = 3'h0,
@@ -520,11 +541,16 @@ always @*
       T1:
         begin
           // These instructions are in their last cycle but do not prefetch.
-          if ((q_ir == BRK) || (q_ir == CLC)     || (q_ir == CLD)     || (q_ir == CLI)     ||
-              (q_ir == CLV) || (q_ir == LDA_IMM) || (q_ir == LDX_IMM) || (q_ir == LDY_IMM) ||
-              (q_ir == NOP) || (q_ir == SEC)     || (q_ir == SED)     || (q_ir == SEI)     ||
-              (q_ir == TAX) || (q_ir == TAY)     || (q_ir == TSX)     || (q_ir == TXA)     ||
-              (q_ir == TXS) || (q_ir == TYA))
+          if ((q_ir == BRK)      || (q_ir == CLC)      || (q_ir == CLD)      ||
+              (q_ir == CLI)      || (q_ir == CLV)      || (q_ir == DOP_IMM)  ||
+              (q_ir == DOP_IMM2) || (q_ir == DOP_IMM3) || (q_ir == DOP_IMM4) ||
+              (q_ir == DOP_IMM5) || (q_ir == LDA_IMM)  || (q_ir == LDX_IMM)  ||
+              (q_ir == LDY_IMM)  || (q_ir == NOP)      || (q_ir == NOP_1A)   ||
+              (q_ir == NOP_3A)   || (q_ir == NOP_5A)   || (q_ir == NOP_7A)   ||
+              (q_ir == NOP_DA)   || (q_ir == NOP_FA)   || (q_ir == SEC)      ||
+              (q_ir == SED)      || (q_ir == SEI)      || (q_ir == TAX)      ||
+              (q_ir == TAY)      || (q_ir == TSX)      || (q_ir == TXA)      ||
+              (q_ir == TXS)      || (q_ir == TYA))
             d_t = T0;
 
           // Check for not-taken branches.  These instructions must setup the not-taken PC during
@@ -550,23 +576,30 @@ always @*
           if ((q_ir == ADC_IMM) || (q_ir == AND_IMM) || (q_ir == ASL_ACC) || (q_ir == CMP_IMM) ||
               (q_ir == CPX_IMM) || (q_ir == CPY_IMM) || (q_ir == DEX)     || (q_ir == DEY)     ||
               (q_ir == EOR_IMM) || (q_ir == INX)     || (q_ir == INY)     || (q_ir == LSR_ACC) ||
-              (q_ir == ORA_IMM) || (q_ir == ROL_ACC) || (q_ir == ROR_ACC) || (q_ir == SBC_IMM))
+              (q_ir == ORA_IMM) || (q_ir == ROL_ACC) || (q_ir == ROR_ACC) || (q_ir == SBC_IMM) ||
+              (q_ir == SBC_IMM))
             d_t = T1;
 
           // These instructions are in their last cycle but do not prefetch.
-          else if ((q_ir == JMP_ABS) || (q_ir == LDA_ZP) || (q_ir == LDX_ZP) || (q_ir == LDY_ZP) ||
-                   (q_ir == STA_ZP)  || (q_ir == STX_ZP) || (q_ir == STY_ZP))
+          else if ((q_ir == DOP_ZP)  || (q_ir == DOP_ZP2) || (q_ir == DOP_ZP3) ||
+                   (q_ir == JMP_ABS) || (q_ir == LAX_ZP)  || (q_ir == LDA_ZP)  ||
+                   (q_ir == LDX_ZP)  || (q_ir == LDY_ZP)  || (q_ir == SAX_ZP)  ||
+                   (q_ir == STA_ZP)  || (q_ir == STX_ZP)  || (q_ir == STY_ZP))
             d_t = T0;
 
           // For ops using relative absolute addressing modes, we can skip stage 3 if the result
           // doesn't cross a page boundary (i.e., don't need to add 1 to the high byte).
-          else if (!acr && ((q_ir == ADC_ABSX) || (q_ir == ADC_ABSY) ||
-                            (q_ir == AND_ABSX) || (q_ir == AND_ABSY) ||
-                            (q_ir == CMP_ABSX) || (q_ir == CMP_ABSY) ||
-                            (q_ir == EOR_ABSX) || (q_ir == EOR_ABSY) ||
-                            (q_ir == LDA_ABSX) || (q_ir == LDA_ABSY) ||
-                            (q_ir == ORA_ABSX) || (q_ir == ORA_ABSY) ||
-                            (q_ir == SBC_ABSX) || (q_ir == SBC_ABSY)))
+          else if (!acr && ((q_ir == ADC_ABSX ) || (q_ir == ADC_ABSY ) ||
+                            (q_ir == AND_ABSX ) || (q_ir == AND_ABSY ) ||
+                            (q_ir == CMP_ABSX ) || (q_ir == CMP_ABSY ) ||
+                            (q_ir == EOR_ABSX ) || (q_ir == EOR_ABSY ) ||
+                            (q_ir == LAX_ABSY ) || (q_ir == LDA_ABSX ) ||
+                            (q_ir == LDA_ABSY ) || (q_ir == ORA_ABSX ) ||
+                            (q_ir == ORA_ABSY ) || (q_ir == SBC_ABSX ) ||
+                            (q_ir == SBC_ABSY ) || (q_ir == TOP_ABSX ) ||
+                            (q_ir == TOP_ABSX2) || (q_ir == TOP_ABSX3) ||
+                            (q_ir == TOP_ABSX4) || (q_ir == TOP_ABSX5) ||
+                            (q_ir == TOP_ABSX6)))
             d_t = T4;
 
           // For relative addressing ops (branches), we can skip stage 3 if the new PC doesn't
@@ -590,21 +623,24 @@ always @*
             d_t = T1;
 
           // These instructions are in their last cycle but do not prefetch.
-          else if ((q_ir == BCC)     || (q_ir == BCS)     || (q_ir == BEQ)     ||
-                   (q_ir == BMI)     || (q_ir == BNE)     || (q_ir == BPL)     ||
-                   (q_ir == BVC)     || (q_ir == BVS)     || (q_ir == LDA_ABS) ||
-                   (q_ir == LDA_ZPX) || (q_ir == LDX_ABS) || (q_ir == LDX_ZPY) ||
-                   (q_ir == LDY_ABS) || (q_ir == LDY_ZPX) || (q_ir == PLA)     ||
-                   (q_ir == PLP)     || (q_ir == STA_ABS) || (q_ir == STA_ZPX) ||
-                   (q_ir == STX_ABS) || (q_ir == STX_ZPY) || (q_ir == STY_ABS) ||
-                   (q_ir == STY_ZPX))
+          else if ((q_ir == BCC)      || (q_ir == BCS)      || (q_ir == BEQ)      ||
+                   (q_ir == BMI)      || (q_ir == BNE)      || (q_ir == BPL)      ||
+                   (q_ir == BVC)      || (q_ir == BVS)      || (q_ir == DOP_ZPX)  ||
+                   (q_ir == DOP_ZPX2) || (q_ir == DOP_ZPX3) || (q_ir == DOP_ZPX4) ||
+                   (q_ir == DOP_ZPX5) || (q_ir == DOP_ZPX6) || (q_ir == LAX_ABS)  ||
+                   (q_ir == LAX_ZPY)  || (q_ir == LDA_ABS)  || (q_ir == LDA_ZPX)  ||
+                   (q_ir == LDX_ABS)  || (q_ir == LDX_ZPY)  || (q_ir == LDY_ABS)  ||
+                   (q_ir == LDY_ZPX)  || (q_ir == PLA)      || (q_ir == PLP)      ||
+                   (q_ir == SAX_ABS)  || (q_ir == SAX_ZPY)  || (q_ir == STA_ABS)  ||
+                   (q_ir == STA_ZPX)  || (q_ir == STX_ABS)  || (q_ir == STX_ZPY)  ||
+                   (q_ir == STY_ABS)  || (q_ir == STY_ZPX)  || (q_ir == TOP_ABS))
             d_t = T0;
 
           // For loads using (indirect),Y addressing modes, we can skip stage 4 if the result
           // doesn't cross a page boundary (i.e., don't need to add 1 to the high byte).
           else if (!acr && ((q_ir == ADC_INDY) || (q_ir == AND_INDY) || (q_ir == CMP_INDY) ||
-                            (q_ir == EOR_INDY) || (q_ir == LDA_INDY) || (q_ir == ORA_INDY) ||
-                            (q_ir == SBC_INDY)))
+                            (q_ir == EOR_INDY) || (q_ir == LAX_INDY) || (q_ir == LDA_INDY) ||
+                            (q_ir == ORA_INDY) || (q_ir == SBC_INDY)))
             d_t = T5;
 
           else if (`IS_VALID_OPCODE(q_ir))
@@ -622,11 +658,13 @@ always @*
             d_t = T1;
 
           // These instructions are in their last cycle but do not prefetch.
-          else if ((q_ir == ASL_ZP)   || (q_ir == DEC_ZP)   || (q_ir == INC_ZP)   ||
-                   (q_ir == JMP_IND)  || (q_ir == LDA_ABSX) || (q_ir == LDA_ABSY) ||
-                   (q_ir == LDX_ABSY) || (q_ir == LDY_ABSX) || (q_ir == LSR_ZP)   ||
-                   (q_ir == ROL_ZP)   || (q_ir == ROR_ZP)   || (q_ir == STA_ABSX) ||
-                   (q_ir == STA_ABSY))
+          else if ((q_ir == ASL_ZP)    || (q_ir == DEC_ZP)    || (q_ir == INC_ZP)    ||
+                   (q_ir == JMP_IND)   || (q_ir == LAX_ABSY)  || (q_ir == LDA_ABSX)  ||
+                   (q_ir == LDA_ABSY)  || (q_ir == LDX_ABSY)  || (q_ir == LDY_ABSX)  ||
+                   (q_ir == LSR_ZP)    || (q_ir == ROL_ZP)    || (q_ir == ROR_ZP)    ||
+                   (q_ir == STA_ABSX)  || (q_ir == STA_ABSY)  || (q_ir == TOP_ABSX)  ||
+                   (q_ir == TOP_ABSX2) || (q_ir == TOP_ABSX3) || (q_ir == TOP_ABSX4) ||
+                   (q_ir == TOP_ABSX5) || (q_ir == TOP_ABSX6))
             d_t = T0;
 
           else if (`IS_VALID_OPCODE(q_ir))
@@ -646,10 +684,11 @@ always @*
           // These instructions are in their last cycle but do not prefetch.
           else if ((q_ir == ASL_ABS)  || (q_ir == ASL_ZPX)  || (q_ir == DEC_ABS)  ||
                    (q_ir == DEC_ZPX)  || (q_ir == INC_ABS)  || (q_ir == INC_ZPX)  ||
-                   (q_ir == JSR)      || (q_ir == LDA_INDX) || (q_ir == LDA_INDY) ||
-                   (q_ir == LSR_ABS)  || (q_ir == LSR_ZPX)  || (q_ir == ROL_ABS)  ||
-                   (q_ir == ROL_ZPX)  || (q_ir == ROR_ABS)  || (q_ir == ROR_ZPX)  ||
-                   (q_ir == RTI)      || (q_ir == RTS)      || (q_ir == STA_INDX) ||
+                   (q_ir == JSR)      || (q_ir == LAX_INDX) || (q_ir == LAX_INDY) ||
+                   (q_ir == LDA_INDX) || (q_ir == LDA_INDY) || (q_ir == LSR_ABS)  ||
+                   (q_ir == LSR_ZPX)  || (q_ir == ROL_ABS)  || (q_ir == ROL_ZPX)  ||
+                   (q_ir == ROR_ABS)  || (q_ir == ROR_ZPX)  || (q_ir == RTI)      ||
+                   (q_ir == RTS)      || (q_ir == SAX_INDX) || (q_ir == STA_INDX) ||
                    (q_ir == STA_INDY))
             d_t = T0;
 
@@ -683,7 +722,7 @@ always @*
           begin
             d_ir           = IRQ;
             force_noinc_pc = 1'b1;
-            
+
             if (q_rst)
               d_irq_sel = INTERRUPT_RST;
             else if (q_nmi)
@@ -925,23 +964,24 @@ always @*
       begin
         case (q_ir)
           ADC_ABS, AND_ABS, ASL_ABS, BIT_ABS, CMP_ABS, CPX_ABS, CPY_ABS, DEC_ABS,
-                   EOR_ABS, INC_ABS, JMP_ABS, JMP_IND, LDA_ABS, LDX_ABS, LDY_ABS,
-                   LSR_ABS, ORA_ABS, ROL_ABS, ROR_ABS, SBC_ABS, STA_ABS, STX_ABS,
-                   STY_ABS:
+                   EOR_ABS, INC_ABS, JMP_ABS, JMP_IND, LAX_ABS, LDA_ABS, LDX_ABS,
+                   LDY_ABS, LSR_ABS, ORA_ABS, ROL_ABS, ROR_ABS, SAX_ABS, SBC_ABS,
+                   STA_ABS, STX_ABS, STY_ABS, TOP_ABS:
             begin
               load_prg_byte = 1'b1;
               zero_to_ai    = 1'b1;
               dl_to_bi      = 1'b1;
             end
-          ADC_ABSX, AND_ABSX, ASL_ABSX, CMP_ABSX, DEC_ABSX, EOR_ABSX, INC_ABSX, LDA_ABSX,
-                    LDY_ABSX, LSR_ABSX, ORA_ABSX, ROL_ABSX, ROR_ABSX, SBC_ABSX, STA_ABSX:
+          ADC_ABSX, AND_ABSX, ASL_ABSX,  CMP_ABSX,  DEC_ABSX,  EOR_ABSX,  INC_ABSX,  LDA_ABSX,
+                    LDY_ABSX, LSR_ABSX,  ORA_ABSX,  ROL_ABSX,  ROR_ABSX,  SBC_ABSX,  STA_ABSX,
+                    TOP_ABSX, TOP_ABSX2, TOP_ABSX3, TOP_ABSX4, TOP_ABSX5, TOP_ABSX6:
             begin
               load_prg_byte = 1'b1;
               x_to_ai       = 1'b1;
               dl_to_bi      = 1'b1;
             end
-          ADC_ABSY, AND_ABSY, CMP_ABSY, EOR_ABSY, LDA_ABSY, LDX_ABSY, ORA_ABSY, SBC_ABSY,
-                    STA_ABSY:
+          ADC_ABSY, AND_ABSY, CMP_ABSY, EOR_ABSY, LAX_ABSY, LDA_ABSY, LDX_ABSY, ORA_ABSY,
+                    SBC_ABSY, STA_ABSY:
             begin
               load_prg_byte = 1'b1;
               y_to_ai       = 1'b1;
@@ -953,24 +993,25 @@ always @*
               ac_to_ai      = 1'b1;
               dl_to_bi      = 1'b1;
             end
-          ADC_INDX, AND_INDX, CMP_INDX, EOR_INDX, LDA_INDX, ORA_INDX, SBC_INDX, STA_INDX,
-          ADC_ZPX,  AND_ZPX,  ASL_ZPX,  CMP_ZPX,  DEC_ZPX,  EOR_ZPX,  INC_ZPX,  LDA_ZPX,
-                    LDY_ZPX,  LSR_ZPX,  ORA_ZPX,  ROL_ZPX,  ROR_ZPX,  SBC_ZPX,  STA_ZPX,
-                    STY_ZPX:
+          ADC_INDX, AND_INDX, CMP_INDX, EOR_INDX, LAX_INDX, LDA_INDX, ORA_INDX, SBC_INDX,
+                    SAX_INDX, STA_INDX,
+          ADC_ZPX,  AND_ZPX,  ASL_ZPX,  CMP_ZPX,  DEC_ZPX,  DOP_ZPX,  DOP_ZPX2, DOP_ZPX3,
+                    DOP_ZPX4, DOP_ZPX5, DOP_ZPX6, EOR_ZPX,  INC_ZPX,  LDA_ZPX,  LDY_ZPX,
+                    LSR_ZPX,  ORA_ZPX,  ROL_ZPX,  ROR_ZPX,  SBC_ZPX,  STA_ZPX,  STY_ZPX:
             begin
               x_to_ai  = 1'b1;
               dl_to_bi = 1'b1;
             end
-          ADC_INDY, AND_INDY, CMP_INDY, EOR_INDY, LDA_INDY, ORA_INDY, SBC_INDY, STA_INDY:
+          ADC_INDY, AND_INDY, CMP_INDY, EOR_INDY, LAX_INDY, LDA_INDY, ORA_INDY, SBC_INDY, STA_INDY:
             begin
               zero_to_abh = 1'b1;
               dl_to_abl   = 1'b1;
               zero_to_ai  = 1'b1;
               dl_to_bi    = 1'b1;
             end
-          ADC_ZP, AND_ZP, ASL_ZP, BIT_ZP, CMP_ZP, CPX_ZP, CPY_ZP, DEC_ZP,
-                  EOR_ZP, INC_ZP, LDA_ZP, LDX_ZP, LDY_ZP, LSR_ZP, ORA_ZP,
-                  ROL_ZP, ROR_ZP, SBC_ZP:
+          ADC_ZP, AND_ZP,  ASL_ZP, BIT_ZP, CMP_ZP, CPX_ZP, CPY_ZP, DEC_ZP, DOP_ZP, DOP_ZP2,
+                  DOP_ZP3, EOR_ZP, INC_ZP, LAX_ZP, LDA_ZP, LDX_ZP, LDY_ZP, LSR_ZP, ORA_ZP,
+                  ROL_ZP,  ROR_ZP, SBC_ZP:
             begin
               zero_to_abh = 1'b1;
               dl_to_abl   = 1'b1;
@@ -1001,7 +1042,7 @@ always @*
             cli_op = 1'b1;
           CLV:
             clv_op = 1'b1;
-          CMP_IMM, SBC_IMM:
+          CMP_IMM, SBC_IMM, SBC_IMM2:
             begin
               load_prg_byte = 1'b1;
               ac_to_ai      = 1'b1;
@@ -1029,6 +1070,10 @@ always @*
               y_to_ai    = 1'b1;
               neg1_to_bi = 1'b1;
             end
+          DOP_IMM, DOP_IMM2, DOP_IMM3, DOP_IMM4, DOP_IMM5:
+            begin
+              load_prg_byte = 1'b1;
+            end
           INX:
             begin
               zero_to_ai = 1'b1;
@@ -1055,6 +1100,11 @@ always @*
               s_to_bi      = 1'b1;
               dl_to_s      = 1'b1;
             end
+          LAX_ZPY, LDX_ZPY, SAX_ZPY, STX_ZPY:
+            begin
+              y_to_ai  = 1'b1;
+              dl_to_bi = 1'b1;
+            end
           LDA_IMM:
             begin
               load_prg_byte = 1'b1;
@@ -1064,11 +1114,6 @@ always @*
             begin
               load_prg_byte = 1'b1;
               ldx_op        = 1'b1;
-            end
-          LDX_ZPY, STX_ZPY:
-            begin
-              y_to_ai  = 1'b1;
-              dl_to_bi = 1'b1;
             end
           LDY_IMM:
             begin
@@ -1098,6 +1143,13 @@ always @*
             sed_op = 1'b1;
           SEI:
             sei_op = 1'b1;
+          SAX_ZP:
+            begin
+              ac_to_dor   = 1'b1;
+              x_to_dor    = 1'b1;
+              zero_to_abh = 1'b1;
+              dl_to_abl   = 1'b1;
+            end
           STA_ZP:
             begin
               ac_to_dor   = 1'b1;
@@ -1138,36 +1190,39 @@ always @*
       begin
         case (q_ir)
           ADC_ABS, AND_ABS, ASL_ABS, BIT_ABS, CMP_ABS, CPX_ABS, CPY_ABS, DEC_ABS,
-                   EOR_ABS, INC_ABS, JMP_IND, LDA_ABS, LDX_ABS, LDY_ABS, LSR_ABS,
-                   ORA_ABS, ROL_ABS, ROR_ABS, SBC_ABS:
+                   EOR_ABS, INC_ABS, JMP_IND, LAX_ABS, LDA_ABS, LDX_ABS, LDY_ABS,
+                   LSR_ABS, ORA_ABS, ROL_ABS, ROR_ABS, SBC_ABS, TOP_ABS:
             begin
               dl_to_abh     = 1'b1;
               alusum_to_abl = 1'b1;
             end
-          ADC_ABSX, AND_ABSX, ASL_ABSX, CMP_ABSX, DEC_ABSX, EOR_ABSX, INC_ABSX, LDA_ABSX,
-                    LDY_ABSX, LSR_ABSX, ORA_ABSX, ROL_ABSX, ROR_ABSX, SBC_ABSX, STA_ABSX,
-          ADC_ABSY, AND_ABSY, CMP_ABSY, EOR_ABSY, LDA_ABSY, LDX_ABSY, ORA_ABSY, SBC_ABSY,
-                    STA_ABSY:
+          ADC_ABSX, AND_ABSX, ASL_ABSX,  CMP_ABSX,  DEC_ABSX,  EOR_ABSX,  INC_ABSX,  LDA_ABSX,
+                    LDY_ABSX, LSR_ABSX,  ORA_ABSX,  ROL_ABSX,  ROR_ABSX,  SBC_ABSX,  STA_ABSX,
+                    TOP_ABSX, TOP_ABSX2, TOP_ABSX3, TOP_ABSX4, TOP_ABSX5, TOP_ABSX6,
+          ADC_ABSY, AND_ABSY, CMP_ABSY,  EOR_ABSY,  LAX_ABSY,  LDA_ABSY,  LDX_ABSY,  ORA_ABSY,
+                    SBC_ABSY, STA_ABSY:
             begin
               dl_to_abh     = 1'b1;
               alusum_to_abl = 1'b1;
               zero_to_ai    = 1'b1;
               dl_to_bi      = 1'b1;
             end
-          ADC_IMM, SBC_IMM:
+          ADC_IMM, SBC_IMM, SBC_IMM2:
             begin
               load_prg_byte = 1'b1;
               adc_op        = 1'b1;
             end
-          ADC_INDX, AND_INDX, CMP_INDX, EOR_INDX, LDA_INDX, ORA_INDX, SBC_INDX, STA_INDX,
-          ADC_ZPX,  AND_ZPX,  ASL_ZPX,  CMP_ZPX,  DEC_ZPX,  EOR_ZPX,  INC_ZPX,  LDA_ZPX,
-                    LDY_ZPX,  LSR_ZPX,  ORA_ZPX,  ROL_ZPX,  ROR_ZPX,  SBC_ZPX,
-          LDX_ZPY:
+          ADC_INDX, AND_INDX, CMP_INDX, EOR_INDX, LAX_INDX, LDA_INDX, ORA_INDX, SBC_INDX,
+                    SAX_INDX, STA_INDX,
+          ADC_ZPX,  AND_ZPX,  ASL_ZPX,  CMP_ZPX,  DEC_ZPX,  DOP_ZPX,  DOP_ZPX2, DOP_ZPX3,
+                    DOP_ZPX4, DOP_ZPX5, DOP_ZPX6, EOR_ZPX,  INC_ZPX,  LDA_ZPX,  LDY_ZPX,
+                    LSR_ZPX,  ORA_ZPX,  ROL_ZPX,  ROR_ZPX,  SBC_ZPX,
+          LAX_ZPY, LDX_ZPY:
             begin
               zero_to_abh   = 1'b1;
               alusum_to_abl = 1'b1;
             end
-          ADC_INDY, AND_INDY, CMP_INDY, EOR_INDY, LDA_INDY, ORA_INDY, SBC_INDY, STA_INDY:
+          ADC_INDY, AND_INDY, CMP_INDY, EOR_INDY, LAX_INDY, LDA_INDY, ORA_INDY, SBC_INDY, STA_INDY:
             begin
               zero_to_abh   = 1'b1;
               aluinc_to_abl = 1'b1;
@@ -1250,6 +1305,10 @@ always @*
               load_prg_byte = 1'b1;
               dey_op        = 1'b1;
             end
+          DOP_ZP, DOP_ZP2, DOP_ZP3:
+            begin
+              load_prg_byte = 1'b1;
+            end
           EOR_IMM:
             begin
               load_prg_byte = 1'b1;
@@ -1288,6 +1347,12 @@ always @*
             begin
               pch_to_dor = 1'b1;
               neg1_to_ai = 1'b1;
+            end
+          LAX_ZP:
+            begin
+              load_prg_byte = 1'b1;
+              lda_op        = 1'b1;
+              ldx_op        = 1'b1;
             end
           LDA_ZP:
             begin
@@ -1343,16 +1408,30 @@ always @*
               aluinc_to_abl = 1'b1;
               aluinc_to_bi  = 1'b1;
             end
+          SAX_ABS:
+            begin
+              ac_to_dor     = 1'b1;
+              x_to_dor      = 1'b1;
+              dl_to_abh     = 1'b1;
+              alusum_to_abl = 1'b1;
+            end
+          SAX_ZP, STA_ZP, STX_ZP, STY_ZP:
+            begin
+              load_prg_byte = 1'b1;
+              r_nw          = 1'b0;
+            end
+          SAX_ZPY:
+            begin
+              ac_to_dor     = 1'b1;
+              x_to_dor      = 1'b1;
+              zero_to_abh   = 1'b1;
+              alusum_to_abl = 1'b1;
+            end
           STA_ABS:
             begin
               ac_to_dor     = 1'b1;
               dl_to_abh     = 1'b1;
               alusum_to_abl = 1'b1;
-            end
-          STA_ZP, STX_ZP, STY_ZP:
-            begin
-              load_prg_byte = 1'b1;
-              r_nw          = 1'b0;
             end
           STA_ZPX:
             begin
@@ -1400,18 +1479,23 @@ always @*
               ac_to_ai      = 1'b1;
               dl_to_bi      = 1'b1;
             end
-          ADC_ABSX, AND_ABSX, ASL_ABSX, CMP_ABSX, DEC_ABSX, EOR_ABSX, INC_ABSX, LDA_ABSX,
-                    LDY_ABSX, LSR_ABSX, ORA_ABSX, ROL_ABSX, ROR_ABSX, SBC_ABSX,
-          ADC_ABSY, AND_ABSY, CMP_ABSY, EOR_ABSY, LDA_ABSY, LDX_ABSY, ORA_ABSY, SBC_ABSY:
-            aluacrinc_to_abh = 1'b1;
-          ADC_INDX, AND_INDX, CMP_INDX, EOR_INDX, LDA_INDX, ORA_INDX, STA_INDX, SBC_INDX:
+          ADC_ABSX, AND_ABSX,  ASL_ABSX,  CMP_ABSX,  DEC_ABSX,  EOR_ABSX,  INC_ABSX, LDA_ABSX,
+                    LDY_ABSX,  LSR_ABSX,  ORA_ABSX,  ROL_ABSX,  ROR_ABSX,  SBC_ABSX, TOP_ABSX,
+                    TOP_ABSX2, TOP_ABSX3, TOP_ABSX4, TOP_ABSX5, TOP_ABSX6,
+          ADC_ABSY, AND_ABSY,  CMP_ABSY,  EOR_ABSY,  LAX_ABSY,  LDA_ABSY,  LDX_ABSY, ORA_ABSY,
+                    SBC_ABSY:
+            begin
+              aluacrinc_to_abh = 1'b1;
+            end
+          ADC_INDX, AND_INDX, CMP_INDX, EOR_INDX, LAX_INDX, LDA_INDX, ORA_INDX, SAX_INDX,
+                    STA_INDX, SBC_INDX:
             begin
               zero_to_abh   = 1'b1;
               aluinc_to_abl = 1'b1;
               zero_to_ai    = 1'b1;
               dl_to_bi      = 1'b1;
             end
-          ADC_INDY, AND_INDY, CMP_INDY, EOR_INDY, LDA_INDY, ORA_INDY, SBC_INDY, STA_INDY:
+          ADC_INDY, AND_INDY, CMP_INDY, EOR_INDY, LAX_INDY, LDA_INDY, ORA_INDY, SBC_INDY, STA_INDY:
             begin
               dl_to_abh     = 1'b1;
               alusum_to_abl = 1'b1;
@@ -1485,6 +1569,10 @@ always @*
             end
           DEC_ZP:
             dec_op = 1'b1;
+          DOP_ZPX, DOP_ZPX2, DOP_ZPX3, DOP_ZPX4, DOP_ZPX5, DOP_ZPX6:
+            begin
+              load_prg_byte = 1'b1;
+            end
           EOR_ZP:
             begin
               load_prg_byte = 1'b1;
@@ -1517,6 +1605,12 @@ always @*
               alusum_to_abl = 1'b1;
               alusum_to_bi  = 1'b1;
               r_nw          = 1'b0;
+            end
+          LAX_ABS, LAX_ZPY:
+            begin
+              load_prg_byte = 1'b1;
+              lda_op        = 1'b1;
+              ldx_op        = 1'b1;
             end
           LDA_ABS, LDA_ZPX:
             begin
@@ -1570,9 +1664,9 @@ always @*
               aluinc_to_abl = 1'b1;
               dl_to_s       = 1'b1;
             end
-          STA_ABS, STX_ABS, STY_ABS,
+          SAX_ABS, STA_ABS, STX_ABS, STY_ABS,
           STA_ZPX, STY_ZPX,
-          STX_ZPY:
+          SAX_ZPY, STX_ZPY:
             begin
               load_prg_byte = 1'b1;
               r_nw          = 1'b0;
@@ -1582,6 +1676,10 @@ always @*
             begin
               ac_to_dor        = 1'b1;
               aluacrinc_to_abh = 1'b1;
+            end
+          TOP_ABS:
+            begin
+              load_prg_byte = 1'b1;
             end
           default:
             begin
@@ -1605,13 +1703,15 @@ always @*
               ac_to_ai      = 1'b1;
               dl_to_bi      = 1'b1;
             end
-          ADC_INDX, AND_INDX, CMP_INDX, EOR_INDX, LDA_INDX, ORA_INDX, SBC_INDX:
+          ADC_INDX, AND_INDX, CMP_INDX, EOR_INDX, LAX_INDX, LDA_INDX, ORA_INDX, SBC_INDX:
             begin
               dl_to_abh     = 1'b1;
               alusum_to_abl = 1'b1;
             end
-          ADC_INDY, AND_INDY, CMP_INDY, EOR_INDY, LDA_INDY, ORA_INDY, SBC_INDY:
-            aluacrinc_to_abh = 1'b1;
+          ADC_INDY, AND_INDY, CMP_INDY, EOR_INDY, LAX_INDY, LDA_INDY, ORA_INDY, SBC_INDY:
+            begin
+              aluacrinc_to_abh = 1'b1;
+            end
           AND_ABS,
           AND_ZPX:
             begin
@@ -1694,6 +1794,12 @@ always @*
               load_prg_byte_noinc = 1'b1;
               r_nw                = 1'b0;
             end
+          LAX_ABSY:
+            begin
+              load_prg_byte = 1'b1;
+              lda_op        = 1'b1;
+              ldx_op        = 1'b1;
+            end
           LDA_ABSX,
           LDA_ABSY:
             begin
@@ -1736,6 +1842,13 @@ always @*
               s_to_pcl    = 1'b1;
               aluinc_to_s = 1'b1;
             end
+          SAX_INDX:
+            begin
+              ac_to_dor     = 1'b1;
+              x_to_dor      = 1'b1;
+              dl_to_abh     = 1'b1;
+              alusum_to_abl = 1'b1;
+            end
           STA_INDX:
             begin
               ac_to_dor     = 1'b1;
@@ -1746,6 +1859,10 @@ always @*
             begin
               ac_to_dor        = 1'b1;
               aluacrinc_to_abh = 1'b1;
+            end
+          TOP_ABSX, TOP_ABSX2, TOP_ABSX3, TOP_ABSX4, TOP_ABSX5, TOP_ABSX6:
+            begin
+              load_prg_byte = 1'b1;
             end
           default:
             begin
@@ -1777,7 +1894,7 @@ always @*
             end
           ASL_ABS, DEC_ABS, INC_ABS, LSR_ABS, ROL_ABS, ROR_ABS,
           ASL_ZPX, DEC_ZPX, INC_ZPX, LSR_ZPX, ROL_ZPX, ROR_ZPX,
-          STA_INDX,
+          SAX_INDX, STA_INDX,
           STA_INDY:
             begin
               load_prg_byte = 1'b1;
@@ -1824,6 +1941,13 @@ always @*
               dl_to_abh    = 1'b1;
               s_to_abl     = 1'b1;
               alusum_to_s  = 1'b1;
+            end
+          LAX_INDX,
+          LAX_INDY:
+            begin
+              load_prg_byte = 1'b1;
+              lda_op        = 1'b1;
+              ldx_op        = 1'b1;
             end
           LDA_INDX,
           LDA_INDY:
