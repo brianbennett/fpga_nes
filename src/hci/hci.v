@@ -1,16 +1,17 @@
 ///////////////////////////////////////////////////////////////////////////////////////////////////
-// Module Name: dbg
+// Module Name: hci
 //
 // Author:      Brian Bennett (brian.k.bennett@gmail.com)
 // Create Date: 08/09/2010
 //
 // Description:
 //
-// Debugging module for an fpga-based NES emulator.  Accepts packets over a serial connection,
-// interacts with the rest of the hw system as specified, and returns the specified data.
+// Host communication interface for an fpga-based NES emulator.  Accepts packets over a serial
+// connection, interacts with the rest of the hw system as specified, and returns the specified
+// data.
 //
 ///////////////////////////////////////////////////////////////////////////////////////////////////
-module dbg
+module hci
 (
   input  wire        clk,              // 50MHz system clock signal
   input  wire        rst,              // reset signal

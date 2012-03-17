@@ -221,48 +221,48 @@ sprdma sprdma_blk(
 );
 
 //
-// DBG: debug block.  Interacts with debugger through serial connection.
+// HCI: host communication interface block.  Interacts with NesDbg software through serial port.
 //
-wire        dbg_active;
-wire [ 7:0] dbg_cpu_din;        // CPU: D[ 7:0] (data bus [input])
-wire [ 7:0] dbg_cpu_dout;       // CPU: D[ 7:0] (data bus [output])
-wire [15:0] dbg_cpu_a;          // CPU: A[15:0] (address bus)
-wire        dbg_cpu_r_nw;       // CPU: R/!W
-wire [ 7:0] dbg_ppu_vram_din;   // PPU: D[ 7:0] (data bus [input])
-wire [ 7:0] dbg_ppu_vram_dout;  // PPU: D[ 7:0] (data bus [output])
-wire [15:0] dbg_ppu_vram_a;     // PPU: A[15:0] (address bus)
-wire        dbg_ppu_vram_wr;    // PPU: WR
+wire        hci_active;
+wire [ 7:0] hci_cpu_din;        // CPU: D[ 7:0] (data bus [input])
+wire [ 7:0] hci_cpu_dout;       // CPU: D[ 7:0] (data bus [output])
+wire [15:0] hci_cpu_a;          // CPU: A[15:0] (address bus)
+wire        hci_cpu_r_nw;       // CPU: R/!W
+wire [ 7:0] hci_ppu_vram_din;   // PPU: D[ 7:0] (data bus [input])
+wire [ 7:0] hci_ppu_vram_dout;  // PPU: D[ 7:0] (data bus [output])
+wire [15:0] hci_ppu_vram_a;     // PPU: A[15:0] (address bus)
+wire        hci_ppu_vram_wr;    // PPU: WR
 
-dbg dbg_blk(
+hci hci_blk(
   .clk(CLK_50MHZ),
   .rst(BTN_SOUTH),
   .rx(RS232_DCE_RXD),
   .brk(cpu_brk),
-  .cpu_din(dbg_cpu_din),
+  .cpu_din(hci_cpu_din),
   .cpu_dbgreg_in(cpu_dbgreg_out),
-  .ppu_vram_din(dbg_ppu_vram_din),
+  .ppu_vram_din(hci_ppu_vram_din),
   .tx(RS232_DCE_TXD),
-  .active(dbg_active),
-  .cpu_r_nw(dbg_cpu_r_nw),
-  .cpu_a(dbg_cpu_a),
-  .cpu_dout(dbg_cpu_dout),
+  .active(hci_active),
+  .cpu_r_nw(hci_cpu_r_nw),
+  .cpu_a(hci_cpu_a),
+  .cpu_dout(hci_cpu_dout),
   .cpu_dbgreg_sel(cpu_dbgreg_sel),
   .cpu_dbgreg_out(cpu_dbgreg_in),
   .cpu_dbgreg_wr(cpu_dbgreg_wr),
-  .ppu_vram_wr(dbg_ppu_vram_wr),
-  .ppu_vram_a(dbg_ppu_vram_a),
-  .ppu_vram_dout(dbg_ppu_vram_dout),
+  .ppu_vram_wr(hci_ppu_vram_wr),
+  .ppu_vram_a(hci_ppu_vram_a),
+  .ppu_vram_dout(hci_ppu_vram_dout),
   .ppumc_mirror_cfg(ppumc_mirror_cfg)
 );
 
 always @*
   begin
-    if (dbg_active)
+    if (hci_active)
       begin
         cpu_ready  = 1'b0;
-        cpumc_a    = dbg_cpu_a;
-        cpumc_r_nw = dbg_cpu_r_nw;
-        cpumc_din  = dbg_cpu_dout;
+        cpumc_a    = hci_cpu_a;
+        cpumc_r_nw = hci_cpu_r_nw;
+        cpumc_din  = hci_cpu_dout;
       end
     else if (sprdma_active)
       begin
@@ -280,23 +280,23 @@ always @*
       end
   end
 
-// Mux jp signals from cpu or dbg blk, depending on debug break state (dbg_active).
-assign jp_a   = (dbg_active) ? dbg_cpu_a       : cpu_a;
-assign jp_wr  = (dbg_active) ? ~dbg_cpu_r_nw   : ~cpu_r_nw;
-assign jp_din = (dbg_active) ? dbg_cpu_dout[0] : cpu_dout[0];
+// Mux jp signals from cpu or hci blk, depending on debug break state (hci_active).
+assign jp_a   = (hci_active) ? hci_cpu_a       : cpu_a;
+assign jp_wr  = (hci_active) ? ~hci_cpu_r_nw   : ~cpu_r_nw;
+assign jp_din = (hci_active) ? hci_cpu_dout[0] : cpu_dout[0];
 
 // CART, WRAM, PPU, and JP return 0 for reads that don't hit an appropriate region of memory.  The
 // final CPU D bus value can be derived by ORing together the output of all blocks that can service
 // a memory read.
 assign cpu_din     = cart_prg_dout | wram_dout | ppu_ri_dout | jp_dout;
-assign dbg_cpu_din = cart_prg_dout | wram_dout | ppu_ri_dout | jp_dout;
+assign hci_cpu_din = cart_prg_dout | wram_dout | ppu_ri_dout | jp_dout;
 
-// Mux ppumc signals from ppu or dbg blk, depending on debug break state (dbg_active).
-assign ppumc_a          = (dbg_active) ? dbg_ppu_vram_a[13:0] : ppu_vram_a;
-assign ppumc_wr         = (dbg_active) ? dbg_ppu_vram_wr      : ppu_vram_wr;
-assign ppumc_din        = (dbg_active) ? dbg_ppu_vram_dout    : ppu_vram_dout;
+// Mux ppumc signals from ppu or hci blk, depending on debug break state (hci_active).
+assign ppumc_a          = (hci_active) ? hci_ppu_vram_a[13:0] : ppu_vram_a;
+assign ppumc_wr         = (hci_active) ? hci_ppu_vram_wr      : ppu_vram_wr;
+assign ppumc_din        = (hci_active) ? hci_ppu_vram_dout    : ppu_vram_dout;
 assign ppu_vram_din     = cart_chr_dout | vram_dout;
-assign dbg_ppu_vram_din = cart_chr_dout | vram_dout;
+assign hci_ppu_vram_din = cart_chr_dout | vram_dout;
 
 // Issue NMI interupt on PPU vertical blank.
 assign cpu_nnmi = ppu_nvbl;
