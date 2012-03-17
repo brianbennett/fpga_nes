@@ -23,7 +23,6 @@ module cpu
   output wire [ 7:0] dout,        // data output bus
   output wire [15:0] a,           // address bus
   output reg         r_nw,        // R/!W signal
-  output wire        req,         // initiate a memory request
   output reg         brk,         // debug break signal
   output reg  [ 7:0] dbgreg_out   // dbg reg read output
 );
@@ -523,9 +522,6 @@ always @(posedge clk)
         q_pch <= (dbgreg_sel == `REGSEL_PCH) ? dbgreg_in : q_pch;
       end
   end
-
-// Set req signal for any read request since it might come from flash RAM.
-assign req = r_nw && ((q_clk_phase == 5'h01) || (q_clk_phase == 5'h0F));
 
 //
 // Timing Generation Logic

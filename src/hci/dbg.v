@@ -19,12 +19,9 @@ module dbg
   input  wire [ 7:0] cpu_din,          // cpu data bus (D) [input]
   input  wire [ 7:0] cpu_dbgreg_in,    // cpu debug register read bus
   input  wire [ 7:0] ppu_vram_din,     // ppu data bus [input]
-  input  wire        cpumc_rdy,        // cpumc is ready for mem requests
   output wire        tx,               // rs-232 tx signal
   output wire        active,           // dbg block is active (disable CPU)
-  output reg         cpu_req,          // cpumc mem request signal
   output reg         cpu_r_nw,         // cpu R/!W pin
-  output reg         cpumc_erase,      // cpumc erase 128KB block request
   output wire [15:0] cpu_a,            // cpu A bus (A)
   output reg  [ 7:0] cpu_dout,         // cpu data bus (D) [output]
   output reg  [ 3:0] cpu_dbgreg_sel,   // selects cpu register to read/write through cpu_dbgreg_in
@@ -33,8 +30,7 @@ module dbg
   output reg         ppu_vram_wr,      // ppu memory write enable signal
   output wire [15:0] ppu_vram_a,       // ppu memory address
   output wire [ 7:0] ppu_vram_dout,    // ppu data bus [output]
-  output wire [ 7:0] ppumc_mirror_cfg, // ppu memory mirroring configuration
-  output wire [ 7:0] cpumc_cfg         // cpumc config data
+  output wire [ 7:0] ppumc_mirror_cfg  // ppu memory mirroring configuration
 );
 
 // Debug packet opcodes.
@@ -50,9 +46,7 @@ localparam [7:0] OP_ECHO                 = 8'h00,
                  OP_PPU_MEM_RD           = 8'h09,
                  OP_PPU_MEM_WR           = 8'h0A,
                  OP_PPU_DISABLE          = 8'h0B,
-                 OP_PPUMC_SET_MIRROR_CFG = 8'h0C,
-                 OP_CPU_MEM_ERASE        = 8'h0D,
-                 OP_CPUMC_SET_CFG        = 8'h0E;
+                 OP_PPUMC_SET_MIRROR_CFG = 8'h0C;
 
 // Error code bit positions.
 localparam DBG_UART_PARITY_ERR = 0,
@@ -65,24 +59,18 @@ localparam [4:0] S_DISABLED             = 5'h00,
                  S_ECHO_STG_1           = 5'h03,
                  S_CPU_MEM_RD_STG_0     = 5'h04,
                  S_CPU_MEM_RD_STG_1     = 5'h05,
-                 S_CPU_MEM_RD_STG_2     = 5'h06,
-                 S_CPU_MEM_WR_STG_0     = 5'h07,
-                 S_CPU_MEM_WR_STG_1     = 5'h08,
-                 S_CPU_MEM_WR_STG_2     = 5'h09,
-                 S_CPU_REG_RD           = 5'h0A,
-                 S_CPU_REG_WR_STG_0     = 5'h0B,
-                 S_CPU_REG_WR_STG_1     = 5'h0C,
-                 S_QUERY_ERR_CODE       = 5'h0D,
-                 S_PPU_MEM_RD_STG_0     = 5'h0E,
-                 S_PPU_MEM_RD_STG_1     = 5'h0F,
-                 S_PPU_MEM_WR_STG_0     = 5'h10,
-                 S_PPU_MEM_WR_STG_1     = 5'h11,
-                 S_PPU_DISABLE          = 5'h12,
-                 S_PPUMC_SET_MIRROR_CFG = 5'h13,
-                 S_CPU_MEM_ERASE_0      = 5'h14,
-                 S_CPU_MEM_ERASE_1      = 5'h15,
-                 S_CPU_MEM_ERASE_2      = 5'h16,
-                 S_CPUMC_SET_CFG        = 5'h17;
+                 S_CPU_MEM_WR_STG_0     = 5'h06,
+                 S_CPU_MEM_WR_STG_1     = 5'h07,
+                 S_CPU_REG_RD           = 5'h08,
+                 S_CPU_REG_WR_STG_0     = 5'h09,
+                 S_CPU_REG_WR_STG_1     = 5'h0A,
+                 S_QUERY_ERR_CODE       = 5'h0B,
+                 S_PPU_MEM_RD_STG_0     = 5'h0C,
+                 S_PPU_MEM_RD_STG_1     = 5'h0D,
+                 S_PPU_MEM_WR_STG_0     = 5'h0E,
+                 S_PPU_MEM_WR_STG_1     = 5'h0F,
+                 S_PPU_DISABLE          = 5'h10,
+                 S_PPUMC_SET_MIRROR_CFG = 5'h11;
 
 reg [ 4:0] q_state,            d_state;
 reg [ 2:0] q_decode_cnt,       d_decode_cnt;
@@ -90,7 +78,6 @@ reg [16:0] q_execute_cnt,      d_execute_cnt;
 reg [15:0] q_addr,             d_addr;
 reg [ 1:0] q_err_code,         d_err_code;
 reg [ 7:0] q_ppumc_mirror_cfg, d_ppumc_mirror_cfg;
-reg [ 7:0] q_cpumc_cfg,        d_cpumc_cfg;
 
 // UART output buffer FFs.
 reg  [7:0] q_tx_data, d_tx_data;
@@ -116,7 +103,6 @@ always @(posedge clk)
         q_ppumc_mirror_cfg <= 8'h00;
         q_tx_data          <= 8'h00;
         q_wr_en            <= 1'b0;
-        q_cpumc_cfg        <= 8'h00;
       end
     else
       begin
@@ -128,7 +114,6 @@ always @(posedge clk)
         q_ppumc_mirror_cfg <= d_ppumc_mirror_cfg;
         q_tx_data          <= d_tx_data;
         q_wr_en            <= d_wr_en;
-        q_cpumc_cfg        <= d_cpumc_cfg;
       end
   end
 
@@ -160,16 +145,13 @@ always @*
     d_addr             = q_addr;
     d_err_code         = q_err_code;
     d_ppumc_mirror_cfg = q_ppumc_mirror_cfg;
-    d_cpumc_cfg        = q_cpumc_cfg;
 
     rd_en         = 1'b0;
     d_tx_data     = 8'h00;
     d_wr_en       = 1'b0;
 
     // Setup default output regs.
-    cpu_req        = 1'b0;
     cpu_r_nw       = 1'b1;
-    cpumc_erase    = 1'b0;
     cpu_dout       = rd_data;
     cpu_dbgreg_sel = 0;
     cpu_dbgreg_out = 0;
@@ -222,8 +204,6 @@ always @*
                 OP_PPU_MEM_WR:           d_state = S_PPU_MEM_WR_STG_0;
                 OP_PPU_DISABLE:          d_state = S_PPU_DISABLE;
                 OP_PPUMC_SET_MIRROR_CFG: d_state = S_PPUMC_SET_MIRROR_CFG;
-                OP_CPU_MEM_ERASE:        d_state = S_CPU_MEM_ERASE_0;
-                OP_CPUMC_SET_CFG:        d_state = S_CPUMC_SET_CFG;
                 OP_DBG_RUN:
                   begin
                     d_state = S_DISABLED;
@@ -313,19 +293,22 @@ always @*
                 end
               else
                 begin
-                  d_execute_cnt = { rd_data, q_execute_cnt[7:0] };
+                  // Read CNT_HI into high bits of execute count.  Execute count is shifted by 1:
+                  // use 2 clock cycles per byte read.
+                  d_execute_cnt = { rd_data, q_execute_cnt[7:0], 1'b0 };
                   d_state = (d_execute_cnt) ? S_CPU_MEM_RD_STG_1 : S_DECODE;
                 end
             end
         end
       S_CPU_MEM_RD_STG_1:
         begin
-          cpu_req = 1'b1;
-          d_state = S_CPU_MEM_RD_STG_2;
-        end
-      S_CPU_MEM_RD_STG_2:
-        begin
-          if (cpumc_rdy)
+          if (~q_execute_cnt[0])
+            begin
+              // Dummy cycle.  Allow memory read 1 cycle to return result, and allow uart tx fifo
+              // 1 cycle to update tx_full setting.
+              d_execute_cnt = q_execute_cnt - 1;
+            end
+          else
             begin
               if (!tx_full)
                 begin
@@ -338,8 +321,6 @@ always @*
                   // After last byte is written to uart, return to decode stage.
                   if (d_execute_cnt == 0)
                     d_state = S_DECODE;
-                  else
-                    d_state = S_CPU_MEM_RD_STG_1;
                 end
             end
         end
@@ -382,66 +363,17 @@ always @*
         end
       S_CPU_MEM_WR_STG_1:
         begin
-          if (!rx_empty && cpumc_rdy)
+          if (!rx_empty)
             begin
               rd_en         = 1'b1;               // pop packet byte off uart fifo
               d_execute_cnt = q_execute_cnt - 1;  // advance to next execute stage (write byte)
               d_addr        = q_addr + 1;         // advance to next byte
 
-              cpu_req       = 1'b1;
               cpu_r_nw      = 1'b0;
 
               // After last byte is written to memory, return to decode stage.
               if (d_execute_cnt == 0)
-                d_state = S_CPU_MEM_WR_STG_2;
-            end
-        end
-      S_CPU_MEM_WR_STG_2:
-        begin
-          if (cpumc_rdy)
-            begin
-              d_state = S_DECODE;
-            end
-        end
-
-
-      // --- CPU_MEM_WR ---
-      //   OP_CODE
-      //   ADDR_LO
-      //   ADDR_HI
-      S_CPU_MEM_ERASE_0:
-        begin
-          if (!rx_empty)
-            begin
-              rd_en        = 1'b1;              // pop packet byte off uart fifo
-              d_decode_cnt = q_decode_cnt + 1;  // advance to next decode stage
-              if (q_decode_cnt == 0)
-                begin
-                  // Read ADDR_LO into low bits of addr.
-                  d_addr = rd_data;
-                end
-              else if (q_decode_cnt == 1)
-                begin
-                  // Read ADDR_HI into high bits of addr.
-                  d_addr = { rd_data, q_addr[7:0] };
-                  d_state = S_CPU_MEM_ERASE_1;
-                end
-            end
-        end
-      S_CPU_MEM_ERASE_1:
-        begin
-          if (cpumc_rdy)
-            begin
-              cpu_req     = 1'b1;
-              cpumc_erase = 1'b1;
-              d_state     = S_CPU_MEM_ERASE_2;
-            end
-        end
-      S_CPU_MEM_ERASE_2:
-        begin
-          if (cpumc_rdy)
-            begin
-              d_state = S_DECODE;
+                d_state = S_DECODE;
             end
         end
 
@@ -672,20 +604,6 @@ always @*
               d_state = S_DECODE;
             end
         end
-
-      // --- CPUMC_SET_CFG ---
-      //   OP_CODE
-      //   CONFIG
-      S_CPUMC_SET_CFG:
-        begin
-          if (!rx_empty)
-            begin
-              rd_en       = 1'b1;
-              d_cpumc_cfg = rd_data;
-
-              d_state = S_DECODE;
-            end
-        end
     endcase
   end
 
@@ -694,7 +612,6 @@ assign active           = (q_state != S_DISABLED);
 assign ppu_vram_a       = q_addr;
 assign ppu_vram_dout    = rd_data;
 assign ppumc_mirror_cfg = q_ppumc_mirror_cfg;
-assign cpumc_cfg        = q_cpumc_cfg;
 
 endmodule
 
