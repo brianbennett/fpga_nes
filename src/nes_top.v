@@ -151,15 +151,19 @@ ppu ppu_blk(
   .vram_d_in(ppu_vram_din),
   .hsync_out(VGA_HSYNC),
   .vsync_out(VGA_VSYNC),
-  .r_out(VGA_RED),
-  .g_out(VGA_GREEN),
-  .b_out(VGA_BLUE),
+  .r_out(VGA_RED[3:1]),
+  .g_out(VGA_GREEN[3:1]),
+  .b_out(VGA_BLUE[3:2]),
   .ri_d_out(ppu_ri_dout),
   .nvbl_out(ppu_nvbl),
   .vram_a_out(ppu_vram_a),
   .vram_d_out(ppu_vram_dout),
   .vram_wr_out(ppu_vram_wr)
 );
+
+assign VGA_RED[0]    = 1'b0;
+assign VGA_GREEN[0]  = 1'b0;
+assign VGA_BLUE[1:0] = 2'b00;
 
 //
 // VRAM: internal video ram
