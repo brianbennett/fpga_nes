@@ -1,5 +1,5 @@
 ///////////////////////////////////////////////////////////////////////////////////////////////////
-// Module Name: nes
+// Module Name: nes_top
 //
 // Author:      Brian Bennett (brian.k.bennett@gmail.com)
 // Create Date: 08/09/2010
@@ -64,10 +64,10 @@ cpu cpu_blk(
 //
 // CPUMC: cpu memory controller block.
 //
-reg  [ 7:0] cpumc_din;   // D[ 7:0] (data bus [input])
-wire [ 7:0] cpumc_dout;  // D[ 7:0] (data bus [output])
-reg  [15:0] cpumc_a;     // A[15:0] (address bus)
-reg         cpumc_r_nw;  // R/!W
+reg  [ 7:0] cpumc_din;
+wire [ 7:0] cpumc_dout;
+reg  [15:0] cpumc_a;
+reg         cpumc_r_nw;
 
 cpumc cpumc_blk(
   .clk(CLK_50MHZ),
@@ -76,6 +76,23 @@ cpumc cpumc_blk(
   .din(cpumc_din),
   .dout(cpumc_dout)
 );
+
+//
+// WRAM: internal work ram
+//
+wire       wram_en;
+wire [7:0] wram_dout;
+
+wram wram_blk(
+  .clk_in(CLK_50MHZ),
+  .en_in(wram_en),
+  .r_nw_in(cpumc_r_nw),
+  .a_in(cpumc_a[10:0]),
+  .d_in(cpumc_din),
+  .d_out(wram_dout)
+);
+
+assign wram_en = (cpumc_a[15:13] == 0);
 
 //
 // PPU: picture processing unit block.
@@ -173,7 +190,7 @@ sprdma sprdma_blk(
   .rst_in(BTN_SOUTH),
   .cpumc_a_in(cpumc_a),
   .cpumc_din_in(cpumc_din),
-  .cpumc_dout_in(cpumc_dout),
+  .cpumc_dout_in(cpu_din),
   .cpu_r_nw_in(cpumc_r_nw),
   .active_out(sprdma_active),
   .cpumc_a_out(sprdma_a),
@@ -249,8 +266,8 @@ assign jp_din = (dbg_active) ? dbg_cpu_dout[0] : cpu_dout[0];
 // CPUMC, PPU, and JP return 0 for reads that don't hit an appropriate region of memory.  The final
 // D bus value can be derived by ORing together the output of all blocks that can service a
 // memory read.
-assign cpu_din     = cpumc_dout | ppu_ri_dout | jp_dout;
-assign dbg_cpu_din = cpumc_dout | ppu_ri_dout | jp_dout;
+assign cpu_din     = cpumc_dout | wram_dout | ppu_ri_dout | jp_dout;
+assign dbg_cpu_din = cpumc_dout | wram_dout | ppu_ri_dout | jp_dout;
 
 // Mux ppumc signals from ppu or dbg blk, depending on debug break state (dbg_active).
 assign ppumc_a          = (dbg_active) ? dbg_ppu_vram_a[13:0] : ppu_vram_a;

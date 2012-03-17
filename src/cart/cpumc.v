@@ -18,10 +18,6 @@ module cpumc
   output reg  [ 7:0] dout   // data output bus
 );
 
-wire [10:0] ram_addr;
-wire [ 7:0] ram_rd_data;
-reg         ram_wr;
-
 wire [13:0] prgrom_hi_addr;
 wire [ 7:0] prgrom_hi_rd_data;
 reg         prgrom_hi_wr;
@@ -33,19 +29,6 @@ reg         prgrom_hi_wr;
 //   0x6000 - 0x7FFF SRAM          (currently unsupported)
 //   0x8000 - 0xBFFF PRG-ROM LO    (currently mirrors PRG-ROM HI)
 //   0xC000 - 0xFFFF PRG-ROM HI
-
-// Block ram instance for "RAM" memory range (0x0000 - 0x1FFF).  0x0800 - 0x1FFF mirrors
-// 0x0000 - 0x07FF, so we only need 2048 bytes of physical block ram.
-single_port_ram_sync #(.ADDR_WIDTH(11),
-                       .DATA_WIDTH(8)) ram(
-  .clk(clk),
-  .we(ram_wr),
-  .addr_a(ram_addr),
-  .din_a(din),
-  .dout_a(ram_rd_data)
-);
-
-assign ram_addr = addr[10:0];
 
 // Block ram instance for "PRG-ROM HI" memory range (0xC000 - 0xFFFF).
 single_port_ram_sync #(.ADDR_WIDTH(14),
@@ -62,16 +45,9 @@ assign prgrom_hi_addr = addr[13:0];
 always @*
   begin
     dout         = 8'h00;
-    ram_wr       = 1'b0;
     prgrom_hi_wr = 1'b0;
 
-    if (addr[15:13] == 0)
-      begin
-        // RAM range (0x0000 - 0x1FFF).
-        dout   = ram_rd_data;
-        ram_wr = wr;
-      end
-    else if (addr[15] == 1'b1)
+    if (addr[15] == 1'b1)
       begin
         // PRG-ROM HI range (0xC000 - 0xFFFF).
         dout         = prgrom_hi_rd_data;
