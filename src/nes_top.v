@@ -36,6 +36,11 @@ reg  [ 7:0] cpumc_din;
 reg  [15:0] cpumc_a;
 reg         cpumc_r_nw;
 
+wire [ 7:0] ppumc_din;
+wire [13:0] ppumc_a;
+wire        ppumc_wr;
+wire [ 7:0] ppumc_mirror_cfg;
+
 //
 // CPU: central processing unit block.
 //
@@ -73,14 +78,24 @@ cpu cpu_blk(
 //
 wire       cart_prg_nce;
 wire [7:0] cart_prg_dout;
+wire [7:0] cart_chr_dout;
+wire       cart_ciram_nce;
+wire       cart_ciram_a10;
 
 cart cart_blk(
   .clk_in(CLK_50MHZ),
+  .mirror_cfg_in(ppumc_mirror_cfg[0]),
   .prg_nce_in(cart_prg_nce),
   .prg_a_in(cpumc_a[14:0]),
   .prg_r_nw_in(cpumc_r_nw),
   .prg_d_in(cpumc_din),
-  .prg_d_out(cart_prg_dout)
+  .prg_d_out(cart_prg_dout),
+  .chr_a_in(ppumc_a),
+  .chr_r_nw_in(~ppumc_wr),
+  .chr_d_in(ppumc_din),
+  .chr_d_out(cart_chr_dout),
+  .ciram_nce_out(cart_ciram_nce),
+  .ciram_a10_out(cart_ciram_a10)
 );
 
 assign cart_prg_nce = ~cpumc_a[15];
@@ -147,23 +162,6 @@ ppu ppu_blk(
 );
 
 //
-// PPUMC: ppu memory controller block.
-//
-wire [ 7:0] ppumc_din;         // D[ 7:0] (data bus [input])
-wire [ 7:0] ppumc_dout;        // D[ 7:0] (data bus [output])
-wire [13:0] ppumc_a;           // A[13:0] (address bus)
-wire        ppumc_wr;          // WR
-wire [ 7:0] ppumc_mirror_cfg;  // select horizontal/vertical mirroring
-
-ppumc ppumc_blk(
-  .clk(CLK_50MHZ),
-  .wr(ppumc_wr),
-  .addr(ppumc_a),
-  .din(ppumc_din),
-  .dout(ppumc_dout)
-);
-
-//
 // VRAM: internal video ram
 //
 wire [10:0] vram_a;
@@ -171,14 +169,14 @@ wire [ 7:0] vram_dout;
 
 vram vram_blk(
   .clk_in(CLK_50MHZ),
-  .en_in(ppumc_a[13]),
+  .en_in(~cart_ciram_nce),
   .r_nw_in(~ppumc_wr),
   .a_in(vram_a),
   .d_in(ppumc_din),
   .d_out(vram_dout)
 );
 
-assign vram_a = { ((ppumc_mirror_cfg[0]) ? ppumc_a[10] : ppumc_a[11]), ppumc_a[9:0] };
+assign vram_a = { cart_ciram_a10, ppumc_a[9:0] };
 
 //
 // JP: joypad controller block.
@@ -297,8 +295,8 @@ assign dbg_cpu_din = cart_prg_dout | wram_dout | ppu_ri_dout | jp_dout;
 assign ppumc_a          = (dbg_active) ? dbg_ppu_vram_a[13:0] : ppu_vram_a;
 assign ppumc_wr         = (dbg_active) ? dbg_ppu_vram_wr      : ppu_vram_wr;
 assign ppumc_din        = (dbg_active) ? dbg_ppu_vram_dout    : ppu_vram_dout;
-assign ppu_vram_din     = ppumc_dout | vram_dout;
-assign dbg_ppu_vram_din = ppumc_dout | vram_dout;
+assign ppu_vram_din     = cart_chr_dout | vram_dout;
+assign dbg_ppu_vram_din = cart_chr_dout | vram_dout;
 
 // Issue NMI interupt on PPU vertical blank.
 assign cpu_nnmi = ppu_nvbl;
