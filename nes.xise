@@ -27,10 +27,6 @@
       <association xil_pn:name="BehavioralSimulation" xil_pn:seqID="3"/>
       <association xil_pn:name="Implementation" xil_pn:seqID="10"/>
     </file>
-    <file xil_pn:name="src/cart/cpumc.v" xil_pn:type="FILE_VERILOG">
-      <association xil_pn:name="BehavioralSimulation" xil_pn:seqID="4"/>
-      <association xil_pn:name="Implementation" xil_pn:seqID="19"/>
-    </file>
     <file xil_pn:name="src/cpu/cpu.v" xil_pn:type="FILE_VERILOG">
       <association xil_pn:name="BehavioralSimulation" xil_pn:seqID="5"/>
       <association xil_pn:name="Implementation" xil_pn:seqID="17"/>
@@ -81,6 +77,10 @@
     <file xil_pn:name="src/wram.v" xil_pn:type="FILE_VERILOG">
       <association xil_pn:name="BehavioralSimulation" xil_pn:seqID="77"/>
       <association xil_pn:name="Implementation" xil_pn:seqID="12"/>
+    </file>
+    <file xil_pn:name="src/cart/cart.v" xil_pn:type="FILE_VERILOG">
+      <association xil_pn:name="BehavioralSimulation" xil_pn:seqID="78"/>
+      <association xil_pn:name="Implementation" xil_pn:seqID="19"/>
     </file>
   </files>
 

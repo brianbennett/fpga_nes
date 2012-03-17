@@ -30,6 +30,13 @@ module nes
 );
 
 //
+// System Busses
+//
+reg  [ 7:0] cpumc_din;
+reg  [15:0] cpumc_a;
+reg         cpumc_r_nw;
+
+//
 // CPU: central processing unit block.
 //
 wire [ 7:0] cpu_din;         // D[ 7:0] (data bus [input]), split to prevent internal tristates
@@ -62,20 +69,21 @@ cpu cpu_blk(
 );
 
 //
-// CPUMC: cpu memory controller block.
+// CART: cartridge emulator
 //
-reg  [ 7:0] cpumc_din;
-wire [ 7:0] cpumc_dout;
-reg  [15:0] cpumc_a;
-reg         cpumc_r_nw;
+wire       cart_prg_nce;
+wire [7:0] cart_prg_dout;
 
-cpumc cpumc_blk(
-  .clk(CLK_50MHZ),
-  .wr(~cpumc_r_nw),
-  .addr(cpumc_a),
-  .din(cpumc_din),
-  .dout(cpumc_dout)
+cart cart_blk(
+  .clk_in(CLK_50MHZ),
+  .prg_nce_in(cart_prg_nce),
+  .prg_a_in(cpumc_a[14:0]),
+  .prg_r_nw_in(cpumc_r_nw),
+  .prg_d_in(cpumc_din),
+  .prg_d_out(cart_prg_dout)
 );
+
+assign cart_prg_nce = ~cpumc_a[15];
 
 //
 // WRAM: internal work ram
@@ -263,11 +271,11 @@ assign jp_a   = (dbg_active) ? dbg_cpu_a       : cpu_a;
 assign jp_wr  = (dbg_active) ? ~dbg_cpu_r_nw   : ~cpu_r_nw;
 assign jp_din = (dbg_active) ? dbg_cpu_dout[0] : cpu_dout[0];
 
-// CPUMC, PPU, and JP return 0 for reads that don't hit an appropriate region of memory.  The final
-// D bus value can be derived by ORing together the output of all blocks that can service a
-// memory read.
-assign cpu_din     = cpumc_dout | wram_dout | ppu_ri_dout | jp_dout;
-assign dbg_cpu_din = cpumc_dout | wram_dout | ppu_ri_dout | jp_dout;
+// CART, WRAM, PPU, and JP return 0 for reads that don't hit an appropriate region of memory.  The
+// final CPU D bus value can be derived by ORing together the output of all blocks that can service
+// a memory read.
+assign cpu_din     = cart_prg_dout | wram_dout | ppu_ri_dout | jp_dout;
+assign dbg_cpu_din = cart_prg_dout | wram_dout | ppu_ri_dout | jp_dout;
 
 // Mux ppumc signals from ppu or dbg blk, depending on debug break state (dbg_active).
 assign ppumc_a          = (dbg_active) ? dbg_ppu_vram_a[13:0] : ppu_vram_a;
