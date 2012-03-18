@@ -39,7 +39,6 @@ wire        cpumc_r_nw;
 wire [ 7:0] ppumc_din;
 wire [13:0] ppumc_a;
 wire        ppumc_wr;
-wire [ 7:0] ppumc_mirror_cfg;
 
 //
 // RP2A03: Main processing chip including CPU, APU, joypad control, and sprite DMA control.
@@ -80,15 +79,18 @@ rp2a03 rp2a03_blk(
 //
 // CART: cartridge emulator
 //
-wire       cart_prg_nce;
-wire [7:0] cart_prg_dout;
-wire [7:0] cart_chr_dout;
-wire       cart_ciram_nce;
-wire       cart_ciram_a10;
+wire        cart_prg_nce;
+wire [ 7:0] cart_prg_dout;
+wire [ 7:0] cart_chr_dout;
+wire        cart_ciram_nce;
+wire        cart_ciram_a10;
+wire [39:0] cart_cfg;
+wire        cart_cfg_upd;
 
 cart cart_blk(
   .clk_in(CLK_50MHZ),
-  .mirror_cfg_in(ppumc_mirror_cfg[0]),
+  .cfg_in(cart_cfg),
+  .cfg_upd_in(cart_cfg_upd),
   .prg_nce_in(cart_prg_nce),
   .prg_a_in(cpumc_a[14:0]),
   .prg_r_nw_in(cpumc_r_nw),
@@ -218,7 +220,8 @@ hci hci_blk(
   .ppu_vram_wr(hci_ppu_vram_wr),
   .ppu_vram_a(hci_ppu_vram_a),
   .ppu_vram_dout(hci_ppu_vram_dout),
-  .ppumc_mirror_cfg(ppumc_mirror_cfg)
+  .cart_cfg(cart_cfg),
+  .cart_cfg_upd(cart_cfg_upd)
 );
 
 // Mux cpumc signals from rp2a03 or hci blk, depending on debug break state (hci_active).

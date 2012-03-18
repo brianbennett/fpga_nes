@@ -17,7 +17,8 @@ module cart
   input  wire        clk_in,           // system clock signal
 
   // Mapper config data.
-  input  wire        mirror_cfg_in,    // mirror configuration
+  input  wire [39:0] cfg_in,           // cartridge config (from iNES header)
+  input  wire        cfg_upd_in,       // pulse signal on cfg_in update
 
   // PRG-ROM interface.
   input  wire        prg_nce_in,       // prg-rom chip enable (active low)
@@ -66,7 +67,7 @@ single_port_ram_sync #(.ADDR_WIDTH(13),
 );
 
 assign ciram_nce_out      = ~chr_a_in[13];
-assign ciram_a10_out      = (mirror_cfg_in) ? chr_a_in[10] : chr_a_in[11];
+assign ciram_a10_out      = (cfg_in[16])    ? chr_a_in[10] : chr_a_in[11];
 assign chrrom_pat_bram_we = (ciram_nce_out) ? ~chr_r_nw_in : 1'b0;
 assign chr_d_out          = (ciram_nce_out) ? chrrom_pat_bram_dout : 8'h00;
 

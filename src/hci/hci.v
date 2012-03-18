@@ -31,7 +31,8 @@ module hci
   output reg         ppu_vram_wr,      // ppu memory write enable signal
   output wire [15:0] ppu_vram_a,       // ppu memory address
   output wire [ 7:0] ppu_vram_dout,    // ppu data bus [output]
-  output wire [ 7:0] ppumc_mirror_cfg  // ppu memory mirroring configuration
+  output wire [39:0] cart_cfg,         // cartridge config data (from iNES header)
+  output wire        cart_cfg_upd      // pulse on cart_cfg update so cart can reset
 );
 
 // Debug packet opcodes.
@@ -47,7 +48,7 @@ localparam [7:0] OP_ECHO                 = 8'h00,
                  OP_PPU_MEM_RD           = 8'h09,
                  OP_PPU_MEM_WR           = 8'h0A,
                  OP_PPU_DISABLE          = 8'h0B,
-                 OP_PPUMC_SET_MIRROR_CFG = 8'h0C;
+                 OP_CART_SET_CFG         = 8'h0C;
 
 // Error code bit positions.
 localparam DBG_UART_PARITY_ERR = 0,
@@ -71,14 +72,16 @@ localparam [4:0] S_DISABLED             = 5'h00,
                  S_PPU_MEM_WR_STG_0     = 5'h0E,
                  S_PPU_MEM_WR_STG_1     = 5'h0F,
                  S_PPU_DISABLE          = 5'h10,
-                 S_PPUMC_SET_MIRROR_CFG = 5'h11;
+                 S_CART_SET_CFG_STG_0   = 5'h11,
+                 S_CART_SET_CFG_STG_1   = 5'h12;
 
 reg [ 4:0] q_state,            d_state;
 reg [ 2:0] q_decode_cnt,       d_decode_cnt;
 reg [16:0] q_execute_cnt,      d_execute_cnt;
 reg [15:0] q_addr,             d_addr;
 reg [ 1:0] q_err_code,         d_err_code;
-reg [ 7:0] q_ppumc_mirror_cfg, d_ppumc_mirror_cfg;
+reg [39:0] q_cart_cfg,         d_cart_cfg;
+reg        q_cart_cfg_upd,     d_cart_cfg_upd;
 
 // UART output buffer FFs.
 reg  [7:0] q_tx_data, d_tx_data;
@@ -101,7 +104,8 @@ always @(posedge clk)
         q_execute_cnt      <= 0;
         q_addr             <= 16'h0000;
         q_err_code         <= 0;
-        q_ppumc_mirror_cfg <= 8'h00;
+        q_cart_cfg         <= 40'h0000000000;
+        q_cart_cfg_upd     <= 1'b0;
         q_tx_data          <= 8'h00;
         q_wr_en            <= 1'b0;
       end
@@ -112,7 +116,8 @@ always @(posedge clk)
         q_execute_cnt      <= d_execute_cnt;
         q_addr             <= d_addr;
         q_err_code         <= d_err_code;
-        q_ppumc_mirror_cfg <= d_ppumc_mirror_cfg;
+        q_cart_cfg         <= d_cart_cfg;
+        q_cart_cfg_upd     <= d_cart_cfg_upd;
         q_tx_data          <= d_tx_data;
         q_wr_en            <= d_wr_en;
       end
@@ -140,12 +145,13 @@ uart #(.BAUD_RATE(115200),
 always @*
   begin
     // Setup default FF updates.
-    d_state            = q_state;
-    d_decode_cnt       = q_decode_cnt;
-    d_execute_cnt      = q_execute_cnt;
-    d_addr             = q_addr;
-    d_err_code         = q_err_code;
-    d_ppumc_mirror_cfg = q_ppumc_mirror_cfg;
+    d_state        = q_state;
+    d_decode_cnt   = q_decode_cnt;
+    d_execute_cnt  = q_execute_cnt;
+    d_addr         = q_addr;
+    d_err_code     = q_err_code;
+    d_cart_cfg     = q_cart_cfg;
+    d_cart_cfg_upd = 1'b0;
 
     rd_en         = 1'b0;
     d_tx_data     = 8'h00;
@@ -204,7 +210,7 @@ always @*
                 OP_PPU_MEM_RD:           d_state = S_PPU_MEM_RD_STG_0;
                 OP_PPU_MEM_WR:           d_state = S_PPU_MEM_WR_STG_0;
                 OP_PPU_DISABLE:          d_state = S_PPU_DISABLE;
-                OP_PPUMC_SET_MIRROR_CFG: d_state = S_PPUMC_SET_MIRROR_CFG;
+                OP_CART_SET_CFG:         d_state = S_CART_SET_CFG_STG_0;
                 OP_DBG_RUN:
                   begin
                     d_state = S_DISABLED;
@@ -592,17 +598,33 @@ always @*
             end
         end
 
-      // --- PPU_SET_MIRROR_CFG ---
+      // --- CART_SET_CFG ---
       //   OP_CODE
-      //   CONFIG
-      S_PPUMC_SET_MIRROR_CFG:
+      //   iNES byte 4 (16KB PRG-ROM bank count)
+      //   iNES byte 5 (8KB CHR-ROM bank count)
+      //   iNES byte 6 (ROM Control Byte 1)
+      //   iNES byte 7 (ROM Control Byte 2)
+      //   iNES byte 8 (8KB RAM bank count)
+      S_CART_SET_CFG_STG_0:
+        begin
+          d_execute_cnt = 16'h0004;
+          d_state       = S_CART_SET_CFG_STG_1;
+        end
+      S_CART_SET_CFG_STG_1:
         begin
           if (!rx_empty)
             begin
-              rd_en              = 1'b1;
-              d_ppumc_mirror_cfg = rd_data;
+              rd_en         = 1'b1;               // pop packet byte off uart fifo
+              d_execute_cnt = q_execute_cnt - 1;  // advance to next execute stage
 
-              d_state = S_DECODE;
+              d_cart_cfg = { q_cart_cfg[31:0], rd_data };
+
+              // After last byte of packet, return to decode stage.
+              if (q_execute_cnt == 0)
+                begin
+                  d_state        = S_DECODE;
+                  d_cart_cfg_upd = 1'b1;
+                end
             end
         end
     endcase
@@ -612,7 +634,8 @@ assign cpu_a            = q_addr;
 assign active           = (q_state != S_DISABLED);
 assign ppu_vram_a       = q_addr;
 assign ppu_vram_dout    = rd_data;
-assign ppumc_mirror_cfg = q_ppumc_mirror_cfg;
+assign cart_cfg         = q_cart_cfg;
+assign cart_cfg_upd     = q_cart_cfg_upd;
 
 endmodule
 
