@@ -30,11 +30,11 @@ module nes
 );
 
 //
-// System Busses
+// System Memory Buses
 //
-reg  [ 7:0] cpumc_din;
-reg  [15:0] cpumc_a;
-reg         cpumc_r_nw;
+wire [ 7:0] cpumc_din;
+wire [15:0] cpumc_a;
+wire        cpumc_r_nw;
 
 wire [ 7:0] ppumc_din;
 wire [13:0] ppumc_a;
@@ -42,35 +42,39 @@ wire        ppumc_wr;
 wire [ 7:0] ppumc_mirror_cfg;
 
 //
-// CPU: central processing unit block.
+// RP2A03: Main processing chip including CPU, APU, joypad control, and sprite DMA control.
 //
-wire [ 7:0] cpu_din;         // D[ 7:0] (data bus [input]), split to prevent internal tristates
-wire [ 7:0] cpu_dout;        // D[ 7:0] (data bus [output])
-wire [15:0] cpu_a;           // A[15:0] (address bus)
-wire        cpu_r_nw;        // R/!W
-reg         cpu_ready;       // READY
-wire        cpu_brk;         // signals CPU-intiated debug break
-wire [ 3:0] cpu_dbgreg_sel;  // CPU input for debugger register read/write select
-wire [ 7:0] cpu_dbgreg_out;  // CPU output for debugger register reads
-wire [ 7:0] cpu_dbgreg_in;   // CPU input for debugger register writes
-wire        cpu_dbgreg_wr;   // CPU input for debugger register writen enable
-wire        cpu_nnmi;        // Non-Maskable Interrupt signal (active low)
+wire        rp2a03_rdy;
+wire [ 7:0] rp2a03_din;
+wire        rp2a03_nnmi;
+wire [ 7:0] rp2a03_dout;
+wire [15:0] rp2a03_a;
+wire        rp2a03_r_nw;
+wire        rp2a03_brk;
+wire [ 3:0] rp2a03_dbgreg_sel;
+wire [ 7:0] rp2a03_dbgreg_din;
+wire        rp2a03_dbgreg_wr;
+wire [ 7:0] rp2a03_dbgreg_dout;
 
-cpu cpu_blk(
-  .clk(CLK_50MHZ),
-  .rst(BTN_SOUTH),
-  .ready(cpu_ready),
-  .dbgreg_sel(cpu_dbgreg_sel),
-  .dbgreg_in(cpu_dbgreg_in),
-  .dbgreg_wr(cpu_dbgreg_wr),
-  .din(cpu_din),
-  .nnmi(cpu_nnmi),
-  .nres(~BTN_EAST),
-  .dout(cpu_dout),
-  .a(cpu_a),
-  .r_nw(cpu_r_nw),
-  .brk(cpu_brk),
-  .dbgreg_out(cpu_dbgreg_out)
+rp2a03 rp2a03_blk(
+  .clk_in(CLK_50MHZ),
+  .rst_in(BTN_SOUTH),
+  .rdy_in(rp2a03_rdy),
+  .d_in(rp2a03_din),
+  .nnmi_in(rp2a03_nnmi),
+  .nres_in(~BTN_EAST),
+  .d_out(rp2a03_dout),
+  .a_out(rp2a03_a),
+  .r_nw_out(rp2a03_r_nw),
+  .brk_out(rp2a03_brk),
+  .jp_data1_in(NES_JOYPAD_DATA1),
+  .jp_data2_in(NES_JOYPAD_DATA2),
+  .jp_clk(NES_JOYPAD_CLK),
+  .jp_latch(NES_JOYPAD_LATCH),
+  .dbgreg_sel_in(rp2a03_dbgreg_sel),
+  .dbgreg_d_in(rp2a03_dbgreg_din),
+  .dbgreg_wr_in(rp2a03_dbgreg_wr),
+  .dbgreg_d_out(rp2a03_dbgreg_dout)
 );
 
 //
@@ -116,6 +120,21 @@ wram wram_blk(
 );
 
 assign wram_en = (cpumc_a[15:13] == 0);
+
+//
+// VRAM: internal video ram
+//
+wire [10:0] vram_a;
+wire [ 7:0] vram_dout;
+
+vram vram_blk(
+  .clk_in(CLK_50MHZ),
+  .en_in(~cart_ciram_nce),
+  .r_nw_in(~ppumc_wr),
+  .a_in(vram_a),
+  .d_in(ppumc_din),
+  .d_out(vram_dout)
+);
 
 //
 // PPU: picture processing unit block.
@@ -165,145 +184,62 @@ assign VGA_RED[0]    = 1'b0;
 assign VGA_GREEN[0]  = 1'b0;
 assign VGA_BLUE[1:0] = 2'b00;
 
-//
-// VRAM: internal video ram
-//
-wire [10:0] vram_a;
-wire [ 7:0] vram_dout;
-
-vram vram_blk(
-  .clk_in(CLK_50MHZ),
-  .en_in(~cart_ciram_nce),
-  .r_nw_in(~ppumc_wr),
-  .a_in(vram_a),
-  .d_in(ppumc_din),
-  .d_out(vram_dout)
-);
-
 assign vram_a = { cart_ciram_a10, ppumc_a[9:0] };
-
-//
-// JP: joypad controller block.
-//
-wire        jp_din;
-wire [ 7:0] jp_dout;
-wire [15:0] jp_a;
-wire        jp_wr;
-
-jp jp_blk(
-  .clk(CLK_50MHZ),
-  .rst(BTN_SOUTH),
-  .wr(jp_wr),
-  .addr(jp_a),
-  .din(jp_din),
-  .jp_data1(NES_JOYPAD_DATA1),
-  .jp_data2(NES_JOYPAD_DATA2),
-  .jp_clk(NES_JOYPAD_CLK),
-  .jp_latch(NES_JOYPAD_LATCH),
-  .dout(jp_dout)
-);
-
-//
-// SPRDMA: sprite dma controller block.
-//
-wire        sprdma_active;
-wire [15:0] sprdma_a;
-wire [ 7:0] sprdma_dout;
-wire        sprdma_r_nw;
-
-sprdma sprdma_blk(
-  .clk_in(CLK_50MHZ),
-  .rst_in(BTN_SOUTH),
-  .cpumc_a_in(cpumc_a),
-  .cpumc_din_in(cpumc_din),
-  .cpumc_dout_in(cpu_din),
-  .cpu_r_nw_in(cpumc_r_nw),
-  .active_out(sprdma_active),
-  .cpumc_a_out(sprdma_a),
-  .cpumc_d_out(sprdma_dout),
-  .cpumc_r_nw_out(sprdma_r_nw)
-);
 
 //
 // HCI: host communication interface block.  Interacts with NesDbg software through serial port.
 //
 wire        hci_active;
-wire [ 7:0] hci_cpu_din;        // CPU: D[ 7:0] (data bus [input])
-wire [ 7:0] hci_cpu_dout;       // CPU: D[ 7:0] (data bus [output])
-wire [15:0] hci_cpu_a;          // CPU: A[15:0] (address bus)
-wire        hci_cpu_r_nw;       // CPU: R/!W
-wire [ 7:0] hci_ppu_vram_din;   // PPU: D[ 7:0] (data bus [input])
-wire [ 7:0] hci_ppu_vram_dout;  // PPU: D[ 7:0] (data bus [output])
-wire [15:0] hci_ppu_vram_a;     // PPU: A[15:0] (address bus)
-wire        hci_ppu_vram_wr;    // PPU: WR
+wire [ 7:0] hci_cpu_din;
+wire [ 7:0] hci_cpu_dout;
+wire [15:0] hci_cpu_a;
+wire        hci_cpu_r_nw;
+wire [ 7:0] hci_ppu_vram_din;
+wire [ 7:0] hci_ppu_vram_dout;
+wire [15:0] hci_ppu_vram_a;
+wire        hci_ppu_vram_wr;
 
 hci hci_blk(
   .clk(CLK_50MHZ),
   .rst(BTN_SOUTH),
   .rx(RS232_DCE_RXD),
-  .brk(cpu_brk),
+  .brk(rp2a03_brk),
   .cpu_din(hci_cpu_din),
-  .cpu_dbgreg_in(cpu_dbgreg_out),
+  .cpu_dbgreg_in(rp2a03_dbgreg_dout),
   .ppu_vram_din(hci_ppu_vram_din),
   .tx(RS232_DCE_TXD),
   .active(hci_active),
   .cpu_r_nw(hci_cpu_r_nw),
   .cpu_a(hci_cpu_a),
   .cpu_dout(hci_cpu_dout),
-  .cpu_dbgreg_sel(cpu_dbgreg_sel),
-  .cpu_dbgreg_out(cpu_dbgreg_in),
-  .cpu_dbgreg_wr(cpu_dbgreg_wr),
+  .cpu_dbgreg_sel(rp2a03_dbgreg_sel),
+  .cpu_dbgreg_out(rp2a03_dbgreg_din),
+  .cpu_dbgreg_wr(rp2a03_dbgreg_wr),
   .ppu_vram_wr(hci_ppu_vram_wr),
   .ppu_vram_a(hci_ppu_vram_a),
   .ppu_vram_dout(hci_ppu_vram_dout),
   .ppumc_mirror_cfg(ppumc_mirror_cfg)
 );
 
-always @*
-  begin
-    if (hci_active)
-      begin
-        cpu_ready  = 1'b0;
-        cpumc_a    = hci_cpu_a;
-        cpumc_r_nw = hci_cpu_r_nw;
-        cpumc_din  = hci_cpu_dout;
-      end
-    else if (sprdma_active)
-      begin
-        cpu_ready  = 1'b0;
-        cpumc_a    = sprdma_a;
-        cpumc_r_nw = sprdma_r_nw;
-        cpumc_din  = sprdma_dout;
-      end
-    else
-      begin
-        cpu_ready  = 1'b1;
-        cpumc_a    = cpu_a;
-        cpumc_r_nw = cpu_r_nw;
-        cpumc_din  = cpu_dout;
-      end
-  end
+// Mux cpumc signals from rp2a03 or hci blk, depending on debug break state (hci_active).
+assign rp2a03_rdy  = (hci_active) ? 1'b0         : 1'b1;
+assign cpumc_a     = (hci_active) ? hci_cpu_a    : rp2a03_a;
+assign cpumc_r_nw  = (hci_active) ? hci_cpu_r_nw : rp2a03_r_nw;
+assign cpumc_din   = (hci_active) ? hci_cpu_dout : rp2a03_dout;
 
-// Mux jp signals from cpu or hci blk, depending on debug break state (hci_active).
-assign jp_a   = (hci_active) ? hci_cpu_a       : cpu_a;
-assign jp_wr  = (hci_active) ? ~hci_cpu_r_nw   : ~cpu_r_nw;
-assign jp_din = (hci_active) ? hci_cpu_dout[0] : cpu_dout[0];
-
-// CART, WRAM, PPU, and JP return 0 for reads that don't hit an appropriate region of memory.  The
-// final CPU D bus value can be derived by ORing together the output of all blocks that can service
-// a memory read.
-assign cpu_din     = cart_prg_dout | wram_dout | ppu_ri_dout | jp_dout;
-assign hci_cpu_din = cart_prg_dout | wram_dout | ppu_ri_dout | jp_dout;
+assign rp2a03_din  = cart_prg_dout | wram_dout | ppu_ri_dout;
+assign hci_cpu_din = cart_prg_dout | wram_dout | ppu_ri_dout;
 
 // Mux ppumc signals from ppu or hci blk, depending on debug break state (hci_active).
 assign ppumc_a          = (hci_active) ? hci_ppu_vram_a[13:0] : ppu_vram_a;
 assign ppumc_wr         = (hci_active) ? hci_ppu_vram_wr      : ppu_vram_wr;
 assign ppumc_din        = (hci_active) ? hci_ppu_vram_dout    : ppu_vram_dout;
+
 assign ppu_vram_din     = cart_chr_dout | vram_dout;
 assign hci_ppu_vram_din = cart_chr_dout | vram_dout;
 
 // Issue NMI interupt on PPU vertical blank.
-assign cpu_nnmi = ppu_nvbl;
+assign rp2a03_nnmi = ppu_nvbl;
 
 endmodule
 
