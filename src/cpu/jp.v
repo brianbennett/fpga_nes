@@ -62,7 +62,7 @@ always @*
     d_jp_clk    = q_jp_clk;
     d_jp_latch  = q_jp_latch;
 
-    d_cnt = q_cnt + 1;
+    d_cnt = q_cnt + 9'h001;
 
     // Drive LATCH signal to latch current controller state and return state of A button.  Pulse
     // clock 7 more times to read other 7 buttons.  Controller states are active low.

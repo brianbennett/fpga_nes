@@ -236,7 +236,7 @@ always @(posedge clk_in)
         palette_ram[`PRAM_A(5'h1f)] <= 6'h08;
       end
     else if (ri_pram_wr)
-      palette_ram[`PRAM_A(vram_a_out[4:0])] <= ri_vram_dout;
+      palette_ram[`PRAM_A(vram_a_out[4:0])] <= ri_vram_dout[5:0];
   end
 
 assign ri_vram_din = vram_d_in;

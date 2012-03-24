@@ -240,8 +240,8 @@ always @*
         begin
           if (!rx_empty)
             begin
-              rd_en        = 1'b1;              // pop packet byte off uart fifo
-              d_decode_cnt = q_decode_cnt + 1;  // advance to next decode stage
+              rd_en        = 1'b1;                 // pop packet byte off uart fifo
+              d_decode_cnt = q_decode_cnt + 3'h1;  // advance to next decode stage
               if (q_decode_cnt == 0)
                 begin
                   // Read CNT_LO into low bits of execute count.
@@ -259,8 +259,8 @@ always @*
         begin
           if (!rx_empty)
             begin
-              rd_en         = 1'b1;               // pop packet byte off uart fifo
-              d_execute_cnt = q_execute_cnt - 1;  // advance to next execute stage
+              rd_en         = 1'b1;                       // pop packet byte off uart fifo
+              d_execute_cnt = q_execute_cnt - 17'h00001;  // advance to next execute stage
 
               // Echo packet DATA byte over uart.
               d_tx_data = rd_data;
@@ -282,8 +282,8 @@ always @*
         begin
           if (!rx_empty)
             begin
-              rd_en        = 1'b1;              // pop packet byte off uart fifo
-              d_decode_cnt = q_decode_cnt + 1;  // advance to next decode stage
+              rd_en        = 1'b1;                 // pop packet byte off uart fifo
+              d_decode_cnt = q_decode_cnt + 3'h1;  // advance to next decode stage
               if (q_decode_cnt == 0)
                 begin
                   // Read ADDR_LO into low bits of addr.
@@ -314,17 +314,17 @@ always @*
             begin
               // Dummy cycle.  Allow memory read 1 cycle to return result, and allow uart tx fifo
               // 1 cycle to update tx_full setting.
-              d_execute_cnt = q_execute_cnt - 1;
+              d_execute_cnt = q_execute_cnt - 17'h00001;
             end
           else
             begin
               if (!tx_full)
                 begin
-                  d_execute_cnt = q_execute_cnt - 1;  // advance to next execute stage (read byte)
-                  d_tx_data     = cpu_din;            // write data from cpu D bus
-                  d_wr_en       = 1'b1;               // request uart write
+                  d_execute_cnt = q_execute_cnt - 17'h00001;  // advance to next execute stage
+                  d_tx_data     = cpu_din;                    // write data from cpu D bus
+                  d_wr_en       = 1'b1;                       // request uart write
 
-                  d_addr = q_addr + 1;                // advance to next byte
+                  d_addr = q_addr + 16'h0001;                 // advance to next byte
 
                   // After last byte is written to uart, return to decode stage.
                   if (d_execute_cnt == 0)
@@ -344,8 +344,8 @@ always @*
         begin
           if (!rx_empty)
             begin
-              rd_en        = 1'b1;              // pop packet byte off uart fifo
-              d_decode_cnt = q_decode_cnt + 1;  // advance to next decode stage
+              rd_en        = 1'b1;                 // pop packet byte off uart fifo
+              d_decode_cnt = q_decode_cnt + 3'h1;  // advance to next decode stage
               if (q_decode_cnt == 0)
                 begin
                   // Read ADDR_LO into low bits of addr.
@@ -373,9 +373,9 @@ always @*
         begin
           if (!rx_empty)
             begin
-              rd_en         = 1'b1;               // pop packet byte off uart fifo
-              d_execute_cnt = q_execute_cnt - 1;  // advance to next execute stage (write byte)
-              d_addr        = q_addr + 1;         // advance to next byte
+              rd_en         = 1'b1;                       // pop packet byte off uart fifo
+              d_execute_cnt = q_execute_cnt - 17'h00001;  // advance to next execute stage
+              d_addr        = q_addr + 16'h0001;          // advance to next byte
 
               cpu_r_nw      = 1'b0;
 
@@ -393,7 +393,7 @@ always @*
           if (!rx_empty && !tx_full)
             begin
               rd_en          = 1'b1;           // pop REG_SEL byte off uart fifo
-              cpu_dbgreg_sel = rd_data;        // select CPU reg based on REG_SEL
+              cpu_dbgreg_sel = rd_data[3:0];   // select CPU reg based on REG_SEL
               d_tx_data      = cpu_dbgreg_in;  // send reg read results to uart
               d_wr_en        = 1'b1;           // request uart write
 
@@ -419,7 +419,7 @@ always @*
           if (!rx_empty)
             begin
               rd_en          = 1'b1;
-              cpu_dbgreg_sel = q_addr;
+              cpu_dbgreg_sel = q_addr[3:0];
               cpu_dbgreg_wr  = 1'b1;
               cpu_dbgreg_out = rd_data;
               d_state        = S_DECODE;
@@ -448,8 +448,8 @@ always @*
         begin
           if (!rx_empty)
             begin
-              rd_en        = 1'b1;              // pop packet byte off uart fifo
-              d_decode_cnt = q_decode_cnt + 1;  // advance to next decode stage
+              rd_en        = 1'b1;                 // pop packet byte off uart fifo
+              d_decode_cnt = q_decode_cnt + 3'h1;  // advance to next decode stage
               if (q_decode_cnt == 0)
                 begin
                   // Read ADDR_LO into low bits of addr.
@@ -480,17 +480,17 @@ always @*
             begin
               // Dummy cycle.  Allow memory read 1 cycle to return result, and allow uart tx fifo
               // 1 cycle to update tx_full setting.
-              d_execute_cnt = q_execute_cnt - 1;
+              d_execute_cnt = q_execute_cnt - 17'h00001;
             end
           else
             begin
               if (!tx_full)
                 begin
-                  d_execute_cnt = q_execute_cnt - 1;  // advance to next execute stage (read byte)
-                  d_tx_data     = ppu_vram_din;       // write data from ppu D bus
-                  d_wr_en       = 1'b1;               // request uart write
+                  d_execute_cnt = q_execute_cnt - 17'h00001;  // advance to next execute stage
+                  d_tx_data     = ppu_vram_din;               // write data from ppu D bus
+                  d_wr_en       = 1'b1;                       // request uart write
 
-                  d_addr = q_addr + 1;                // advance to next byte
+                  d_addr = q_addr + 16'h0001;                 // advance to next byte
 
                   // After last byte is written to uart, return to decode stage.
                   if (d_execute_cnt == 0)
@@ -510,8 +510,8 @@ always @*
         begin
           if (!rx_empty)
             begin
-              rd_en        = 1'b1;              // pop packet byte off uart fifo
-              d_decode_cnt = q_decode_cnt + 1;  // advance to next decode stage
+              rd_en        = 1'b1;                 // pop packet byte off uart fifo
+              d_decode_cnt = q_decode_cnt + 3'h1;  // advance to next decode stage
               if (q_decode_cnt == 0)
                 begin
                   // Read ADDR_LO into low bits of addr.
@@ -539,9 +539,9 @@ always @*
         begin
           if (!rx_empty)
             begin
-              rd_en         = 1'b1;               // pop packet byte off uart fifo
-              d_execute_cnt = q_execute_cnt - 1;  // advance to next execute stage (write byte)
-              d_addr        = q_addr + 1;         // advance to next byte
+              rd_en         = 1'b1;                       // pop packet byte off uart fifo
+              d_execute_cnt = q_execute_cnt - 17'h00001;  // advance to next execute stage
+              d_addr        = q_addr + 16'h0001;          // advance to next byte
 
               ppu_vram_wr   = 1'b1;
 
@@ -555,7 +555,7 @@ always @*
       //   OP_CODE
       S_PPU_DISABLE:
         begin
-          d_decode_cnt = q_decode_cnt + 1;  // advance to next decode stage
+          d_decode_cnt = q_decode_cnt + 3'h1;  // advance to next decode stage
 
           if (q_decode_cnt == 0)
             begin
@@ -615,8 +615,8 @@ always @*
         begin
           if (!rx_empty)
             begin
-              rd_en         = 1'b1;               // pop packet byte off uart fifo
-              d_execute_cnt = q_execute_cnt - 1;  // advance to next execute stage
+              rd_en         = 1'b1;                       // pop packet byte off uart fifo
+              d_execute_cnt = q_execute_cnt - 17'h00001;  // advance to next execute stage
 
               d_cart_cfg = { q_cart_cfg[31:0], rd_data };
 

@@ -188,9 +188,8 @@ localparam [2:0] T0  = 3'h0,
                  T6  = 3'h6;
 
 // Interrupt types.
-localparam [1:0] INTERRUPT_RST = 2'b00,
-                 INTERRUPT_NMI = 2'b01,
-                 INTERRUPT_IRQ = 2'b10;
+localparam INTERRUPT_RST = 1'b0,
+           INTERRUPT_NMI = 1'b1;
 
 // User registers.
 reg  [7:0] q_ac;     // accumulator register
@@ -375,8 +374,8 @@ assign d_clk_phase = (q_clk_phase == 6'h38) ? 6'h00 : q_clk_phase + 6'h01;
 //
 // Interrupt and Reset Control.
 //
-reg [1:0] q_irq_sel;       // interrupt selected for service
-reg [1:0] d_irq_sel;
+reg q_irq_sel;       // interrupt selected for service
+reg d_irq_sel;
 
 reg       q_rst;           // rst interrupt needs to be serviced
 wire      d_rst;

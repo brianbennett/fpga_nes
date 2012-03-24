@@ -98,7 +98,7 @@ always @*
               if (q_addr[7:0] == 8'hff)
                 d_state = S_COOLDOWN;
               else
-                d_addr = q_addr + 1;
+                d_addr = q_addr + 16'h0001;
             end
         endcase
       end

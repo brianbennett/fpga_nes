@@ -179,7 +179,7 @@ always @*
             // Current object is in range, and there are less than 8 in-range objects found
             // so far.  Update the STM and increment the in-range counter.
             stm_wr       = 1'b1;
-            d_in_rng_cnt = q_in_rng_cnt + 1;
+            d_in_rng_cnt = q_in_rng_cnt + 4'h1;
           end
       end
   end

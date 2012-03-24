@@ -117,9 +117,9 @@ always @*
         // the HT counter is no longer being clocked, and the VT counter is now being clocked by
         // access to 2007.
         if (ri_inc_addr_amt_in)
-          { d_fvc, d_vc, d_hc, d_vtc } = { q_fvc, q_vc, q_hc, q_vtc } + 1;
+          { d_fvc, d_vc, d_hc, d_vtc } = { q_fvc, q_vc, q_hc, q_vtc } + 10'h001;
         else
-          { d_fvc, d_vc, d_hc, d_vtc, d_htc } = { q_fvc, q_vc, q_hc, q_vtc, q_htc } + 1;
+          { d_fvc, d_vc, d_hc, d_vtc, d_htc } = { q_fvc, q_vc, q_hc, q_vtc, q_htc } + 15'h0001;
       end
     else
       begin
