@@ -11,7 +11,7 @@
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 module cpu
 (
-  input  wire        clk,         // 50MHz system clock
+  input  wire        clk,         // 100MHz system clock
   input  wire        rst,         // reset signal
   input  wire        ready,       // ready signal
   input  wire [ 3:0] dbgreg_sel,  // dbg reg select
@@ -179,7 +179,7 @@ localparam [7:0] ADC_ABS   = 8'h6D, ADC_ABSX  = 8'h7D, ADC_ABSY  = 8'h79, ADC_IM
      ((op) == TXS      ) || ((op) == TYA      ))
 
 // Timing generation cycle states.
-localparam [3:0] T0  = 3'h0,
+localparam [2:0] T0  = 3'h0,
                  T1  = 3'h1,
                  T2  = 3'h2,
                  T3  = 3'h3,
@@ -354,23 +354,23 @@ assign rdy = ready && q_ready;
 //
 // Clock phase generation logic.
 //
-reg  [4:0] q_clk_phase;
-wire [4:0] d_clk_phase;
+reg  [5:0] q_clk_phase;
+wire [5:0] d_clk_phase;
 
 always @(posedge clk)
   begin
     if (rst)
-      q_clk_phase <= 5'h01;
+      q_clk_phase <= 6'h01;
     else if (rdy)
       q_clk_phase <= d_clk_phase;
 
     // If the debugger writes a PC register, this is a partial reset: the cycle is set to
     // T0, and the clock phase should be set to the beginning of the 4 clock cycle.
     else if (dbgreg_wr && ((dbgreg_sel == `REGSEL_PCH) || (dbgreg_sel == `REGSEL_PCL)))
-      q_clk_phase <= 5'h01;
+      q_clk_phase <= 6'h01;
   end
 
-assign d_clk_phase = (q_clk_phase == 5'h1C) ? 5'h00 : q_clk_phase + 1;
+assign d_clk_phase = (q_clk_phase == 6'h38) ? 6'h00 : q_clk_phase + 6'h01;
 
 //
 // Interrupt and Reset Control.
@@ -399,7 +399,7 @@ always @(posedge clk)
         q_nmi     <= 1'b0;
         q_nnmi    <= 1'b1;
       end
-    else if (q_clk_phase == 5'h00)
+    else if (q_clk_phase == 6'h00)
       begin
         q_irq_sel <= d_irq_sel;
         q_rst     <= d_rst;
@@ -443,7 +443,7 @@ always @(posedge clk)
         q_s    <= 8'hFF;
         q_t    <= T1;
       end
-    else if (rdy && (q_clk_phase == 5'h00))
+    else if (rdy && (q_clk_phase == 6'h00))
       begin
         q_ac   <= d_ac;
         q_x    <= d_x;
@@ -506,7 +506,7 @@ always @(posedge clk)
         q_add <= 8'h00;
         q_acr <= 1'b0;
       end
-    else if (rdy && (q_clk_phase == 5'h0E))
+    else if (rdy && (q_clk_phase == 6'h1C))
       begin
         q_pcl <= d_pcl;
         q_pch <= d_pch;
@@ -1028,7 +1028,7 @@ always @*
               // Note that the BRK instruction is not implemented as on a true 6502 processor.
               // Instead of firing an interrupt, it deasserts the rdy signal, effectively pausing
               // the cpu and allowing the debug block to inspect the internal state.
-              brk = (q_clk_phase == 5'h01) && rdy;
+              brk = (q_clk_phase == 6'h01) && rdy;
             end
           CLC:
             clc_op = 1'b1;

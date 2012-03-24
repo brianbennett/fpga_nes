@@ -6,12 +6,12 @@
 //
 // Description:
 //
-// Sprite DMA control block for an fpga-based NES emulator.  Designed for a Spartan 3E FPGA.
+// Sprite DMA control block for an fpga-based NES emulator.
 //
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 module sprdma
 (
-  input  wire        clk_in,         // 50MHz system clock signal
+  input  wire        clk_in,         // 100MHz system clock signal
   input  wire        rst_in,         // reset signal
   input  wire [15:0] cpumc_a_in,     // cpu address bus in (to snoop cpu writes of 0x4014)
   input  wire [ 7:0] cpumc_din_in,   // cpumc din bus in (to snoop cpu writes of 0x4014)

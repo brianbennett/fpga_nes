@@ -11,7 +11,7 @@
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 module ppu_spr
 (
-  input  wire        clk_in,            // 50MHz system clock signal
+  input  wire        clk_in,            // 100MHz system clock signal
   input  wire        rst_in,            // reset signal
   input  wire        en_in,             // enable sprites
   input  wire        ls_clip_in,        // clip sprites in left 8 pixels

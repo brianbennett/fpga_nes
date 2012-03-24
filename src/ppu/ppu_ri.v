@@ -11,7 +11,7 @@
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 module ppu_ri
 (
-  input  wire        clk_in,            // 50MHz system clock signal
+  input  wire        clk_in,            // 100MHz system clock signal
   input  wire        rst_in,            // reset signal
   input  wire [ 2:0] sel_in,            // register interface reg select
   input  wire        ncs_in,            // register interface enable (active low)

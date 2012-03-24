@@ -13,7 +13,7 @@
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 module hci
 (
-  input  wire        clk,              // 50MHz system clock signal
+  input  wire        clk,              // 100MHz system clock signal
   input  wire        rst,              // reset signal
   input  wire        rx,               // rs-232 rx signal
   input  wire        brk,              // signal for cpu-intiated debug break
@@ -124,7 +124,8 @@ always @(posedge clk)
   end
 
 // Instantiate the serial controller block.
-uart #(.BAUD_RATE(115200),
+uart #(.SYS_CLK_FREQ(100000000),
+       .BAUD_RATE(19200),
        .DATA_BITS(8),
        .STOP_BITS(1),
        .PARITY_MODE(1)) uart_blk

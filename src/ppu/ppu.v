@@ -6,12 +6,12 @@
 //
 // Description:
 //
-// Picture processing unit block for an fpga-based NES emulator.  Designed for a Spartan 3E FPGA.
+// Picture processing unit block for an fpga-based NES emulator.
 //
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 module ppu
 (
-  input  wire        clk_in,        // 50MHz system clock signal
+  input  wire        clk_in,        // 100MHz system clock signal
   input  wire        rst_in,        // reset signal
   input  wire        dbl_in,        // request nes resolution doubler
   input  wire [ 2:0] ri_sel_in,     // register interface reg select

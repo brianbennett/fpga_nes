@@ -6,25 +6,24 @@
 //
 // Description:
 //
-// Top level module for fpga-based Nintendo Entertainment System emulator.  Designed for a Spartan
-// 3E FPGA.
+// Top level module for fpga-based Nintendo Entertainment System emulator.
 //
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 module nes
 (
-  input  wire       CLK_50MHZ,         // 50MHz system clock signal
+  input  wire       CLK_100MHZ,        // 100MHz system clock signal
   input  wire       BTN_SOUTH,         // reset push button
   input  wire       BTN_EAST,          // console reset
-  input  wire       RS232_DCE_RXD,     // rs-232 rx signal
+  input  wire       RXD,               // rs-232 rx signal
   input  wire       SW0,               // switch 0
   input  wire       NES_JOYPAD_DATA1,  // joypad 1 input signal
   input  wire       NES_JOYPAD_DATA2,  // joypad 2 input signal
-  output wire       RS232_DCE_TXD,     // rs-232 tx signal
+  output wire       TXD,               // rs-232 tx signal
   output wire       VGA_HSYNC,         // vga hsync signal
   output wire       VGA_VSYNC,         // vga vsync signal
-  output wire [3:0] VGA_RED,           // vga red signal
-  output wire [3:0] VGA_GREEN,         // vga green signal
-  output wire [3:0] VGA_BLUE,          // vga blue signal
+  output wire [2:0] VGA_RED,           // vga red signal
+  output wire [2:0] VGA_GREEN,         // vga green signal
+  output wire [1:0] VGA_BLUE,          // vga blue signal
   output wire       NES_JOYPAD_CLK,    // joypad output clk signal
   output wire       NES_JOYPAD_LATCH   // joypad output latch signal
 );
@@ -56,7 +55,7 @@ wire        rp2a03_dbgreg_wr;
 wire [ 7:0] rp2a03_dbgreg_dout;
 
 rp2a03 rp2a03_blk(
-  .clk_in(CLK_50MHZ),
+  .clk_in(CLK_100MHZ),
   .rst_in(BTN_SOUTH),
   .rdy_in(rp2a03_rdy),
   .d_in(rp2a03_din),
@@ -88,7 +87,7 @@ wire [39:0] cart_cfg;
 wire        cart_cfg_upd;
 
 cart cart_blk(
-  .clk_in(CLK_50MHZ),
+  .clk_in(CLK_100MHZ),
   .cfg_in(cart_cfg),
   .cfg_upd_in(cart_cfg_upd),
   .prg_nce_in(cart_prg_nce),
@@ -113,7 +112,7 @@ wire       wram_en;
 wire [7:0] wram_dout;
 
 wram wram_blk(
-  .clk_in(CLK_50MHZ),
+  .clk_in(CLK_100MHZ),
   .en_in(wram_en),
   .r_nw_in(cpumc_r_nw),
   .a_in(cpumc_a[10:0]),
@@ -130,7 +129,7 @@ wire [10:0] vram_a;
 wire [ 7:0] vram_dout;
 
 vram vram_blk(
-  .clk_in(CLK_50MHZ),
+  .clk_in(CLK_100MHZ),
   .en_in(~cart_ciram_nce),
   .r_nw_in(~ppumc_wr),
   .a_in(vram_a),
@@ -162,7 +161,7 @@ assign ppu_ri_r_nw = cpumc_r_nw;
 assign ppu_ri_din  = cpumc_din;
 
 ppu ppu_blk(
-  .clk_in(CLK_50MHZ),
+  .clk_in(CLK_100MHZ),
   .rst_in(BTN_SOUTH),
   .dbl_in(SW0),
   .ri_sel_in(ppu_ri_sel),
@@ -172,19 +171,15 @@ ppu ppu_blk(
   .vram_d_in(ppu_vram_din),
   .hsync_out(VGA_HSYNC),
   .vsync_out(VGA_VSYNC),
-  .r_out(VGA_RED[3:1]),
-  .g_out(VGA_GREEN[3:1]),
-  .b_out(VGA_BLUE[3:2]),
+  .r_out(VGA_RED),
+  .g_out(VGA_GREEN),
+  .b_out(VGA_BLUE),
   .ri_d_out(ppu_ri_dout),
   .nvbl_out(ppu_nvbl),
   .vram_a_out(ppu_vram_a),
   .vram_d_out(ppu_vram_dout),
   .vram_wr_out(ppu_vram_wr)
 );
-
-assign VGA_RED[0]    = 1'b0;
-assign VGA_GREEN[0]  = 1'b0;
-assign VGA_BLUE[1:0] = 2'b00;
 
 assign vram_a = { cart_ciram_a10, ppumc_a[9:0] };
 
@@ -202,14 +197,14 @@ wire [15:0] hci_ppu_vram_a;
 wire        hci_ppu_vram_wr;
 
 hci hci_blk(
-  .clk(CLK_50MHZ),
+  .clk(CLK_100MHZ),
   .rst(BTN_SOUTH),
-  .rx(RS232_DCE_RXD),
+  .rx(RXD),
   .brk(rp2a03_brk),
   .cpu_din(hci_cpu_din),
   .cpu_dbgreg_in(rp2a03_dbgreg_dout),
   .ppu_vram_din(hci_ppu_vram_din),
-  .tx(RS232_DCE_TXD),
+  .tx(TXD),
   .active(hci_active),
   .cpu_r_nw(hci_cpu_r_nw),
   .cpu_a(hci_cpu_a),

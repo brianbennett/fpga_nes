@@ -11,7 +11,7 @@
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 module ppu_vga
 (
-  input  wire       clk_in,              // 50MHz system clock signal
+  input  wire       clk_in,              // 100MHz system clock signal
   input  wire       rst_in,              // reset signal
   input  wire       dbl_in,              // enable nes resolution doubler
   input  wire [5:0] sys_palette_idx_in,  // system palette index (selects output color)
@@ -28,15 +28,15 @@ module ppu_vga
 );
 
 // Display dimensions (640x480).
-localparam [ 9:0] DISPLAY_W    = 10'h280,
-                  DISPLAY_H    = 10'h1E0;
+localparam [9:0] DISPLAY_W    = 10'h280,
+                 DISPLAY_H    = 10'h1E0;
 
 // NES screen dimensions (256x240).
-localparam [ 9:0] NES_W        = 10'h100,
-                  NES_H        = 10'h0F0;
+localparam [9:0] NES_W        = 10'h100,
+                 NES_H        = 10'h0F0;
 
 // Border color (surrounding NES screen).
-localparam [11:0] BORDER_COLOR = 8'h92;
+localparam [7:0] BORDER_COLOR = 8'h49;
 
 //
 // VGA_SYNC: VGA synchronization control block.

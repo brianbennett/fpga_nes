@@ -6,12 +6,12 @@
 //
 // Description:
 // 
-// Joypad controller block for an fpga-based NES emulator.  Designed for a Spartan 3E FPGA.
+// Joypad controller block for an fpga-based NES emulator.
 //
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 module jp
 (
-  input  wire        clk,       // 50MHz system clock signal
+  input  wire        clk,       // 100MHz system clock signal
   input  wire        rst,       // reset signal
   input  wire        wr,        // write enable signal
   input  wire [15:0] addr,      // 16-bit memory address
@@ -30,7 +30,7 @@ reg [7:0] q_jp1_state, d_jp1_state;
 reg [7:0] q_jp2_state, d_jp2_state;
 reg       q_jp_clk,    d_jp_clk;
 reg       q_jp_latch,  d_jp_latch;
-reg [7:0] q_cnt,       d_cnt;
+reg [8:0] q_cnt,       d_cnt;
 
 always @(posedge clk)
   begin
@@ -40,7 +40,7 @@ always @(posedge clk)
         q_jp2_state <= 8'h00;
         q_jp_clk    <= 1'b0;
         q_jp_latch  <= 1'b0;
-        q_cnt       <= 8'h00;
+        q_cnt       <= 9'h00;
       end
     else
       begin
@@ -66,24 +66,24 @@ always @*
 
     // Drive LATCH signal to latch current controller state and return state of A button.  Pulse
     // clock 7 more times to read other 7 buttons.  Controller states are active low.
-    if (q_cnt[4:0] == 5'h00)
+    if (q_cnt[5:1] == 5'h00)
       begin
         d_jp1_state[state_idx] = ~jp_data1;
         d_jp2_state[state_idx] = ~jp_data2;
 
-        if (q_cnt == 8'h00)
+        if (q_cnt[8:1] == 8'h00)
           d_jp_latch = 1'b1;
         else
           d_jp_clk = 1'b1;
       end
-    else if (q_cnt[4:0] == 5'h10)
+    else if (q_cnt[5:1] == 5'h10)
       begin
         d_jp_clk   = 1'b0;
         d_jp_latch = 1'b0;
       end
   end
 
-assign state_idx = q_cnt[7:5] - 3'h1;
+assign state_idx = q_cnt[8:6] - 3'h1;
 assign jp_latch  = q_jp_latch;
 assign jp_clk    = q_jp_clk;
 
@@ -106,8 +106,8 @@ always @(posedge clk)
     if (rst)
       begin
         q_addr           <= 16'h0000;
-        q_jp1_read_state <= 8'h00;
-        q_jp2_read_state <= 8'h00;
+        q_jp1_read_state <= 9'h000;
+        q_jp2_read_state <= 9'h000;
         q_strobe_state   <= S_STROBE_WROTE_0;
       end
     else
@@ -130,7 +130,7 @@ always @*
 
     if (addr[15:1] == JOYPAD1_MMR_ADDR[15:1])
       begin
-        dout = ((addr[0]) ? q_jp2_read_state : q_jp1_read_state) & 8'h01;
+        dout = { 7'h00, ((addr[0]) ? q_jp2_read_state[0] : q_jp1_read_state[0]) };
 
         // Only update internal state one time per read/write.
         if (addr != q_addr)

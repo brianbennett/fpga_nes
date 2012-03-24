@@ -11,7 +11,7 @@
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 module ppu_bg
 (
-  input  wire        clk_in,             // 50MHz system clock signal
+  input  wire        clk_in,             // 100MHz system clock signal
   input  wire        rst_in,             // reset signal
   input  wire        en_in,              // enable background
   input  wire        ls_clip_in,         // clip background in left 8 pixels
