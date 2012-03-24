@@ -36,22 +36,24 @@ module cart
   output wire        ciram_a10_out     // vram a10 value (controls mirroring)
 );
 
-wire       prgrom_hi_bram_we;
-wire [7:0] prgrom_hi_bram_dout;
+wire        prgrom_bram_we;
+wire [14:0] prgrom_bram_a;
+wire [7:0]  prgrom_bram_dout;
 
-// Block ram instance for "PRG-ROM HI" memory range (0xC000 - 0xFFFF).  Will eventually be
+// Block ram instance for PRG-ROM memory range (0x8000 - 0xFFFF).  Will eventually be
 // replaced with SRAM.
-single_port_ram_sync #(.ADDR_WIDTH(14),
-                       .DATA_WIDTH(8)) prgrom_hi_bram(
+single_port_ram_sync #(.ADDR_WIDTH(15),
+                       .DATA_WIDTH(8)) prgrom_bram(
   .clk(clk_in),
-  .we(prgrom_hi_bram_we),
-  .addr_a(prg_a_in[13:0]),
+  .we(prgrom_bram_we),
+  .addr_a(prgrom_bram_a),
   .din_a(prg_d_in),
-  .dout_a(prgrom_hi_bram_dout)
+  .dout_a(prgrom_bram_dout)
 );
 
-assign prgrom_hi_bram_we = (~prg_nce_in) ? ~prg_r_nw_in        : 1'b0;
-assign prg_d_out         = (~prg_nce_in) ? prgrom_hi_bram_dout : 8'h00;
+assign prgrom_bram_we = (~prg_nce_in) ? ~prg_r_nw_in     : 1'b0;
+assign prg_d_out      = (~prg_nce_in) ? prgrom_bram_dout : 8'h00;
+assign prgrom_bram_a  = (cfg_in[33])  ? prg_a_in[14:0]   : { 1'b0, prg_a_in[13:0] };
 
 wire       chrrom_pat_bram_we;
 wire [7:0] chrrom_pat_bram_dout;
