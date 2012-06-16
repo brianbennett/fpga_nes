@@ -1,0 +1,415 @@
+/***************************************************************************************************
+** % File:        nesdbg.cpp
+*  % Description: NesDbg class implementation.
+***************************************************************************************************/
+
+#include "dbgpacket.h"
+#include "nesdbg.h"
+#include "resource.h"
+#include "scriptmgr.h"
+#include "serialcomm.h"
+
+/***************************************************************************************************
+** % Method:      NesDbg::NesDbg()
+*  % Description: NesDbg constructor.
+***************************************************************************************************/
+NesDbg::NesDbg(
+    HINSTANCE hInstance,  // handle to application instance
+    HWND      hWnd)       // handle to main application window
+    :
+    m_hInstance(hInstance),
+    m_hWnd(hWnd),
+    m_hFontCourierNew(NULL),
+    m_pSerialComm(NULL),
+    m_pScriptMgr(NULL)
+{
+}
+
+/***************************************************************************************************
+** % Method:      NesDbg::~NesDbg()
+*  % Description: NesDbg destructor.
+***************************************************************************************************/
+NesDbg::~NesDbg()
+{
+    BOOL ret;
+
+    if (m_hFontCourierNew)
+    {
+        ret = DeleteObject(m_hFontCourierNew);
+    }
+
+    if (m_pSerialComm)
+    {
+        delete m_pSerialComm;
+    }
+
+    if (m_pScriptMgr)
+    {
+        delete m_pScriptMgr;
+    }
+}
+
+/***************************************************************************************************
+** % Method:      NesDbg::Init()
+*  % Description: NesDbg initialization method.  Must be called before any other method.
+*  % Returns:     TRUE on success, FALSE otherwise.
+***************************************************************************************************/
+BOOL NesDbg::Init()
+{
+    BOOL ret = TRUE;
+
+    // Initialize Courier New font object.
+    if (ret)
+    {
+        m_hFontCourierNew = CreateFont(
+            14,                  // nHeight
+            0,                   // nWidth
+            0,                   // nEscapement
+            0,                   // nOrientation
+            FW_DONTCARE,         // fnWeight
+            FALSE,               // fdwItalic
+            FALSE,               // fdwUnderline
+            FALSE,               // fdwStrikeOut
+            DEFAULT_CHARSET,     // fdwCharSet
+            OUT_DEFAULT_PRECIS,  // fdwOutputPrecision
+            CLIP_DEFAULT_PRECIS, // fdwClipPrecision
+            DEFAULT_QUALITY,     // fdwQuality
+            FIXED_PITCH,         // fdwPitchAndFamily
+            _T("Courier New")    // lpszFace
+        );
+
+        if (m_hFontCourierNew == NULL)
+        {
+            ret = FALSE;
+        }
+    }
+
+    // Initialize the serial communication manager object.
+    if (ret)
+    {
+        m_pSerialComm = new SerialComm();
+        if (m_pSerialComm && !m_pSerialComm->Init())
+        {
+            delete m_pSerialComm;
+            m_pSerialComm = NULL;
+        }
+        ret = (m_pSerialComm) ? TRUE : FALSE;
+    }
+
+    // Initialize the script manager object.
+    if (ret)
+    {
+        m_pScriptMgr = new ScriptMgr(this);
+        if (m_pScriptMgr && !m_pScriptMgr->Init())
+        {
+            delete m_pScriptMgr;
+            m_pScriptMgr = NULL;
+        }
+        ret = (m_pScriptMgr) ? TRUE : FALSE;
+    }
+
+    return ret;
+}
+
+/***************************************************************************************************
+** % Method:      NesDbg::LaunchRawDbgDlg()
+*  % Description: Launch the raw debugging interface.
+***************************************************************************************************/
+VOID NesDbg::LaunchRawDbgDlg()
+{
+    DialogBox(m_hInstance, _T("RawDebugDlg"), m_hWnd, RawDbgDlgProc);
+}
+
+/***************************************************************************************************
+** % Method:      NesDbg::LaunchTestScripts()
+*  % Description: Launch the test script interface.
+***************************************************************************************************/
+VOID NesDbg::LaunchTestScriptDlg()
+{
+    DialogBox(m_hInstance, _T("TestScriptDlg"), m_hWnd, ScriptMgr::TestScriptDlgProc);
+}
+
+/***************************************************************************************************
+** % Method:      NesDbg::LoadRom()
+*  % Description: Load a NES ROM using a file loading dialog.
+***************************************************************************************************/
+VOID NesDbg::LoadRom()
+{
+    TCHAR filePath[1024] = _T("");
+
+    OPENFILENAME ofn    = {0};
+    ofn.lStructSize     = sizeof(ofn);
+	ofn.lpstrFile       = &filePath[0];
+	ofn.nMaxFile        = sizeof(filePath);
+	ofn.lpstrFilter     = _T("NES ROMs\0*.NES\0");
+	ofn.nFilterIndex    = 0;
+	ofn.lpstrInitialDir = _T(".\\roms");
+	ofn.Flags           = OFN_PATHMUSTEXIST | OFN_FILEMUSTEXIST;
+ 
+	BOOL success = GetOpenFileName(&ofn);
+ 
+    HANDLE hPrgFile = INVALID_HANDLE_VALUE;
+
+    if (success)
+    {
+        hPrgFile = CreateFile(&filePath[0],
+                              GENERIC_READ,
+                              0,
+                              NULL,
+                              OPEN_EXISTING,
+                              FILE_ATTRIBUTE_NORMAL,
+                              NULL);
+
+        success = (hPrgFile != INVALID_HANDLE_VALUE);
+
+        if (!success)
+        {
+            MessageBox(NULL, _T("Failed to open ROM file."), _T("NesDbg"), MB_OK);
+        }
+    }
+
+    BYTE* pFileData = NULL;
+    DWORD fileDataSize = 0;
+
+    if (success)
+    {
+        static const UINT FileDataBufferSize = 0x100000;
+
+        pFileData = new BYTE[FileDataBufferSize];
+
+        success = ReadFile(hPrgFile, pFileData, FileDataBufferSize, &fileDataSize, NULL);
+
+        if (!success)
+        {
+            MessageBox(NULL, _T("Failed to read data from ROM file."), _T("NesDbg"), MB_OK);
+        }
+    }
+
+    UINT prgRomBanks = 0;
+    UINT chrRomBanks = 0;
+
+    if (success)
+    {
+        if ((pFileData[0] != 'N') || (pFileData[1] != 'E') || (pFileData[2] != 'S') ||
+            (pFileData[3] != 0x1A))
+        {
+            MessageBox(NULL, _T("Invalid ROM header."), _T("NesDbg"), MB_OK);
+            success = FALSE;
+        }
+
+        prgRomBanks = pFileData[4];
+        chrRomBanks = pFileData[5];
+
+        if ((prgRomBanks > 2) || (chrRomBanks > 1))
+        {
+            MessageBox(NULL, _T("Too many ROM banks."), _T("NesDbg"), MB_OK);
+            success = FALSE;
+        }
+
+        // Check mirror support.
+        if (pFileData[6] & 0x08)
+        {
+            MessageBox(NULL,
+                       _T("Only horizontal and vertical mirroring are supported."),
+                       _T("NesDbg"), MB_OK);
+            success = FALSE;
+        }
+
+        if ((((pFileData[6] & 0xF0) >> 4)| (pFileData[7] & 0xF0)) != 0)
+        {
+            MessageBox(NULL, _T("Only mapper 0 is supported."), _T("NesDbg"), MB_OK);
+            success = FALSE;
+        }
+    }
+
+    if (success)
+    {
+        // Issue a debug break.
+        DbgBrkPacket dbgBrkPacket;
+        g_pNesDbg->GetSerialComm()->SendData(dbgBrkPacket.PacketData(),
+                                                dbgBrkPacket.SizeInBytes());
+
+        PpuDisablePacket ppuDisablePacket;
+        g_pNesDbg->GetSerialComm()->SendData(ppuDisablePacket.PacketData(),
+                                             ppuDisablePacket.SizeInBytes());
+
+        // Set iNES header info to configure mappers.
+        CartSetCfgPacket cartSetCfgPacket(&pFileData[0]);
+
+        g_pNesDbg->GetSerialComm()->SendData(cartSetCfgPacket.PacketData(),
+                                             cartSetCfgPacket.SizeInBytes());
+
+        // Copy PRG ROM data.
+        const UINT prgRomDataSize = prgRomBanks * 0x4000;
+        CpuMemWrPacket prgRomMemWrPacket(0x8000, prgRomDataSize, &pFileData[16]);
+
+        g_pNesDbg->GetSerialComm()->SendData(prgRomMemWrPacket.PacketData(),
+                                             prgRomMemWrPacket.SizeInBytes());
+
+        // Copy CHR ROM data.
+        const UINT chrRomDataSize = chrRomBanks * 0x2000;
+        PpuMemWrPacket ppuMemWrPacket(0x0, chrRomDataSize, &pFileData[16 + prgRomDataSize]);
+
+        g_pNesDbg->GetSerialComm()->SendData(ppuMemWrPacket.PacketData(),
+                                             ppuMemWrPacket.SizeInBytes());
+
+        // Update PC to point at the reset interrupt vector location.
+        BYTE pclVal = pFileData[16 + prgRomDataSize - 4];
+        BYTE pchVal = pFileData[16 + prgRomDataSize - 3];
+
+        CpuRegWrPacket pclRegWrPacket(CpuRegPcl, pclVal);
+        g_pNesDbg->GetSerialComm()->SendData(pclRegWrPacket.PacketData(),
+                                             pclRegWrPacket.SizeInBytes());
+        CpuRegWrPacket pchRegWrPacket(CpuRegPch, pchVal);
+        g_pNesDbg->GetSerialComm()->SendData(pchRegWrPacket.PacketData(),
+                                             pchRegWrPacket.SizeInBytes());
+
+        // Issue a debug run command.
+        DbgRunPacket dbgRunPacket;
+        g_pNesDbg->GetSerialComm()->SendData(dbgRunPacket.PacketData(),
+                                             dbgRunPacket.SizeInBytes());
+    }
+
+    if (pFileData != NULL)
+    {
+        delete [] pFileData;
+    }
+
+    if (hPrgFile != INVALID_HANDLE_VALUE)
+    {
+        CloseHandle(hPrgFile);
+    }
+}
+
+/***************************************************************************************************
+** % Method:      NesDbg::GetMessageBoxTitle()
+*  % Description: Returns a string to be used as the title of all message boxes for the app.
+***************************************************************************************************/
+const TCHAR* NesDbg::GetMessageBoxTitle()
+{
+    static const TCHAR* pMsgBoxTitle = _T("NesDbg");
+    return pMsgBoxTitle;
+}
+
+/***************************************************************************************************
+** % Method:      NesDbg::RawDbgDlgProc()
+*  % Description: Raw Debug dialog proc callback implementation.
+*  % Returns:     TRUE if message was handled, FALSE otherwise.
+***************************************************************************************************/
+BOOL CALLBACK NesDbg::RawDbgDlgProc(
+    HWND   hWndDlg,  // handle to the dialog box
+    UINT   msg,      // message
+    WPARAM wParam,   // message-specific information
+    LPARAM lParam)   // additional message-specific information
+{
+    BOOL   ret            = TRUE;
+
+    TCHAR* pInput         = NULL;
+    TCHAR* pOutput        = NULL;
+    TCHAR* pOutputPtr     = NULL;
+    BYTE*  pReceivedData  = NULL;
+
+    DWORD  cmdLength      = 0;
+    DWORD  nibbleIdx      = 0;
+    DWORD  bytesWritten   = 0;
+    UINT   bytesToReceive = 0;
+
+    DbgPacket* pDbgPacket = NULL;
+
+    switch (msg)
+    {
+        case WM_INITDIALOG:
+            SendDlgItemMessage(
+                hWndDlg,
+                IDC_RAWDBG_OUT,
+                WM_SETFONT,
+                (WPARAM)g_pNesDbg->m_hFontCourierNew,
+                FALSE);
+            break;
+        case WM_COMMAND:
+            switch (LOWORD(wParam))
+            {
+                case IDC_RAWDBG_SEND:
+                    cmdLength = SendDlgItemMessage(hWndDlg, IDC_RAWDBG_IN, WM_GETTEXTLENGTH, 0, 0);
+
+                    pInput = new TCHAR[cmdLength + 1];
+
+                    SendDlgItemMessage(hWndDlg,
+                                       IDC_RAWDBG_IN,
+                                       WM_GETTEXT,
+                                       cmdLength + 1,
+                                       (LPARAM)pInput);
+
+                    pDbgPacket = DbgPacket::CreateObjFromString(pInput);
+
+                    if (pDbgPacket)
+                    {
+                        g_pNesDbg->m_pSerialComm->SendData(pDbgPacket->PacketData(),
+                                                           pDbgPacket->SizeInBytes());
+
+                        bytesToReceive = pDbgPacket->ReturnBytesExpected();
+
+                        pReceivedData = new BYTE[bytesToReceive];
+
+                        g_pNesDbg->m_pSerialComm->ReceiveData(pReceivedData, bytesToReceive);
+
+                        pOutput = new TCHAR[bytesToReceive * 3 + 1];
+                        
+                        pOutputPtr = pOutput;
+                        for (UINT i = 0; i < bytesToReceive; i++)
+                        {
+                            BYTE byte     = pReceivedData[i];
+                            BYTE hiNibble = byte >> 4;
+                            BYTE loNibble = byte & 0xF;
+
+                            *pOutputPtr++ = (hiNibble > 9) 
+                                          ? (_T('A') + (hiNibble - 0xA))
+                                          : _T('0') + hiNibble;
+                            *pOutputPtr++ = (loNibble > 9)
+                                          ? (_T('A') + (loNibble - 0xA))
+                                          : _T('0') + loNibble;
+                            *pOutputPtr++ = _T(' ');
+                        }
+
+                        *pOutputPtr++ = 0;
+
+                        SendDlgItemMessage(hWndDlg, IDC_RAWDBG_OUT, WM_SETTEXT, 0, (LPARAM)pOutput);
+
+                        delete [] pReceivedData;
+                        delete [] pOutput;
+
+                        pDbgPacket->Destroy();
+
+                        // Clear input text.
+                        SendDlgItemMessage(hWndDlg, IDC_RAWDBG_IN, WM_SETTEXT, 0, (LPARAM)_T(""));
+                    }
+                    else
+                    {
+                        MessageBox(NULL,
+                                   _T("Invalid data."),
+                                   g_pNesDbg->GetMessageBoxTitle(),
+                                   MB_OK);
+                    }
+
+                    delete [] pInput;
+                    break;
+                case IDC_RAWDBG_CLEAR:
+                    // Clear output text.
+                    SendDlgItemMessage(hWndDlg, IDC_RAWDBG_OUT, WM_SETTEXT, 0, (LPARAM)_T(""));
+                    break;
+                case IDC_RAWDBG_DONE:
+                case IDCANCEL:
+                    EndDialog(hWndDlg, wParam);
+                    break;
+                default:
+                    ret = FALSE;
+                    break;
+            }
+            break;
+        default:
+            ret = FALSE;
+            break;
+    } 
+
+    return ret;
+}

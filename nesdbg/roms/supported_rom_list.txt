@@ -1,0 +1,138 @@
+10 Yard Fight
+7551
+3340
+Balloon Fight
+7580
+1228
+Baseball
+7533
+3326
+Bomberman
+7401
+739
+BurgerTime
+7490
+3435
+Chubby Cherub
+7523
+1229
+Clu Clu Land
+7585
+3321
+Defender II
+7453
+2613
+Dig Dug II
+7217
+2447
+Donkey Kong
+7590
+1250
+Donkey Kong 3
+7543
+1272
+Donkey Kong Jr.
+7591
+1086
+Donkey Kong Jr. Math
+7587
+3099
+Duck Hunt
+7539
+3338
+Elevator Action
+7130
+2582
+ExciteBike
+7573
+742
+Galaga
+7519
+2555
+Golf
+7575
+743
+Gyromite
+7535
+3339
+Hogan's Alley
+7561
+3335
+Hydlide
+7271
+848
+Ice Climber
+7537
+3316
+Ice Hockey
+7748
+3109
+Lode Runner
+7464
+3360
+Lunar Pool
+7278
+3118
+Magmax
+7272
+3365
+Mario Bros.
+7554
+1264
+Millipede
+7452
+2618
+Ms. Pac-Man
+7345
+1107
+M.U.S.C.L.E.
+7525
+1129
+Pac-Man
+7408
+2887
+Pinball
+7557
+3336
+Popeye
+7555
+2939
+Raid on Bungeling Bay
+7467
+2356
+Seicross
+7276
+2315
+Spelunker
+7474
+764
+Spy vs. Spy
+7529
+2848
+Sqoon
+7739
+2817
+Stack Up
+7586
+1233
+Super Mario Bros.
+7569
+3319
+Tag Team Wrestling
+7484
+2871
+Tennis
+7559
+2108
+Urban Champion
+7577
+3322
+Volleyball
+7583
+3337
+Wild Gunman
+7548
+3479
+Xevious
+7517
+2556
