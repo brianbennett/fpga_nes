@@ -67,6 +67,9 @@ Ice Climber
 Ice Hockey
 7748
 3109
+Kung Fu
+7564
+1487
 Lode Runner
 7464
 3360
