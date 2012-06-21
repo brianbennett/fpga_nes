@@ -1,4 +1,3 @@
-
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 // Module Name: vga_sync
 //
@@ -16,7 +15,7 @@
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 module vga_sync
 (
-  input  wire       clk,    // 50Mhz clock signal
+  input  wire       clk,    // 100Mhz clock signal
   output wire       hsync,  // HSYNC VGA control output
   output wire       vsync,  // VSYNC VGA control output
   output wire       en,     // Indicates when RGB generation circuit should enable (x,y valid)
@@ -40,7 +39,7 @@ localparam V_FP    = 10;   // Vertical front porch in lines
 localparam V_RT    = 2;    // Vertical retrace (vsync pulse) in lines
 localparam V_BP    = 29;   // Vertical back porch in lines
 
-// FF for mod-2 counter.  Used to generate a 25MHz pixel enable signal.
+// FF for mod-4 counter.  Used to generate a 25MHz pixel enable signal.
 reg  [1:0] q_mod4_cnt;
 wire [1:0] d_mod4_cnt;
 
