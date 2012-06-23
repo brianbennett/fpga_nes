@@ -1,7 +1,7 @@
 fpga_nes is an fpga-targeted Nintento Entertainment System emulator written in Verilog.  It is
-currently under development, and is missing support for mappers and sound as well as some
-other smaller features.  At this point, it is able to run most NROM games well without sound
-(e.g., Super Mario Brothers, Excitebike).
+currently under development, and is most notably missing support for mappers and sound.  At
+this point, it is able to run most NROM games well without sound (e.g., Super Mario Brothers,
+Excitebike).
 
 In addition, this project includes a C++ Windows application called NesDbg, which communicates
 with the FPGA over USB UART to load ROMs, run unit tests, read/write memory, etc.
