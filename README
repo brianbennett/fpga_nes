@@ -1,0 +1,18 @@
+fpga_nes is an fpga-targeted Nintento Entertainment System emulator written in Verilog.  It is
+currently under development, and is missing support for mappers and sound as well as some other
+smaller features.  At this point, it is able to run most NROM games well without sound (e.g.,
+Super Mario Brothers, Excitebike).
+
+In addition, this project includes a C++ Windows application called NesDbg, which communicates
+with the FPGA over USB UART to load ROMs, run unit tests, read/write memory, etc.
+
+Unfortunetly, getting up and running with the project is fairly complicated and expensive.
+
+Target FPGA Platform:     Nexys 3 Spartan-6 FPGA board ($119 or $199 from digilentinc.com)
+Other Hardware:           NES Gamepad Controller Adapter ($4.99 from parallax.com)
+                          NES Gamepad Controller ($4.99 from parallax.com)
+                          VmodBB - VHDC Breadboard ($39.99 from digilentinc.com)
+
+Development Environment:  ISE 13.4 WebPack (free from Xilinx)
+                          Visual Studio 2010 Express (free from Microsoft)
+
