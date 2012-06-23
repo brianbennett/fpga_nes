@@ -6,7 +6,7 @@ Excitebike).
 In addition, this project includes a C++ Windows application called NesDbg, which communicates
 with the FPGA over USB UART to load ROMs, run unit tests, read/write memory, etc.
 
-Unfortunetly, getting up and running with the project is fairly complicated and expensive.
+Unfortunately, getting up and running with the project is fairly complicated and expensive.
 
 Target FPGA Platform:     Nexys 3 Spartan-6 FPGA board ($119 or $199 from digilentinc.com)
 Other Hardware:           NES Gamepad Controller Adapter ($4.99 from parallax.com)
