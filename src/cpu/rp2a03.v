@@ -47,6 +47,9 @@ module rp2a03
   output wire        jp_clk,         // joypad output clk signal
   output wire        jp_latch,       // joypad output latch signal
 
+  // Audio signals.
+  output wire        audio_out,      // pwm audio output
+
   // HCI interface.
   input  wire [ 3:0] dbgreg_sel_in,  // dbg reg select
   input  wire [ 7:0] dbgreg_d_in,    // dbg reg data in
@@ -78,6 +81,15 @@ cpu cpu_blk(
   .r_nw(cpu_r_nw),
   .brk(brk_out),
   .dbgreg_out(dbgreg_d_out)
+);
+
+//
+// APU: audio processing unit block.
+//
+apu apu_blk(
+  .clk_in(clk_in),
+  .rst_in(rst_in),
+  .audio_out(audio_out)
 );
 
 //

@@ -41,7 +41,8 @@ module nes_top
   output wire [2:0] VGA_GREEN,         // vga green signal
   output wire [1:0] VGA_BLUE,          // vga blue signal
   output wire       NES_JOYPAD_CLK,    // joypad output clk signal
-  output wire       NES_JOYPAD_LATCH   // joypad output latch signal
+  output wire       NES_JOYPAD_LATCH,  // joypad output latch signal
+  output wire       AUDIO              // pwm output audio channel
 );
 
 //
@@ -85,6 +86,7 @@ rp2a03 rp2a03_blk(
   .jp_data2_in(NES_JOYPAD_DATA2),
   .jp_clk(NES_JOYPAD_CLK),
   .jp_latch(NES_JOYPAD_LATCH),
+  .audio_out(AUDIO),
   .dbgreg_sel_in(rp2a03_dbgreg_sel),
   .dbgreg_d_in(rp2a03_dbgreg_din),
   .dbgreg_wr_in(rp2a03_dbgreg_wr),
