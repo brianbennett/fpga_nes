@@ -14,3 +14,4 @@ nesdbg/nesdbg.vcxproj.user
 usage_statistics_webtalk.html
 webtalk.log
 webtalk_impact.xml
+impact.xsl
