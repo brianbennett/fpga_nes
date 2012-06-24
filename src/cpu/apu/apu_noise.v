@@ -1,5 +1,5 @@
 /***************************************************************************************************
-** fpga_nes/src/cpu/apu/apu.v
+** fpga_nes/src/cpu/apu/apu_noise.v
 *
 *  Copyright (c) 2012, Brian Bennett
 *  All rights reserved.
@@ -22,69 +22,52 @@
 *  WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY
 *  WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 *
-*  Audio Processing Unit.
+*  APU noise channel.
 ***************************************************************************************************/
 
-module apu
+module apu_noise
 (
-  input  wire clk_in,    // system clock signal
-  input  wire rst_in,    // reset signal
-  input  wire mute_in,   // disable all audio
-  output wire audio_out  // pwm audio output
+  input  wire clk_in,              // system clock signal
+  input  wire rst_in,              // reset signal
+  input  wire apu_cycle_pulse_in,  // 1 clk pulse on every apu cycle
+  output wire noise_out            // noise channel output
 );
 
-// CPU cycle pulse.  Ideally this would be generated in rp2a03 and shared by the apu and cpu.
-reg  [5:0] q_clk_cnt;
-wire [5:0] d_clk_cnt;
-wire       cpu_cycle_pulse;
-wire       apu_cycle_pulse;
-wire       e_pulse;
-wire       l_pulse;
-wire       f_pulse;
+reg [14:0] q_lfsr, d_lfsr;
+
+wire timer_pulse;
+
+apu_div_const #(.PERIOD_BITS(12),
+                .PERIOD(202)) timer(
+  .clk_in(clk_in),
+  .rst_in(rst_in),
+  .pulse_in(apu_cycle_pulse_in),
+  .pulse_out(timer_pulse)
+);
 
 always @(posedge clk_in)
   begin
     if (rst_in)
       begin
-        q_clk_cnt <= 6'h00;
+        q_lfsr <= 15'h0001;
       end
     else
       begin
-        q_clk_cnt <= d_clk_cnt;
+        q_lfsr <= d_lfsr;
       end
   end
 
-assign d_clk_cnt       = (q_clk_cnt == 6'h37) ? 6'h00 : q_clk_cnt + 6'h01;
-assign cpu_cycle_pulse = (q_clk_cnt == 6'h00);
+always @*
+  begin
+    d_lfsr = q_lfsr;
 
+    if (timer_pulse)
+      begin
+        d_lfsr = { q_lfsr[0] ^ q_lfsr[1], q_lfsr[14:1] };
+      end
+  end
 
-apu_div_const #(.PERIOD_BITS(1),
-                .PERIOD(1)) apu_div_gen_apu_pulse(
-  .clk_in(clk_in),
-  .rst_in(rst_in),
-  .pulse_in(cpu_cycle_pulse),
-  .pulse_out(apu_cycle_pulse)
-);
-
-apu_frame_counter apu_frame_counter_blk(
-  .clk_in(clk_in),
-  .rst_in(rst_in),
-  .apu_cycle_pulse_in(apu_cycle_pulse),
-  .e_pulse_out(e_pulse),
-  .l_pulse_out(l_pulse),
-  .f_pulse_out(f_pulse)
-);
-
-wire noise;
-
-apu_noise apu_noise_blk(
-  .clk_in(clk_in),
-  .rst_in(rst_in),
-  .apu_cycle_pulse_in(apu_cycle_pulse),
-  .noise_out(noise)
-);
-
-assign audio_out = (mute_in) ? 1'b0 : noise;
+assign noise_out = q_lfsr[0];
 
 endmodule
 
