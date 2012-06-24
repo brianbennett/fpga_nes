@@ -91,6 +91,9 @@ apu apu_blk(
   .clk_in(clk_in),
   .rst_in(rst_in),
   .mute_in(mute_in),
+  .a_in(cpu_a),
+  .d_in(cpu_dout),
+  .r_nw_in(cpu_r_nw),
   .audio_out(audio_out)
 );
 

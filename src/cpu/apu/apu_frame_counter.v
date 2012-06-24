@@ -27,31 +27,41 @@
 
 module apu_frame_counter
 (
-  input  wire clk_in,              // system clock signal
-  input  wire rst_in,              // reset signal
-  input  wire apu_cycle_pulse_in,  // 1 clk pulse on every apu cycle
-  output reg  e_pulse_out,         // Envelope and linear counter pulse (~240 Hz)
-  output reg  l_pulse_out,         // Length counter and sweep pulse (~120 Hz)
-  output reg  f_pulse_out          // Frame pulse (~60Hz, should drive IRQ)
+  input  wire       clk_in,              // system clock signal
+  input  wire       rst_in,              // reset signal
+  input  wire       apu_cycle_pulse_in,  // 1 clk pulse on every apu cycle
+  input  wire [1:0] mode_in,             // mode ([0] = IRQ inhibit, [1] = sequence mode)
+  input  wire       mode_wr_in,          // update mode
+  output reg        e_pulse_out,         // envelope and linear counter pulse (~240 Hz)
+  output reg        l_pulse_out,         // length counter and sweep pulse (~120 Hz)
+  output reg        f_pulse_out          // frame pulse (~60Hz, should drive IRQ)
 );
 
-reg [13:0] q_apu_cycle_cnt, d_apu_cycle_cnt;
+reg [14:0] q_apu_cycle_cnt, d_apu_cycle_cnt;
+reg        q_seq_mode,      d_seq_mode;
+reg        q_irq_inhibit,   d_irq_inhibit;
 
 always @(posedge clk_in)
   begin
     if (rst_in)
       begin
-        q_apu_cycle_cnt <= 14'h0000;
+        q_apu_cycle_cnt <= 15'h0000;
+        q_seq_mode      <= 1'b0;
+        q_irq_inhibit   <= 1'b0;
       end
     else
       begin
         q_apu_cycle_cnt <= d_apu_cycle_cnt;
+        q_seq_mode      <= d_seq_mode;
+        q_irq_inhibit   <= d_irq_inhibit;
       end
   end
 
 always @*
   begin
     d_apu_cycle_cnt = q_apu_cycle_cnt;
+    d_seq_mode      = (mode_wr_in) ? mode_in[1] : q_seq_mode;
+    d_irq_inhibit   = (mode_wr_in) ? mode_in[0] : q_irq_inhibit;
 
     e_pulse_out = 1'b0;
     l_pulse_out = 1'b0;
@@ -59,24 +69,31 @@ always @*
 
     if (apu_cycle_pulse_in)
       begin
-        d_apu_cycle_cnt = q_apu_cycle_cnt + 14'h0001;
+        d_apu_cycle_cnt = q_apu_cycle_cnt + 15'h0001;
 
-        if ((q_apu_cycle_cnt == 14'h0E90) || (q_apu_cycle_cnt == 14'h2BB1))
+        if ((q_apu_cycle_cnt == 15'h0E90) || (q_apu_cycle_cnt == 15'h2BB1))
           begin
             e_pulse_out = 1'b1;
           end
-        else if (q_apu_cycle_cnt == 14'h1D20)
+        else if (q_apu_cycle_cnt == 15'h1D20)
           begin
             e_pulse_out = 1'b1;
             l_pulse_out = 1'b1;
           end
-        else if (q_apu_cycle_cnt == 14'h3A42)
+        else if (!q_seq_mode && (q_apu_cycle_cnt == 15'h3A42))
           begin
             e_pulse_out = 1'b1;
             l_pulse_out = 1'b1;
-            f_pulse_out = 1'b1;
+            f_pulse_out = ~q_irq_inhibit;
 
-            d_apu_cycle_cnt = 14'h0000;
+            d_apu_cycle_cnt = 15'h0000;
+          end
+        else if (q_seq_mode && (q_apu_cycle_cnt == 15'h48d0))
+          begin
+            e_pulse_out = 1'b1;
+            l_pulse_out = 1'b1;
+
+            d_apu_cycle_cnt = 15'h0000;
           end
       end
   end

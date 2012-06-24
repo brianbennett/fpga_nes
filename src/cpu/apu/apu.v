@@ -27,11 +27,16 @@
 
 module apu
 (
-  input  wire clk_in,    // system clock signal
-  input  wire rst_in,    // reset signal
-  input  wire mute_in,   // disable all audio
-  output wire audio_out  // pwm audio output
+  input  wire        clk_in,    // system clock signal
+  input  wire        rst_in,    // reset signal
+  input  wire        mute_in,   // disable all audio
+  input  wire [15:0] a_in,      // addr input bus
+  input  wire [7:0]  d_in,      // data input bus
+  input  wire        r_nw_in,   // read/write select
+  output wire        audio_out  // pwm audio output
 );
+
+localparam [15:0] FRAME_COUNTER_CNTL_MMR_ADDR = 16'h4017;
 
 // CPU cycle pulse.  Ideally this would be generated in rp2a03 and shared by the apu and cpu.
 reg  [5:0] q_clk_cnt;
@@ -66,14 +71,22 @@ apu_div_const #(.PERIOD_BITS(1),
   .pulse_out(apu_cycle_pulse)
 );
 
+wire [1:0] frame_counter_mode;
+wire       frame_counter_mode_wr;
+
 apu_frame_counter apu_frame_counter_blk(
   .clk_in(clk_in),
   .rst_in(rst_in),
   .apu_cycle_pulse_in(apu_cycle_pulse),
+  .mode_in(frame_counter_mode),
+  .mode_wr_in(frame_counter_mode_wr),
   .e_pulse_out(e_pulse),
   .l_pulse_out(l_pulse),
   .f_pulse_out(f_pulse)
 );
+
+assign frame_counter_mode    = d_in[7:6];
+assign frame_counter_mode_wr = ~r_nw_in && (a_in == FRAME_COUNTER_CNTL_MMR_ADDR);
 
 wire noise;
 
