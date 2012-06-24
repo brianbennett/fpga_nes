@@ -86,6 +86,7 @@ rp2a03 rp2a03_blk(
   .jp_data2_in(NES_JOYPAD_DATA2),
   .jp_clk(NES_JOYPAD_CLK),
   .jp_latch(NES_JOYPAD_LATCH),
+  .mute_in(SW0),
   .audio_out(AUDIO),
   .dbgreg_sel_in(rp2a03_dbgreg_sel),
   .dbgreg_d_in(rp2a03_dbgreg_din),
@@ -181,7 +182,6 @@ assign ppu_ri_din  = cpumc_din;
 ppu ppu_blk(
   .clk_in(CLK_100MHZ),
   .rst_in(BTN_SOUTH),
-  .dbl_in(SW0),
   .ri_sel_in(ppu_ri_sel),
   .ri_ncs_in(ppu_ri_ncs),
   .ri_r_nw_in(ppu_ri_r_nw),

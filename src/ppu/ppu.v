@@ -29,7 +29,6 @@ module ppu
 (
   input  wire        clk_in,        // 100MHz system clock signal
   input  wire        rst_in,        // reset signal
-  input  wire        dbl_in,        // request nes resolution doubler
   input  wire [ 2:0] ri_sel_in,     // register interface reg select
   input  wire        ri_ncs_in,     // register interface enable
   input  wire        ri_r_nw_in,    // register interface read/write select
@@ -60,7 +59,6 @@ wire       vga_vblank;
 ppu_vga ppu_vga_blk(
   .clk_in(clk_in),
   .rst_in(rst_in),
-  .dbl_in(dbl_in),
   .sys_palette_idx_in(vga_sys_palette_idx),
   .hsync_out(hsync_out),
   .vsync_out(vsync_out),

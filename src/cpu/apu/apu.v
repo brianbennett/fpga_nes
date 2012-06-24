@@ -29,6 +29,7 @@ module apu
 (
   input  wire clk_in,    // system clock signal
   input  wire rst_in,    // reset signal
+  input  wire mute_in,   // disable all audio
   output wire audio_out  // pwm audio output
 );
 
@@ -56,7 +57,7 @@ always @(posedge clk_in)
 assign d_cnt = (q_cnt == 0) ? 18'h377C8 : q_cnt - 18'h00001;
 assign d_out = (q_cnt == 0) ? ~q_out : q_out;
 
-assign audio_out = q_out;
+assign audio_out = (mute_in) ? 1'b0 : q_out;
 
 endmodule
 

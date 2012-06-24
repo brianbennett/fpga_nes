@@ -48,6 +48,7 @@ module rp2a03
   output wire        jp_latch,       // joypad output latch signal
 
   // Audio signals.
+  input  wire        mute_in,        // disable all autio output
   output wire        audio_out,      // pwm audio output
 
   // HCI interface.
@@ -89,6 +90,7 @@ cpu cpu_blk(
 apu apu_blk(
   .clk_in(clk_in),
   .rst_in(rst_in),
+  .mute_in(mute_in),
   .audio_out(audio_out)
 );
 

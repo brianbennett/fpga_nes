@@ -29,7 +29,6 @@ module ppu_vga
 (
   input  wire       clk_in,              // 100MHz system clock signal
   input  wire       rst_in,              // reset signal
-  input  wire       dbl_in,              // enable nes resolution doubler
   input  wire [5:0] sys_palette_idx_in,  // system palette index (selects output color)
   output wire       hsync_out,           // vga hsync signal
   output wire       vsync_out,           // vga vsync signal
@@ -102,10 +101,10 @@ always @(posedge clk_in)
 wire [9:0] nes_x_next;  // nes x coordinate for next clock
 wire       border;      // indicates we are displaying a vga pixel outside the nes extents
 
-assign nes_x_out      = (sync_x - ((DISPLAY_W - (NES_W << dbl_in)) >> 1)) >> dbl_in;
-assign nes_y_out      = (sync_y - ((DISPLAY_H - (NES_H << dbl_in)) >> 1)) >> dbl_in;
-assign nes_x_next     = (sync_x_next - ((DISPLAY_W - (NES_W << dbl_in)) >> 1)) >> dbl_in;
-assign nes_y_next_out = (sync_y_next - ((DISPLAY_H - (NES_H << dbl_in)) >> 1)) >> dbl_in;
+assign nes_x_out      = (sync_x - 10'h040) >> 1;
+assign nes_y_out      = sync_y >> 1;
+assign nes_x_next     = (sync_x_next - 10'h040) >> 1;
+assign nes_y_next_out = sync_y_next >> 1;
 assign border         = (nes_x_out >= NES_W) || (nes_y_out < 8) || (nes_y_out >= (NES_H - 8));
 
 //
