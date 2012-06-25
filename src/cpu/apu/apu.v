@@ -36,6 +36,8 @@ module apu
   output wire        audio_out  // pwm audio output
 );
 
+localparam [15:0] NOISE_CHANNEL_CNTL_MMR_ADDR = 16'h400C;
+localparam [15:0] STATUS_MMR_ADDR             = 16'h4015;
 localparam [15:0] FRAME_COUNTER_CNTL_MMR_ADDR = 16'h4017;
 
 // CPU cycle pulse.  Ideally this would be generated in rp2a03 and shared by the apu and cpu.
@@ -46,20 +48,26 @@ wire       apu_cycle_pulse;
 wire       e_pulse;
 wire       l_pulse;
 wire       f_pulse;
+reg        q_noise_en;
+wire       d_noise_en;
 
 always @(posedge clk_in)
   begin
     if (rst_in)
       begin
-        q_clk_cnt <= 6'h00;
+        q_clk_cnt  <= 6'h00;
+        q_noise_en <= 1'b0;
       end
     else
       begin
-        q_clk_cnt <= d_clk_cnt;
+        q_clk_cnt  <= d_clk_cnt;
+        q_noise_en <= d_noise_en;
       end
   end
 
 assign d_clk_cnt       = (q_clk_cnt == 6'h37) ? 6'h00 : q_clk_cnt + 6'h01;
+assign d_noise_en      = (~r_nw_in && (a_in == STATUS_MMR_ADDR)) ? d_in[3] : q_noise_en;
+
 assign cpu_cycle_pulse = (q_clk_cnt == 6'h00);
 
 
@@ -71,33 +79,39 @@ apu_div_const #(.PERIOD_BITS(1),
   .pulse_out(apu_cycle_pulse)
 );
 
-wire [1:0] frame_counter_mode;
-wire       frame_counter_mode_wr;
+wire frame_counter_mode_wr;
 
 apu_frame_counter apu_frame_counter_blk(
   .clk_in(clk_in),
   .rst_in(rst_in),
   .apu_cycle_pulse_in(apu_cycle_pulse),
-  .mode_in(frame_counter_mode),
+  .mode_in(d_in[7:6]),
   .mode_wr_in(frame_counter_mode_wr),
   .e_pulse_out(e_pulse),
   .l_pulse_out(l_pulse),
   .f_pulse_out(f_pulse)
 );
 
-assign frame_counter_mode    = d_in[7:6];
 assign frame_counter_mode_wr = ~r_nw_in && (a_in == FRAME_COUNTER_CNTL_MMR_ADDR);
 
-wire noise;
+wire [3:0] noise_out;
+wire       noise_wr;
 
 apu_noise apu_noise_blk(
   .clk_in(clk_in),
   .rst_in(rst_in),
+  .en_in(q_noise_en),
   .apu_cycle_pulse_in(apu_cycle_pulse),
-  .noise_out(noise)
+  .lc_pulse_in(l_pulse),
+  .a_in(a_in[1:0]),
+  .d_in(d_in),
+  .wr_in(noise_wr),
+  .noise_out(noise_out)
 );
 
-assign audio_out = (mute_in) ? 1'b0 : noise;
+assign noise_wr = ~r_nw_in && (a_in[15:2] == NOISE_CHANNEL_CNTL_MMR_ADDR[15:2]);
+
+assign audio_out = (mute_in) ? 1'b0 : |noise_out;
 
 endmodule
 
