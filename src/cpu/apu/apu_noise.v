@@ -32,6 +32,7 @@ module apu_noise
   input  wire       en_in,               // enable (via $4015)
   input  wire       apu_cycle_pulse_in,  // 1 clk pulse on every apu cycle
   input  wire       lc_pulse_in,         // 1 clk pulse for every length counter decrement
+  input  wire       eg_pulse_in,         // 1 clk pulse for every env gen update
   input  wire [1:0] a_in,                // control register addr (i.e. $400C - $400F)
   input  wire [7:0] d_in,                // control register write value
   input  wire       wr_in,               // enable control register write
@@ -95,6 +96,23 @@ apu_length_counter length_counter(
 
 assign length_counter_wr = wr_in && (a_in == 2'b11);
 
+wire       envelope_generator_wr;
+wire       envelope_generator_restart;
+wire [3:0] envelope_generator_out;
+
+apu_envelope_generator envelope_generator(
+  .clk_in(clk_in),
+  .rst_in(rst_in),
+  .eg_pulse_in(eg_pulse_in),
+  .env_in(d_in[5:0]),
+  .env_wr_in(envelope_generator_wr),
+  .env_restart(envelope_generator_restart),
+  .env_out(envelope_generator_out)
+);
+
+assign envelope_generator_wr      = wr_in && (a_in == 2'b00);
+assign envelope_generator_restart = wr_in && (a_in == 2'b11);
+
 always @(posedge clk_in)
   begin
     if (rst_in)
@@ -102,14 +120,12 @@ always @(posedge clk_in)
         q_lfsr                <= 15'h0001;
         q_mode                <= 1'b0;
         q_length_counter_halt <= 1'b0;
-        q_env                 <= 4'h0;
       end
     else
       begin
         q_lfsr                <= d_lfsr;
         q_mode                <= d_mode;
         q_length_counter_halt <= d_length_counter_halt;
-        q_env                 <= d_env;
       end
   end
 
@@ -118,9 +134,8 @@ assign d_lfsr = (timer_pulse) ? { q_lfsr[0] ^ ((q_mode) ? q_lfsr[6] : q_lfsr[1])
 
 assign d_mode                = (wr_in && (a_in == 2'b10)) ? d_in[7]   : q_mode;
 assign d_length_counter_halt = (wr_in && (a_in == 2'b00)) ? d_in[5]   : q_length_counter_halt;
-assign d_env                 = (wr_in && (a_in == 2'b00)) ? d_in[3:0] : q_env;
 
-assign noise_out = (q_lfsr[0] && length_counter_en) ? q_env : 4'h0;
+assign noise_out = (q_lfsr[0] && length_counter_en) ? envelope_generator_out : 4'h0;
 
 endmodule
 

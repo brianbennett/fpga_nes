@@ -103,6 +103,7 @@ apu_noise apu_noise_blk(
   .en_in(q_noise_en),
   .apu_cycle_pulse_in(apu_cycle_pulse),
   .lc_pulse_in(l_pulse),
+  .eg_pulse_in(e_pulse),
   .a_in(a_in[1:0]),
   .d_in(d_in),
   .wr_in(noise_wr),

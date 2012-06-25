@@ -66,7 +66,8 @@ always @(posedge clk_in)
 
 assign d_period  = (set_period_in)           ? period_in :
                                                q_period;
-assign d_cnt     = (pulse_in & (q_cnt == 0)) ? q_period  :
+assign d_cnt     = (set_period_in)           ? period_in :
+                   (pulse_in & (q_cnt == 0)) ? q_period  :
                    (pulse_in)                ? q_cnt - 1 :
                    q_cnt;
 
