@@ -111,7 +111,34 @@ apu_noise apu_noise_blk(
 
 assign noise_wr = ~r_nw_in && (a_in[15:2] == NOISE_CHANNEL_CNTL_MMR_ADDR[15:2]);
 
-assign audio_out = (mute_in) ? 1'b0 : |noise_out;
+//
+// Mixer.
+//
+wire [3:0] mixed_out;
+
+assign mixed_out = noise_out;
+
+//
+// Pulse width modulation.
+//
+reg  [3:0] q_pwm_cnt;
+wire [3:0] d_pwm_cnt;
+
+always @(posedge clk_in)
+  begin
+    if (rst_in)
+      begin
+        q_pwm_cnt  <= 4'h0;
+      end
+    else
+      begin
+        q_pwm_cnt  <= d_pwm_cnt;
+      end
+  end
+
+assign d_pwm_cnt = q_pwm_cnt + 4'h1;
+
+assign audio_out = (mute_in) ? 1'b0 : (mixed_out > q_pwm_cnt);
 
 endmodule
 
