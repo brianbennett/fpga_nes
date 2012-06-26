@@ -36,7 +36,8 @@ module apu_noise
   input  wire [1:0] a_in,                // control register addr (i.e. $400C - $400F)
   input  wire [7:0] d_in,                // control register write value
   input  wire       wr_in,               // enable control register write
-  output wire [3:0] noise_out            // noise channel output
+  output wire [3:0] noise_out,           // noise channel output
+  output wire       active_out           // noise channel active (length counter > 0)
 );
 
 reg  [14:0] q_lfsr;
@@ -135,7 +136,8 @@ assign d_lfsr = (timer_pulse) ? { q_lfsr[0] ^ ((q_mode) ? q_lfsr[6] : q_lfsr[1])
 assign d_mode                = (wr_in && (a_in == 2'b10)) ? d_in[7]   : q_mode;
 assign d_length_counter_halt = (wr_in && (a_in == 2'b00)) ? d_in[5]   : q_length_counter_halt;
 
-assign noise_out = (q_lfsr[0] && length_counter_en) ? envelope_generator_out : 4'h0;
+assign noise_out  = (q_lfsr[0] && length_counter_en) ? envelope_generator_out : 4'h0;
+assign active_out = length_counter_en;
 
 endmodule
 

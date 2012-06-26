@@ -31,9 +31,10 @@ module apu
   input  wire        rst_in,    // reset signal
   input  wire        mute_in,   // disable all audio
   input  wire [15:0] a_in,      // addr input bus
-  input  wire [7:0]  d_in,      // data input bus
+  input  wire [ 7:0] d_in,      // data input bus
   input  wire        r_nw_in,   // read/write select
-  output wire        audio_out  // pwm audio output
+  output wire        audio_out, // pwm audio output
+  output wire [ 7:0] d_out      // data output bus
 );
 
 localparam [15:0] NOISE_CHANNEL_CNTL_MMR_ADDR = 16'h400C;
@@ -95,6 +96,7 @@ apu_frame_counter apu_frame_counter_blk(
 assign frame_counter_mode_wr = ~r_nw_in && (a_in == FRAME_COUNTER_CNTL_MMR_ADDR);
 
 wire [3:0] noise_out;
+wire       noise_active;
 wire       noise_wr;
 
 apu_noise apu_noise_blk(
@@ -107,7 +109,8 @@ apu_noise apu_noise_blk(
   .a_in(a_in[1:0]),
   .d_in(d_in),
   .wr_in(noise_wr),
-  .noise_out(noise_out)
+  .noise_out(noise_out),
+  .active_out(noise_active)
 );
 
 assign noise_wr = ~r_nw_in && (a_in[15:2] == NOISE_CHANNEL_CNTL_MMR_ADDR[15:2]);
@@ -139,6 +142,8 @@ always @(posedge clk_in)
 
 assign d_pwm_cnt = q_pwm_cnt + 4'h1;
 
+assign d_out     = (r_nw_in && (a_in == STATUS_MMR_ADDR)) ? { 4'b0000, noise_active, 3'b000 } : 
+                                                            8'h00;
 assign audio_out = (mute_in) ? 1'b0 : (mixed_out > q_pwm_cnt);
 
 endmodule

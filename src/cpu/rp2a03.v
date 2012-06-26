@@ -87,6 +87,8 @@ cpu cpu_blk(
 //
 // APU: audio processing unit block.
 //
+wire [7:0] audio_dout;
+
 apu apu_blk(
   .clk_in(clk_in),
   .rst_in(rst_in),
@@ -94,7 +96,8 @@ apu apu_blk(
   .a_in(cpu_a),
   .d_in(cpu_dout),
   .r_nw_in(cpu_r_nw),
-  .audio_out(audio_out)
+  .audio_out(audio_out),
+  .d_out(audio_dout)
 );
 
 //
@@ -137,7 +140,7 @@ sprdma sprdma_blk(
 );
 
 assign cpu_ready = rdy_in & !sprdma_active;
-assign cpu_din   = d_in | jp_dout;
+assign cpu_din   = d_in | jp_dout | audio_dout;
 assign d_out     = (sprdma_active) ? sprdma_dout : cpu_dout;
 assign a_out     = (sprdma_active) ? sprdma_a    : cpu_a;
 assign r_nw_out  = (sprdma_active) ? sprdma_r_nw : cpu_r_nw;
