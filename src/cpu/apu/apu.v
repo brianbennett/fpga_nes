@@ -37,9 +37,10 @@ module apu
   output wire [ 7:0] d_out      // data output bus
 );
 
-localparam [15:0] NOISE_CHANNEL_CNTL_MMR_ADDR = 16'h400C;
-localparam [15:0] STATUS_MMR_ADDR             = 16'h4015;
-localparam [15:0] FRAME_COUNTER_CNTL_MMR_ADDR = 16'h4017;
+localparam [15:0] PULSE0_CHANNEL_CNTL_MMR_ADDR = 16'h4000;
+localparam [15:0] NOISE_CHANNEL_CNTL_MMR_ADDR  = 16'h400C;
+localparam [15:0] STATUS_MMR_ADDR              = 16'h4015;
+localparam [15:0] FRAME_COUNTER_CNTL_MMR_ADDR  = 16'h4017;
 
 // CPU cycle pulse.  Ideally this would be generated in rp2a03 and shared by the apu and cpu.
 reg  [5:0] q_clk_cnt;
@@ -49,6 +50,8 @@ wire       apu_cycle_pulse;
 wire       e_pulse;
 wire       l_pulse;
 wire       f_pulse;
+reg        q_pulse0_en;
+wire       d_pulse0_en;
 reg        q_noise_en;
 wire       d_noise_en;
 
@@ -56,18 +59,21 @@ always @(posedge clk_in)
   begin
     if (rst_in)
       begin
-        q_clk_cnt  <= 6'h00;
-        q_noise_en <= 1'b0;
+        q_clk_cnt   <= 6'h00;
+        q_noise_en  <= 1'b0;
+        q_pulse0_en <= 1'b0;
       end
     else
       begin
-        q_clk_cnt  <= d_clk_cnt;
-        q_noise_en <= d_noise_en;
+        q_clk_cnt   <= d_clk_cnt;
+        q_noise_en  <= d_noise_en;
+        q_pulse0_en <= d_pulse0_en;
       end
   end
 
-assign d_clk_cnt       = (q_clk_cnt == 6'h37) ? 6'h00 : q_clk_cnt + 6'h01;
-assign d_noise_en      = (~r_nw_in && (a_in == STATUS_MMR_ADDR)) ? d_in[3] : q_noise_en;
+assign d_clk_cnt   = (q_clk_cnt == 6'h37) ? 6'h00 : q_clk_cnt + 6'h01;
+assign d_noise_en  = (~r_nw_in && (a_in == STATUS_MMR_ADDR)) ? d_in[3] : q_noise_en;
+assign d_pulse0_en = (~r_nw_in && (a_in == STATUS_MMR_ADDR)) ? d_in[0] : q_pulse0_en;
 
 assign cpu_cycle_pulse = (q_clk_cnt == 6'h00);
 
@@ -115,12 +121,32 @@ apu_noise apu_noise_blk(
 
 assign noise_wr = ~r_nw_in && (a_in[15:2] == NOISE_CHANNEL_CNTL_MMR_ADDR[15:2]);
 
+wire [3:0] pulse0_out;
+wire       pulse0_active;
+wire       pulse0_wr;
+
+apu_pulse apu_pulse0_blk(
+  .clk_in(clk_in),
+  .rst_in(rst_in),
+  .en_in(q_pulse0_en),
+  .cpu_cycle_pulse_in(cpu_cycle_pulse),
+  .lc_pulse_in(l_pulse),
+  .eg_pulse_in(e_pulse),
+  .a_in(a_in[1:0]),
+  .d_in(d_in),
+  .wr_in(pulse0_wr),
+  .pulse_out(pulse0_out),
+  .active_out(pulse0_active)
+);
+
+assign pulse0_wr = ~r_nw_in && (a_in[15:2] == PULSE0_CHANNEL_CNTL_MMR_ADDR[15:2]);
+
 //
 // Mixer.
 //
 wire [3:0] mixed_out;
 
-assign mixed_out = noise_out;
+assign mixed_out = pulse0_out; //noise_out
 
 //
 // Pulse width modulation.
@@ -142,8 +168,8 @@ always @(posedge clk_in)
 
 assign d_pwm_cnt = q_pwm_cnt + 4'h1;
 
-assign d_out     = (r_nw_in && (a_in == STATUS_MMR_ADDR)) ? { 4'b0000, noise_active, 3'b000 } : 
-                                                            8'h00;
+assign d_out     = (r_nw_in && (a_in == STATUS_MMR_ADDR)) ? 
+                   { 4'b0000, noise_active, 2'b00, pulse0_active } : 8'h00;
 assign audio_out = (mute_in) ? 1'b0 : (mixed_out > q_pwm_cnt);
 
 endmodule

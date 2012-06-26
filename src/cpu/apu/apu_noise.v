@@ -46,8 +46,6 @@ reg         q_mode;
 wire        d_mode;
 reg         q_length_counter_halt;
 wire        d_length_counter_halt;
-reg  [ 3:0] q_env;
-wire [ 3:0] d_env;
 
 wire [11:0] timer_period;
 wire        timer_period_wr;
