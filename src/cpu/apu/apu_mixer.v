@@ -31,6 +31,7 @@ module apu_mixer
   input  wire       rst_in,     // reset signal
   input  wire       mute_in,    // mute all channels
   input  wire [3:0] pulse0_in,  // pulse 0 channel input
+  input  wire [3:0] pulse1_in,  // pulse 1 channel input
   input  wire [3:0] noise_in,   // noise channel input
   output wire       audio_out   // mixed audio output
 );
@@ -38,26 +39,45 @@ module apu_mixer
 reg [5:0] mixed_out;
 reg [5:0] pulse_out;
 reg [5:0] tnd_out;
+reg [4:0] pulse_in_total;
 
 always @*
   begin
-    case (pulse0_in)
-      4'h0: pulse_out = 6'h00;
-      4'h1: pulse_out = 6'h01;
-      4'h2: pulse_out = 6'h01;
-      4'h3: pulse_out = 6'h02;
-      4'h4: pulse_out = 6'h03;
-      4'h5: pulse_out = 6'h03;
-      4'h6: pulse_out = 6'h04;
-      4'h7: pulse_out = 6'h05;
-      4'h8: pulse_out = 6'h05;
-      4'h9: pulse_out = 6'h06;
-      4'hA: pulse_out = 6'h07;
-      4'hB: pulse_out = 6'h07;
-      4'hC: pulse_out = 6'h08;
-      4'hD: pulse_out = 6'h08;
-      4'hE: pulse_out = 6'h09;
-      4'hF: pulse_out = 6'h09;
+    pulse_in_total = pulse0_in + pulse1_in;
+
+    case (pulse_in_total)
+      5'h00:   pulse_out = 6'h00;
+      5'h01:   pulse_out = 6'h01;
+      5'h02:   pulse_out = 6'h01;
+      5'h03:   pulse_out = 6'h02;
+      5'h04:   pulse_out = 6'h03;
+      5'h05:   pulse_out = 6'h03;
+      5'h06:   pulse_out = 6'h04;
+      5'h07:   pulse_out = 6'h05;
+      5'h08:   pulse_out = 6'h05;
+      5'h09:   pulse_out = 6'h06;
+      5'h0A:   pulse_out = 6'h07;
+      5'h0B:   pulse_out = 6'h07;
+      5'h0C:   pulse_out = 6'h08;
+      5'h0D:   pulse_out = 6'h08;
+      5'h0E:   pulse_out = 6'h09;
+      5'h0F:   pulse_out = 6'h09;
+      5'h10:   pulse_out = 6'h0A;
+      5'h11:   pulse_out = 6'h0A;
+      5'h12:   pulse_out = 6'h0B;
+      5'h13:   pulse_out = 6'h0B;
+      5'h14:   pulse_out = 6'h0C;
+      5'h15:   pulse_out = 6'h0C;
+      5'h16:   pulse_out = 6'h0D;
+      5'h17:   pulse_out = 6'h0D;
+      5'h18:   pulse_out = 6'h0E;
+      5'h19:   pulse_out = 6'h0E;
+      5'h1A:   pulse_out = 6'h0F;
+      5'h1B:   pulse_out = 6'h0F;
+      5'h1C:   pulse_out = 6'h0F;
+      5'h1D:   pulse_out = 6'h10;
+      5'h1E:   pulse_out = 6'h10;
+      default: pulse_out = 6'bxxxxxx;
     endcase
 
     case (noise_in)
