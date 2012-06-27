@@ -1,5 +1,5 @@
 /***************************************************************************************************
-** fpga_nes/nesdbg/scriptmgrdlg.cpp
+** fpga_nes/sw/src/scriptmgrdlg.cpp
 *
 *  Copyright (c) 2012, Brian Bennett
 *  All rights reserved.

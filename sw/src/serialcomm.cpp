@@ -1,5 +1,5 @@
 /***************************************************************************************************
-** fpga_nes/nesdbg/serialcomm.cpp
+** fpga_nes/sw/src/serialcomm.cpp
 *
 *  Copyright (c) 2012, Brian Bennett
 *  All rights reserved.

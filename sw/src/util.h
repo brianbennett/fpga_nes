@@ -1,5 +1,5 @@
 /***************************************************************************************************
-** fpga_nes/nesdbg/util.h
+** fpga_nes/sw/src/util.h
 *
 *  Copyright (c) 2012, Brian Bennett
 *  All rights reserved.

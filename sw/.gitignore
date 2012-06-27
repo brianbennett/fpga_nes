@@ -1,0 +1,6 @@
+Debug/
+Release/
+nesdbg.opensdf
+nesdbg.sdf
+nesdbg.vcxproj.user
+*.swp

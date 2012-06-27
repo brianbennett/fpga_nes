@@ -10,6 +10,25 @@
       <Platform>Win32</Platform>
     </ProjectConfiguration>
   </ItemGroup>
+  <ItemGroup>
+    <ResourceCompile Include="rsrc\nesdbg.rc" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="rsrc\resource.h" />
+    <ClInclude Include="src\dbgpacket.h" />
+    <ClInclude Include="src\nesdbg.h" />
+    <ClInclude Include="src\scriptmgr.h" />
+    <ClInclude Include="src\serialComm.h" />
+    <ClInclude Include="src\util.h" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="src\dbgpacket.cpp" />
+    <ClCompile Include="src\main.cpp" />
+    <ClCompile Include="src\nesdbg.cpp" />
+    <ClCompile Include="src\scriptmgr.cpp" />
+    <ClCompile Include="src\scriptmgrdlg.cpp" />
+    <ClCompile Include="src\serialcomm.cpp" />
+  </ItemGroup>
   <PropertyGroup Label="Globals">
     <ProjectGuid>{29F2F891-71B4-448F-BCC6-83F109705C79}</ProjectGuid>
     <RootNamespace>nesdbg</RootNamespace>
@@ -88,25 +107,6 @@
       <TargetMachine>MachineX86</TargetMachine>
     </Link>
   </ItemDefinitionGroup>
-  <ItemGroup>
-    <ClCompile Include="dbgpacket.cpp" />
-    <ClCompile Include="main.cpp" />
-    <ClCompile Include="nesdbg.cpp" />
-    <ClCompile Include="scriptmgr.cpp" />
-    <ClCompile Include="scriptmgrdlg.cpp" />
-    <ClCompile Include="serialcomm.cpp" />
-  </ItemGroup>
-  <ItemGroup>
-    <ClInclude Include="dbgpacket.h" />
-    <ClInclude Include="nesdbg.h" />
-    <ClInclude Include="rsrc\resource.h" />
-    <ClInclude Include="scriptmgr.h" />
-    <ClInclude Include="serialcomm.h" />
-    <ClInclude Include="util.h" />
-  </ItemGroup>
-  <ItemGroup>
-    <ResourceCompile Include="rsrc\nesdbg.rc" />
-  </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
   </ImportGroup>

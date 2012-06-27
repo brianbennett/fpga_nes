@@ -1,5 +1,5 @@
 /***************************************************************************************************
-** fpga_nes/nesdbg/main.cpp
+** fpga_nes/sw/src/main.cpp
 *
 *  Copyright (c) 2012, Brian Bennett
 *  All rights reserved.

@@ -3,13 +3,6 @@ iseconfig/nes.projectmgr
 iseconfig/nes_top.xreport
 impact_impact.xwbt
 nes_top_summary.html
-nesdbg/Debug/
-nesdbg/Release/
-nesdbg/ipch/
-nesdbg/nesdbg.opensdf
-nesdbg/nesdbg.sdf
-nesdbg/nesdbg.suo
-nesdbg/nesdbg.vcxproj.user
 *.swp
 usage_statistics_webtalk.html
 webtalk.log

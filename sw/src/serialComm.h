@@ -1,5 +1,5 @@
 /***************************************************************************************************
-** fpga_nes/nesdbg/nesdbg.h
+** fpga_nes/sw/src/serialcomm.h
 *
 *  Copyright (c) 2012, Brian Bennett
 *  All rights reserved.
@@ -22,58 +22,33 @@
 *  WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY
 *  WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 *
-*  NesDbg class header.
+*  SerialComm class header.
 ***************************************************************************************************/
 
-#ifndef NESDBG_H
-#define NESDBG_H
-
-#include <windows.h>
-#include <commctrl.h>
-#include <tchar.h>
-
-#include "util.h"
-
-class ScriptMgr;
-class SerialComm;
+#ifndef SERIALCOMM_H
+#define SERIALCOMM_H
 
 /***************************************************************************************************
-** % Class:       NesDbg
-*  % Description: Main manager/brain.
+** % Class:       SerialComm
+*  % Description: Manages communication with NES FPGA through serial port.
 ***************************************************************************************************/
-class NesDbg
+class SerialComm
 {
 public:
-    NesDbg(HINSTANCE hInstance, HWND hWnd);
-    ~NesDbg();
+    SerialComm();
+    ~SerialComm();
 
     BOOL Init();
 
-    VOID LaunchRawDbgDlg();
-    VOID LaunchTestScriptDlg();
-    VOID LoadRom();
-
-    ScriptMgr*  GetScriptMgr() { return m_pScriptMgr; }
-    SerialComm* GetSerialComm() { return m_pSerialComm; }
-
-    static const TCHAR* GetMessageBoxTitle();
+    BOOL SendData(const BYTE* pData, UINT numBytes);
+    BOOL ReceiveData(BYTE* pData, UINT numBytes);
 
 private:
-    NesDbg& operator=(const NesDbg&);
-    NesDbg(const NesDbg&);
+    SerialComm& operator=(const SerialComm&);
+    SerialComm(const SerialComm&);
 
-    static BOOL CALLBACK RawDbgDlgProc(HWND hWndDlg, UINT msg, WPARAM wParam, LPARAM lParam);
-
-    HINSTANCE   m_hInstance;        // handle to application instance
-    HWND        m_hWnd;             // handle to main application window
-
-    HFONT       m_hFontCourierNew;  // handle to the "Courier New" fixed-width font
-
-    SerialComm* m_pSerialComm;      // serial communication manager
-    ScriptMgr*  m_pScriptMgr;       // script manager
+    HANDLE m_hSerialComm;  // win32 handle to debug serial port
 };
 
-extern NesDbg* g_pNesDbg;
-
-#endif // NESDBG_H
+#endif // SERIALCOMM_H
 

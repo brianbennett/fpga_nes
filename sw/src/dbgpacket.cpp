@@ -1,5 +1,5 @@
 /***************************************************************************************************
-** fpga_nes/nesdbg/dbgpacket.cpp
+** fpga_nes/sw/src/dbgpacket.cpp
 *
 *  Copyright (c) 2012, Brian Bennett
 *  All rights reserved.
