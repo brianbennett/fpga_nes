@@ -144,33 +144,17 @@ assign pulse0_wr = ~r_nw_in && (a_in[15:2] == PULSE0_CHANNEL_CNTL_MMR_ADDR[15:2]
 //
 // Mixer.
 //
-wire [3:0] mixed_out;
+apu_mixer apu_mixer_blk(
+  .clk_in(clk_in),
+  .rst_in(rst_in),
+  .mute_in(mute_in),
+  .pulse0_in(pulse0_out),
+  .noise_in(noise_out),
+  .audio_out(audio_out)
+);
 
-assign mixed_out = pulse0_out; //noise_out
-
-//
-// Pulse width modulation.
-//
-reg  [3:0] q_pwm_cnt;
-wire [3:0] d_pwm_cnt;
-
-always @(posedge clk_in)
-  begin
-    if (rst_in)
-      begin
-        q_pwm_cnt  <= 4'h0;
-      end
-    else
-      begin
-        q_pwm_cnt  <= d_pwm_cnt;
-      end
-  end
-
-assign d_pwm_cnt = q_pwm_cnt + 4'h1;
-
-assign d_out     = (r_nw_in && (a_in == STATUS_MMR_ADDR)) ? 
+assign d_out = (r_nw_in && (a_in == STATUS_MMR_ADDR)) ?
                    { 4'b0000, noise_active, 2'b00, pulse0_active } : 8'h00;
-assign audio_out = (mute_in) ? 1'b0 : (mixed_out > q_pwm_cnt);
 
 endmodule
 
