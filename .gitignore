@@ -1,10 +1,6 @@
-bld/
-iseconfig/nes.projectmgr
-iseconfig/nes_top.xreport
+impact.xsl
 impact_impact.xwbt
-nes_top_summary.html
-*.swp
 usage_statistics_webtalk.html
 webtalk.log
 webtalk_impact.xml
-impact.xsl
+*.swp

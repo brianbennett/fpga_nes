@@ -2,5 +2,5 @@ Debug/
 Release/
 nesdbg.opensdf
 nesdbg.sdf
+nesdbg.suo
 nesdbg.vcxproj.user
-*.swp

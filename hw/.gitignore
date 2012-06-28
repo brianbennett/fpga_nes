@@ -1,0 +1,10 @@
+_ngo/
+_xmsgs/
+iseconfig/
+xlnx_auto_0_xdb/
+xst/
+nes.gise
+nes_top*.*
+!nes_top.v
+par_usage_statistics.html
+webtalk_pn.xml
