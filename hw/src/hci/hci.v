@@ -1,5 +1,5 @@
 /***************************************************************************************************
-** fpga_nes/src/hci/hci.v
+** fpga_nes/hw/src/hci/hci.v
 *
 *  Copyright (c) 2012, Brian Bennett
 *  All rights reserved.

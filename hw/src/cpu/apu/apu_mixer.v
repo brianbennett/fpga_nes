@@ -1,5 +1,5 @@
 /***************************************************************************************************
-** fpga_nes/src/cpu/apu/apu_mixer.v
+** fpga_nes/hw/src/cpu/apu/apu_mixer.v
 *
 *  Copyright (c) 2012, Brian Bennett
 *  All rights reserved.

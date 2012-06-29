@@ -1,5 +1,5 @@
 /***************************************************************************************************
-** fpga_nes/src/cpu/rp2a03.v
+** fpga_nes/hw/src/cpu/rp2a03.v
 *
 *  Copyright (c) 2012, Brian Bennett
 *  All rights reserved.

@@ -1,5 +1,5 @@
 /***************************************************************************************************
-** fpga_nes/src/vram.v
+** fpga_nes/hw/src/vram.v
 *
 *  Copyright (c) 2012, Brian Bennett
 *  All rights reserved.

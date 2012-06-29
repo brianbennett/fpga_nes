@@ -1,5 +1,5 @@
 /***************************************************************************************************
-** fpga_nes/lib/vga_sync/vga_sync.v
+** fpga_nes/hw/src/cmn/vga_sync/vga_sync.v
 *
 *  Copyright (c) 2012, Brian Bennett
 *  All rights reserved.

@@ -1,5 +1,5 @@
 /***************************************************************************************************
-** fpga_nes/src/cpu/apu/apu_length_counter.v
+** fpga_nes/hw/src/cpu/apu/apu_length_counter.v
 *
 *  Copyright (c) 2012, Brian Bennett
 *  All rights reserved.

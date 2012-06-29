@@ -1,5 +1,5 @@
 /***************************************************************************************************
-** fpga_nes/lib/fifo/fifo.v
+** fpga_nes/hw/src/cmn/fifo/fifo.v
 *
 *  Copyright (c) 2012, Brian Bennett
 *  All rights reserved.

@@ -1,5 +1,5 @@
 /***************************************************************************************************
-** fpga_nes/src/ppu/ppu_bg.v
+** fpga_nes/hw/src/ppu/ppu_bg.v
 *
 *  Copyright (c) 2012, Brian Bennett
 *  All rights reserved.

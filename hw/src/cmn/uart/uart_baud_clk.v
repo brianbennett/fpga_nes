@@ -1,5 +1,5 @@
 /***************************************************************************************************
-** fpga_nes/lib/uart/uart_baud_clk.v
+** fpga_nes/hw/src/cmn/uart/uart_baud_clk.v
 *
 *  Copyright (c) 2012, Brian Bennett
 *  All rights reserved.

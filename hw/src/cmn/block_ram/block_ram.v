@@ -1,5 +1,5 @@
 /***************************************************************************************************
-** fpga_nes/lib/block_ram/block_ram.v
+** fpga_nes/hw/src/cmn/block_ram/block_ram.v
 *
 *  Copyright (c) 2012, Brian Bennett
 *  All rights reserved.
