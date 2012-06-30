@@ -33,8 +33,7 @@
 
 module apu_div
 #(
-  parameter PERIOD_BITS = 16,
-  parameter INIT_PERIOD = 2
+  parameter PERIOD_BITS = 16
 )
 (
   input  wire                   clk_in,         // system clock signal
@@ -102,7 +101,7 @@ always @(posedge clk_in)
       end
   end
 
-assign d_cnt = (pulse_in & (q_cnt == 0)) ? PERIOD  :
+assign d_cnt = (pulse_in & (q_cnt == 0)) ? PERIOD    :
                (pulse_in)                ? q_cnt - 1 :
                q_cnt;
 

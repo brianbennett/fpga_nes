@@ -81,8 +81,7 @@ always @(posedge clk_in)
       end
   end
 
-apu_div #(.PERIOD_BITS(12),
-          .INIT_PERIOD(0)) timer(
+apu_div #(.PERIOD_BITS(12)) timer(
   .clk_in(clk_in),
   .rst_in(rst_in),
   .pulse_in(cpu_cycle_pulse_in),
@@ -167,8 +166,7 @@ assign d_sweep_reload = (wr_in && (a_in == 2'b01)) ? 1'b1 :
 wire sweep_divider_period_wr;
 wire sweep_divider_pulse;
 
-apu_div #(.PERIOD_BITS(3),
-          .INIT_PERIOD(0)) sweep_divider(
+apu_div #(.PERIOD_BITS(3)) sweep_divider(
   .clk_in(clk_in),
   .rst_in(rst_in),
   .pulse_in(lc_pulse_in),

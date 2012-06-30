@@ -63,8 +63,7 @@ reg  divider_pulse_in;
 reg  divider_set_period;
 wire divider_pulse_out;
 
-apu_div #(.PERIOD_BITS(4),
-          .INIT_PERIOD(4'hF)) divider(
+apu_div #(.PERIOD_BITS(4)) divider(
   .clk_in(clk_in),
   .rst_in(rst_in),
   .pulse_in(divider_pulse_in),

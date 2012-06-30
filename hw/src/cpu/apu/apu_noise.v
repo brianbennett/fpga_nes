@@ -51,8 +51,7 @@ wire [11:0] timer_period;
 wire        timer_period_wr;
 wire        timer_pulse;
 
-apu_div #(.PERIOD_BITS(12),
-          .INIT_PERIOD(4)) timer(
+apu_div #(.PERIOD_BITS(12)) timer(
   .clk_in(clk_in),
   .rst_in(rst_in),
   .pulse_in(apu_cycle_pulse_in),

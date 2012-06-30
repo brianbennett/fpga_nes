@@ -57,8 +57,7 @@ always @(posedge clk_in)
       q_timer_period <= d_timer_period;
   end
 
-apu_div #(.PERIOD_BITS(12),
-          .INIT_PERIOD(0)) timer(
+apu_div #(.PERIOD_BITS(11)) timer(
   .clk_in(clk_in),
   .rst_in(rst_in),
   .pulse_in(cpu_cycle_pulse_in),
