@@ -158,12 +158,11 @@ always @(posedge clk_in)
       q_seq <= d_seq;
   end
 
-assign active_out   = linear_counter_en && length_counter_en;
-
 assign d_seq   = (active_out && timer_pulse) ? q_seq + 5'h01 : q_seq;
 assign seq_out = (q_seq[4]) ? q_seq[3:0] : ~q_seq[3:0];
 
-assign triangle_out = (active_out) ? seq_out : 4'h0;
+assign active_out   = linear_counter_en && length_counter_en;
+assign triangle_out = seq_out;
 
 endmodule
 
