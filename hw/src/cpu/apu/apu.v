@@ -29,7 +29,7 @@ module apu
 (
   input  wire        clk_in,    // system clock signal
   input  wire        rst_in,    // reset signal
-  input  wire        mute_in,   // disable all audio
+  input  wire [ 3:0] mute_in,   // disable specific audio channels
   input  wire [15:0] a_in,      // addr input bus
   input  wire [ 7:0] d_in,      // data input bus
   input  wire        r_nw_in,   // read/write select

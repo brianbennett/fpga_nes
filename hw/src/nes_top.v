@@ -31,7 +31,7 @@ module nes_top
   input  wire       BTN_SOUTH,         // reset push button
   input  wire       BTN_EAST,          // console reset
   input  wire       RXD,               // rs-232 rx signal
-  input  wire       SW0,               // switch 0
+  input  wire [3:0] SW,                // switches
   input  wire       NES_JOYPAD_DATA1,  // joypad 1 input signal
   input  wire       NES_JOYPAD_DATA2,  // joypad 2 input signal
   output wire       TXD,               // rs-232 tx signal
@@ -86,7 +86,7 @@ rp2a03 rp2a03_blk(
   .jp_data2_in(NES_JOYPAD_DATA2),
   .jp_clk(NES_JOYPAD_CLK),
   .jp_latch(NES_JOYPAD_LATCH),
-  .mute_in(SW0),
+  .mute_in(SW),
   .audio_out(AUDIO),
   .dbgreg_sel_in(rp2a03_dbgreg_sel),
   .dbgreg_d_in(rp2a03_dbgreg_din),

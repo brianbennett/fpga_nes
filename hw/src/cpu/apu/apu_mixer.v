@@ -29,13 +29,18 @@ module apu_mixer
 (
   input  wire       clk_in,       // system clock signal
   input  wire       rst_in,       // reset signal
-  input  wire       mute_in,      // mute all channels
+  input  wire [3:0] mute_in,      // mute specific channels
   input  wire [3:0] pulse0_in,    // pulse 0 channel input
   input  wire [3:0] pulse1_in,    // pulse 1 channel input
   input  wire [3:0] triangle_in,  // triangle channel input
   input  wire [3:0] noise_in,     // noise channel input
   output wire       audio_out     // mixed audio output
 );
+
+wire [3:0] pulse0;
+wire [3:0] pulse1;
+wire [3:0] triangle;
+wire [3:0] noise;
 
 reg [4:0] pulse_in_total;
 reg [5:0] pulse_out;
@@ -47,7 +52,7 @@ reg [5:0] mixed_out;
 
 always @*
   begin
-    pulse_in_total = pulse0_in + pulse1_in;
+    pulse_in_total = pulse0 + pulse1;
 
     case (pulse_in_total)
       5'h00:   pulse_out = 6'h00;
@@ -84,7 +89,7 @@ always @*
       default: pulse_out = 6'bxxxxxx;
     endcase
 
-    tnd_in_total = { triangle_in, 1'b0 } + { 1'b0, triangle_in } + { noise_in, 1'b0 };
+    tnd_in_total = { triangle, 1'b0 } + { 1'b0, triangle } + { noise, 1'b0 };
 
     case (tnd_in_total)
       7'h00:   tnd_out = 6'h00;
@@ -189,7 +194,12 @@ always @(posedge clk_in)
 
 assign d_pwm_cnt = q_pwm_cnt + 4'h1;
 
-assign audio_out = (mute_in) ? 1'b0 : (mixed_out > q_pwm_cnt);
+assign pulse0   = (mute_in[0]) ? 4'h0 : pulse0_in;
+assign pulse1   = (mute_in[1]) ? 4'h0 : pulse1_in;
+assign triangle = (mute_in[2]) ? 4'h0 : triangle_in;
+assign noise    = (mute_in[3]) ? 4'h0 : noise_in;
+
+assign audio_out = mixed_out > q_pwm_cnt;
 
 endmodule
 
