@@ -27,19 +27,23 @@
 
 module apu_mixer
 (
-  input  wire       clk_in,     // system clock signal
-  input  wire       rst_in,     // reset signal
-  input  wire       mute_in,    // mute all channels
-  input  wire [3:0] pulse0_in,  // pulse 0 channel input
-  input  wire [3:0] pulse1_in,  // pulse 1 channel input
-  input  wire [3:0] noise_in,   // noise channel input
-  output wire       audio_out   // mixed audio output
+  input  wire       clk_in,       // system clock signal
+  input  wire       rst_in,       // reset signal
+  input  wire       mute_in,      // mute all channels
+  input  wire [3:0] pulse0_in,    // pulse 0 channel input
+  input  wire [3:0] pulse1_in,    // pulse 1 channel input
+  input  wire [3:0] triangle_in,  // triangle channel input
+  input  wire [3:0] noise_in,     // noise channel input
+  output wire       audio_out     // mixed audio output
 );
 
-reg [5:0] mixed_out;
-reg [5:0] pulse_out;
-reg [5:0] tnd_out;
 reg [4:0] pulse_in_total;
+reg [5:0] pulse_out;
+
+reg [6:0] tnd_in_total;
+reg [5:0] tnd_out;
+
+reg [5:0] mixed_out;
 
 always @*
   begin
@@ -80,23 +84,86 @@ always @*
       default: pulse_out = 6'bxxxxxx;
     endcase
 
-    case (noise_in)
-      4'h0: tnd_out = 6'h00;
-      4'h1: tnd_out = 6'h01;
-      4'h2: tnd_out = 6'h02;
-      4'h3: tnd_out = 6'h02;
-      4'h4: tnd_out = 6'h03;
-      4'h5: tnd_out = 6'h04;
-      4'h6: tnd_out = 6'h05;
-      4'h7: tnd_out = 6'h06;
-      4'h8: tnd_out = 6'h06;
-      4'h9: tnd_out = 6'h07;
-      4'hA: tnd_out = 6'h08;
-      4'hB: tnd_out = 6'h09;
-      4'hC: tnd_out = 6'h09;
-      4'hD: tnd_out = 6'h0A;
-      4'hE: tnd_out = 6'h0B;
-      4'hF: tnd_out = 6'h0B;
+    tnd_in_total = { triangle_in, 1'b0 } + { 1'b0, triangle_in } + { noise_in, 1'b0 };
+
+    case (tnd_in_total)
+      7'h00:   tnd_out = 6'h00;
+      7'h01:   tnd_out = 6'h01;
+      7'h02:   tnd_out = 6'h01;
+      7'h03:   tnd_out = 6'h02;
+      7'h04:   tnd_out = 6'h03;
+      7'h05:   tnd_out = 6'h03;
+      7'h06:   tnd_out = 6'h04;
+      7'h07:   tnd_out = 6'h05;
+      7'h08:   tnd_out = 6'h05;
+      7'h09:   tnd_out = 6'h06;
+      7'h0A:   tnd_out = 6'h07;
+      7'h0B:   tnd_out = 6'h07;
+      7'h0C:   tnd_out = 6'h08;
+      7'h0D:   tnd_out = 6'h08;
+      7'h0E:   tnd_out = 6'h09;
+      7'h0F:   tnd_out = 6'h09;
+      7'h10:   tnd_out = 6'h0A;
+      7'h11:   tnd_out = 6'h0A;
+      7'h12:   tnd_out = 6'h0B;
+      7'h13:   tnd_out = 6'h0B;
+      7'h14:   tnd_out = 6'h0C;
+      7'h15:   tnd_out = 6'h0C;
+      7'h16:   tnd_out = 6'h0D;
+      7'h17:   tnd_out = 6'h0D;
+      7'h18:   tnd_out = 6'h0E;
+      7'h19:   tnd_out = 6'h0E;
+      7'h1A:   tnd_out = 6'h0F;
+      7'h1B:   tnd_out = 6'h0F;
+      7'h1C:   tnd_out = 6'h0F;
+      7'h1D:   tnd_out = 6'h10;
+      7'h1E:   tnd_out = 6'h10;
+      7'h1F:   tnd_out = 6'h11;
+      7'h20:   tnd_out = 6'h11;
+      7'h21:   tnd_out = 6'h11;
+      7'h22:   tnd_out = 6'h12;
+      7'h23:   tnd_out = 6'h12;
+      7'h24:   tnd_out = 6'h12;
+      7'h25:   tnd_out = 6'h13;
+      7'h26:   tnd_out = 6'h13;
+      7'h27:   tnd_out = 6'h14;
+      7'h28:   tnd_out = 6'h14;
+      7'h29:   tnd_out = 6'h14;
+      7'h2A:   tnd_out = 6'h15;
+      7'h2B:   tnd_out = 6'h15;
+      7'h2C:   tnd_out = 6'h15;
+      7'h2D:   tnd_out = 6'h15;
+      7'h2E:   tnd_out = 6'h16;
+      7'h2F:   tnd_out = 6'h16;
+      7'h30:   tnd_out = 6'h16;
+      7'h31:   tnd_out = 6'h17;
+      7'h32:   tnd_out = 6'h17;
+      7'h33:   tnd_out = 6'h17;
+      7'h34:   tnd_out = 6'h17;
+      7'h35:   tnd_out = 6'h18;
+      7'h36:   tnd_out = 6'h18;
+      7'h37:   tnd_out = 6'h18;
+      7'h38:   tnd_out = 6'h19;
+      7'h39:   tnd_out = 6'h19;
+      7'h3A:   tnd_out = 6'h19;
+      7'h3B:   tnd_out = 6'h19;
+      7'h3C:   tnd_out = 6'h1A;
+      7'h3D:   tnd_out = 6'h1A;
+      7'h3E:   tnd_out = 6'h1A;
+      7'h3F:   tnd_out = 6'h1A;
+      7'h40:   tnd_out = 6'h1B;
+      7'h41:   tnd_out = 6'h1B;
+      7'h42:   tnd_out = 6'h1B;
+      7'h43:   tnd_out = 6'h1B;
+      7'h44:   tnd_out = 6'h1B;
+      7'h45:   tnd_out = 6'h1C;
+      7'h46:   tnd_out = 6'h1C;
+      7'h47:   tnd_out = 6'h1C;
+      7'h48:   tnd_out = 6'h1C;
+      7'h49:   tnd_out = 6'h1C;
+      7'h4A:   tnd_out = 6'h1D;
+      7'h4B:   tnd_out = 6'h1D;
+      default: tnd_out = 6'bxxxxxx;
     endcase
 
     mixed_out = pulse_out + tnd_out;
