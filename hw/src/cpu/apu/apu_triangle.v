@@ -46,9 +46,8 @@ module apu_triangle
 reg  [10:0] q_timer_period;
 wire [10:0] d_timer_period;
 
-wire  [11:0] timer_period;
-wire         timer_period_wr;
-wire         timer_pulse;
+wire        timer_period_wr;
+wire        timer_pulse;
 
 always @(posedge clk_in)
   begin
@@ -64,15 +63,14 @@ apu_div #(.PERIOD_BITS(12),
   .rst_in(rst_in),
   .pulse_in(cpu_cycle_pulse_in),
   .set_period_in(timer_period_wr),
-  .period_in(timer_period),
+  .period_in(d_timer_period),
   .pulse_out(timer_pulse)
 );
 
 assign timer_period_wr = wr_in && a_in[1];
 assign d_timer_period  = (wr_in && (a_in == 2'b10)) ? { q_timer_period[10:8], d_in[7:0] } :
                          (wr_in && (a_in == 2'b11)) ? { d_in[2:0], q_timer_period[7:0] }  :
-                         q_timer_period;
-assign timer_period    = { d_timer_period, 1'b0 };
+                                                      q_timer_period;
 
 //
 // Linear Counter
