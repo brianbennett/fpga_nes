@@ -105,7 +105,7 @@ assign d_linear_counter_val =
   (eg_pulse_in && (q_linear_counter_val != 7'h00)) ? q_linear_counter_val - 7'h01 :
                                                      q_linear_counter_val;
 
-assign d_linear_counter_halt = 
+assign d_linear_counter_halt =
   (wr_in && (a_in == 2'b11))                 ? 1'b1 :
   (eg_pulse_in && !q_linear_counter_cntl[7]) ? 1'b0 :
                                                q_linear_counter_halt;

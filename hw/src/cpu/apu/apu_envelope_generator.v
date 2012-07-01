@@ -79,7 +79,7 @@ always @*
 
     divider_pulse_in   = 1'b0;
     divider_set_period = 1'b0;
-    
+
     // When the divider outputs a clock, one of two actions occurs: If the counter is non-zero, it
     // is decremented, otherwise if the loop flag is set, the counter is loaded with 15.
     if (divider_pulse_out)
