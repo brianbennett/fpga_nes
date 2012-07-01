@@ -63,8 +63,8 @@ always @(posedge clk_in)
       end
   end
 
-assign d_period  = (set_period_in)           ? period_in :
-                                               q_period;
+assign d_period  = (set_period_in) ? period_in : q_period;
+
 assign d_cnt     = (pulse_in & (q_cnt == 0) && set_period_in) ? period_in    :
                    (pulse_in & (q_cnt == 0))                  ? q_period     :
                    (pulse_in)                                 ? q_cnt - 1'h1 : q_cnt;
