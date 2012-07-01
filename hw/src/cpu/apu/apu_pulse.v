@@ -26,6 +26,9 @@
 ***************************************************************************************************/
 
 module apu_pulse
+#(
+  parameter [0:0] CHANNEL = 1'b0         // Pulse channel 0 or 1
+)
 (
   input  wire       clk_in,              // system clock signal
   input  wire       rst_in,              // reset signal
@@ -187,7 +190,7 @@ always @*
 
     sweep_target_period =
       (!q_sweep_reg[3]) ? q_timer_period + (q_timer_period >> q_sweep_reg[2:0]) :
-                          q_timer_period - (q_timer_period >> q_sweep_reg[2:0]);
+                          q_timer_period + ~(q_timer_period >> q_sweep_reg[2:0]) + CHANNEL;
 
     sweep_silence = (q_timer_period[10:3] == 8'h00) || sweep_target_period[11];
 

@@ -123,7 +123,7 @@ wire [3:0] pulse0_out;
 wire       pulse0_active;
 wire       pulse0_wr;
 
-apu_pulse apu_pulse0_blk(
+apu_pulse #(.CHANNEL(0)) apu_pulse0_blk(
   .clk_in(clk_in),
   .rst_in(rst_in),
   .en_in(q_pulse0_en),
@@ -146,7 +146,7 @@ wire [3:0] pulse1_out;
 wire       pulse1_active;
 wire       pulse1_wr;
 
-apu_pulse apu_pulse1_blk(
+apu_pulse #(.CHANNEL(1)) apu_pulse1_blk(
   .clk_in(clk_in),
   .rst_in(rst_in),
   .en_in(q_pulse1_en),
