@@ -80,6 +80,17 @@ always @*
     divider_pulse_in   = 1'b0;
     divider_set_period = 1'b0;
     
+    // When the divider outputs a clock, one of two actions occurs: If the counter is non-zero, it
+    // is decremented, otherwise if the loop flag is set, the counter is loaded with 15.
+    if (divider_pulse_out)
+      begin
+        divider_set_period = 1'b1;
+        if (q_cnt != 4'h0)
+          d_cnt = q_cnt - 4'h1;
+        else if (q_reg[5])
+          d_cnt = 4'hF;
+      end
+
     // When clocked by the frame counter, one of two actions occurs: if the start flag is clear,
     // the divider is clocked, otherwise the start flag is cleared, the counter is loaded with 15,
     // and the divider's period is immediately reloaded.
@@ -95,16 +106,6 @@ always @*
             d_cnt              = 4'hF;
             divider_set_period = 1'b1;
           end
-      end
-
-    // When the divider outputs a clock, one of two actions occurs: If the counter is non-zero, it
-    // is decremented, otherwise if the loop flag is set, the counter is loaded with 15.
-    if (divider_pulse_out)
-      begin
-        if (q_cnt != 4'h0)
-          d_cnt = q_cnt - 4'h1;
-        else if (q_reg[5])
-          d_cnt = 4'hF;
       end
 
     if (env_restart)
