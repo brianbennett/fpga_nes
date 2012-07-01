@@ -160,11 +160,14 @@ always @(posedge clk_in)
   end
 
 assign d_sweep_reg    = (wr_in && (a_in == 2'b01)) ? d_in : q_sweep_reg;
-assign d_sweep_reload = (wr_in && (a_in == 2'b01)) ? 1'b1 : 
+assign d_sweep_reload = (wr_in && (a_in == 2'b01)) ? 1'b1 :
                         (lc_pulse_in)              ? 1'b0 : q_sweep_reload;
 
 wire sweep_divider_period_wr;
 wire sweep_divider_pulse;
+
+reg        sweep_silence;
+reg [11:0] sweep_target_period;
 
 apu_div #(.PERIOD_BITS(3)) sweep_divider(
   .clk_in(clk_in),
@@ -182,6 +185,12 @@ always @*
     d_timer_period  = q_timer_period;
     timer_period_wr = 1'b0;
 
+    sweep_target_period =
+      (!q_sweep_reg[3]) ? q_timer_period + (q_timer_period >> q_sweep_reg[2:0]) :
+                          q_timer_period - (q_timer_period >> q_sweep_reg[2:0]);
+
+    sweep_silence = (q_timer_period[10:3] == 8'h00) || sweep_target_period[11];
+
     if (wr_in && (a_in == 2'b10))
       begin
         d_timer_period  = { q_timer_period[10:8], d_in };
@@ -192,18 +201,10 @@ always @*
         d_timer_period  = { d_in[2:0], q_timer_period[7:0] };
         timer_period_wr = 1'b1;
       end
-    else if (q_sweep_reg[7] && sweep_divider_pulse && (q_sweep_reg[2:0] != 3'h0))
+    else if (sweep_divider_pulse && q_sweep_reg[7] && !sweep_silence && (q_sweep_reg[2:0] != 3'h0))
       begin
-        if (!q_sweep_reg[3])
-          begin
-            d_timer_period  = q_timer_period + (q_timer_period >> q_sweep_reg[2:0]);
-            timer_period_wr = 1'b1;
-          end
-        else
-          begin
-            d_timer_period  = q_timer_period - (q_timer_period >> q_sweep_reg[2:0]);
-            timer_period_wr = 1'b1;
-          end
+        d_timer_period  = sweep_target_period[10:0];
+        timer_period_wr = 1'b1;
       end
 
     timer_period = { d_timer_period, 1'b0 };
@@ -245,7 +246,7 @@ apu_length_counter length_counter(
 
 assign length_counter_wr = wr_in && (a_in == 2'b11);
 
-assign pulse_out  = (length_counter_en) ? sequencer_out : 4'h0;
+assign pulse_out  = (length_counter_en && !sweep_silence) ? sequencer_out : 4'h0;
 assign active_out = length_counter_en;
 
 endmodule
