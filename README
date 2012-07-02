@@ -1,11 +1,8 @@
-**fpga_nes** is an fpga-targeted Nintento Entertainment System emulator written in Verilog.  It is
-currently under development, and is most notably missing support for mappers and the DMC sound
-channel.  At this point, it runs most NROM games capably (e.g., Super Mario Brothers, Excitebike).
+**fpga_nes** is an fpga-targeted Nintento Entertainment System emulator written in Verilog.  It is currently under development, and is most notably missing support for mappers and the DMC sound channel.  At this point, it runs most NROM games capably (e.g., Super Mario Brothers, Excitebike).
 
-In addition, this project includes a C++ Windows application called NesDbg, which communicates
-with the FPGA over USB UART to load ROMs, run unit tests, readwrite memory, etc.
+In addition, this project includes a C++ Windows application called NesDbg, which communicates with the FPGA over USB UART to load ROMs, run unit tests, readwrite memory, etc.
 
-**Required Hardware:**
+**Hardware Setup:**
 
 ![alt text](http://1.bp.blogspot.com/-BfVh-h9vj14/T-9pofsWmEI/AAAAAAAAAG8/kW62NiNQTsE/s320/setup.jpg "Title")
 
@@ -19,7 +16,8 @@ with the FPGA over USB UART to load ROMs, run unit tests, readwrite memory, etc.
 8. [PmodAMP1](http://www.digilentinc.com/Products/Detail.cfm?Prod=PMOD-AMP1) to amplify NES PWM audio output.  ($20)
 9. [Speaker](http://www.digilentinc.com/Products/Catalog.cfm?NavPath=2,393&Cat=3) to play the NES sound.  ($6)
 
-**Required Software:**
+
+**Development Environment:**
 
 1. [ISE 14.1 WebPack](http://www.xilinx.com/support/download/index.htm) (free)
 2. [Visual Studio 2010 Express](http://www.microsoft.com/visualstudio/en-us/products/2010-editions/visual-cpp-express) (free)
