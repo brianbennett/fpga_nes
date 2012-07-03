@@ -3,7 +3,7 @@
 -- Description: Joypad test.  Execute externally built asm program that reads joypad input, waiting
 --              for a particular input sequence.  Requires user interaction.
 ----------------------------------------------------------------------------------------------------
-dofile("./scripts/inc/nesdbg.lua")
+dofile("../scripts/inc/nesdbg.lua")
 
 local results = {}
 

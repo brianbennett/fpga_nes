@@ -2,7 +2,7 @@
 -- Script:      cpu_lsr.lua
 -- Description: CPU test.  Directed test for LSR instruction.  Covers all address modes.
 ----------------------------------------------------------------------------------------------------
-dofile("./scripts/inc/nesdbg.lua")
+dofile("../scripts/inc/nesdbg.lua")
 
 local results = {}
 

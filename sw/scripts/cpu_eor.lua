@@ -2,7 +2,7 @@
 -- Script:      cpu_eor.lua
 -- Description: CPU test.  Directed test for EOR instruction.  Covers all address modes.
 ----------------------------------------------------------------------------------------------------
-dofile("./scripts/inc/nesdbg.lua")
+dofile("../scripts/inc/nesdbg.lua")
 
 local results = {}
 

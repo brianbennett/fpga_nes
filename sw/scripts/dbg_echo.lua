@@ -3,7 +3,7 @@
 -- Description: Tests dbg block's echo packet.
 ----------------------------------------------------------------------------------------------------
 
-dofile("./scripts/inc/nesdbg.lua")
+dofile("../scripts/inc/nesdbg.lua")
 
 local results = {}
 

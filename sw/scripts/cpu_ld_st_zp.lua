@@ -3,7 +3,7 @@
 -- Description: CPU test.  Directed tests for lda, ldx, ldy, sta, stx, sty instructions with the
 --              various zero page address modes.
 ----------------------------------------------------------------------------------------------------
-dofile("./scripts/inc/nesdbg.lua")
+dofile("../scripts/inc/nesdbg.lua")
 
 local results = {}
 

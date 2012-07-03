@@ -33,8 +33,8 @@
 #include "scriptmgr.h"
 #include "serialcomm.h"
 
-const TCHAR* ScriptMgr::__pScriptDir = _T("./scripts/");
-const TCHAR* ScriptMgr::__pAsmPrgDir = _T("./asm/prg/");
+const TCHAR* ScriptMgr::__pScriptDir = _T("../scripts/");
+const TCHAR* ScriptMgr::__pAsmPrgDir = _T("../asm/prg/");
 
 /***************************************************************************************************
 ** % Method:      ScriptMgr::ScriptMgr()

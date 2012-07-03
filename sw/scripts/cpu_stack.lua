@@ -2,7 +2,7 @@
 -- Script:      cpu_stack.lua
 -- Description: CPU test.  Directed test for PHA, PLA, PHP, and PLP instructions.
 ----------------------------------------------------------------------------------------------------
-dofile("./scripts/inc/nesdbg.lua")
+dofile("../scripts/inc/nesdbg.lua")
 
 local results = {}
 

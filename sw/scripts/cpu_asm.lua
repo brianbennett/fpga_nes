@@ -4,7 +4,7 @@
 --              for more detailed directed tests, especially since cpu_rand doesn't cover branches,
 --              jumps, or subroutines.
 ----------------------------------------------------------------------------------------------------
-dofile("./scripts/inc/nesdbg.lua")
+dofile("../scripts/inc/nesdbg.lua")
 
 local results = {}
 

@@ -3,7 +3,7 @@
 -- Description: CPU test.  Directed test for branch instructions (BCC, BCS, BEQ, BMI, BNE, BPL,
 --              BVC, BVS).
 ----------------------------------------------------------------------------------------------------
-dofile("./scripts/inc/nesdbg.lua")
+dofile("../scripts/inc/nesdbg.lua")
 
 local results = {}
 

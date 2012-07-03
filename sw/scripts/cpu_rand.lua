@@ -2,7 +2,7 @@
 -- Script:      cpu_rand.lua
 -- Description: CPU test.  Random tests.
 ----------------------------------------------------------------------------------------------------
-dofile("./scripts/inc/nesdbg.lua")
+dofile("../scripts/inc/nesdbg.lua")
 
 local numSubtests = 20
 local instructionsPerSubtest = 1000

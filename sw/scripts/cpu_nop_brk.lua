@@ -2,7 +2,7 @@
 -- Script:      cpu_nop_brk.lua
 -- Description: CPU test.  Sanity test for NOP instructions, BRK instructions, and querying the PC.
 ----------------------------------------------------------------------------------------------------
-dofile("./scripts/inc/nesdbg.lua")
+dofile("../scripts/inc/nesdbg.lua")
 
 local results = {}
 

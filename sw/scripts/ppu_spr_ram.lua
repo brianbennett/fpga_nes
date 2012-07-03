@@ -3,7 +3,7 @@
 -- Description: PPU test.  Directed test for reading/writing sprite ram through the PPU register
 --              interface.
 ----------------------------------------------------------------------------------------------------
-dofile("./scripts/inc/nesdbg.lua")
+dofile("../scripts/inc/nesdbg.lua")
 
 local results = {}
 

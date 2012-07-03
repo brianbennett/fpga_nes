@@ -3,7 +3,7 @@
 -- Description: Tests cpumc block (read/write CPU memory)
 ----------------------------------------------------------------------------------------------------
 
-dofile("./scripts/inc/nesdbg.lua")
+dofile("../scripts/inc/nesdbg.lua")
 
 local results = {}
 

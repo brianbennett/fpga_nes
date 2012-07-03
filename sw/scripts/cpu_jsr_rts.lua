@@ -2,7 +2,7 @@
 -- Script:      cpu_jsr_rts.lua
 -- Description: CPU test.  Directed test for JSR and RTS instructions.
 ----------------------------------------------------------------------------------------------------
-dofile("./scripts/inc/nesdbg.lua")
+dofile("../scripts/inc/nesdbg.lua")
 
 local results = {}
 

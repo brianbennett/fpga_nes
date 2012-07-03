@@ -3,7 +3,7 @@
 -- Description: CPU test.  Directed tests for lda and sta instructions with the various indirect
 --              address modes.
 ----------------------------------------------------------------------------------------------------
-dofile("./scripts/inc/nesdbg.lua")
+dofile("../scripts/inc/nesdbg.lua")
 
 local results = {}
 

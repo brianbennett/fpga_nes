@@ -3,7 +3,7 @@
 -- Description: Tests ppumc block (read/write PPU memory)
 ----------------------------------------------------------------------------------------------------
 
-dofile("./scripts/inc/nesdbg.lua")
+dofile("../scripts/inc/nesdbg.lua")
 
 local results = {}
 

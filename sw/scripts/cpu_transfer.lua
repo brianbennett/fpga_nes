@@ -3,7 +3,7 @@
 -- Description: CPU test.  Directed test for transfer instructions: TAX, TAY, TSX, TXA, TXS, and
 --              TYA.
 ----------------------------------------------------------------------------------------------------
-dofile("./scripts/inc/nesdbg.lua")
+dofile("../scripts/inc/nesdbg.lua")
 
 local results = {}
 

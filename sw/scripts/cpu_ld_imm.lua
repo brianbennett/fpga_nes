@@ -2,7 +2,7 @@
 -- Script:      cpu_ld_imm.lua
 -- Description: CPU test.  Directed test for LDA, LDX, LDY immediate ops.
 ----------------------------------------------------------------------------------------------------
-dofile("./scripts/inc/nesdbg.lua")
+dofile("../scripts/inc/nesdbg.lua")
 
 local results = {}
 

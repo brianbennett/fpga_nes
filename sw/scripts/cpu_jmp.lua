@@ -2,7 +2,7 @@
 -- Script:      cpu_jmp.lua
 -- Description: CPU test.  Directed test for JMP instructions.
 ----------------------------------------------------------------------------------------------------
-dofile("./scripts/inc/nesdbg.lua")
+dofile("../scripts/inc/nesdbg.lua")
 
 local results = {}
 

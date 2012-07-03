@@ -3,7 +3,7 @@
 -- Description: CPU test.  Directed test for INC, INX, INY, DEC, DEX, and DEY instructions.  Covers
 --              all address modes.
 ----------------------------------------------------------------------------------------------------
-dofile("./scripts/inc/nesdbg.lua")
+dofile("../scripts/inc/nesdbg.lua")
 
 local results = {}
 

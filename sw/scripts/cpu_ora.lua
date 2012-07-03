@@ -2,7 +2,7 @@
 -- Script:      cpu_ora.lua
 -- Description: CPU test.  Directed test for OR instruction.  Covers all address modes.
 ----------------------------------------------------------------------------------------------------
-dofile("./scripts/inc/nesdbg.lua")
+dofile("../scripts/inc/nesdbg.lua")
 
 local results = {}
 

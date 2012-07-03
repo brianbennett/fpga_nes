@@ -2,7 +2,7 @@
 -- Script:      cpu_bit.lua
 -- Description: CPU test.  Directed test for BIT instruction.  Covers all address modes.
 ----------------------------------------------------------------------------------------------------
-dofile("./scripts/inc/nesdbg.lua")
+dofile("../scripts/inc/nesdbg.lua")
 
 local results = {}
 
