@@ -22,58 +22,67 @@
 <filter task="xst" file="Xst" num="2677" type="warning"><arg index="1">q_cart_cfg_29</arg><arg index="2">hci_blk</arg></filter>
 <filter task="xst" file="Xst" num="2677" type="warning"><arg index="1">hci_blk/q_cart_cfg_31</arg><arg index="2">nes_top</arg></filter>
 <filter task="xst" file="Xst" num="1895" type="warning"><arg index="1">ppu_blk/palette_ram_0_148</arg><arg index="2">0</arg><arg index="3">nes_top</arg></filter>
+<filter task="map" file="PhysDesignRules" num="367" type="warning"><arg index="1">ppu_blk/ppu_spr_blk/Mram_m_stm4_RAMD_D1_O</arg></filter>
 <filter task="xst" file="HDLCompiler" num="413" type="warning"><arg index="1">17</arg><arg index="2">8</arg></filter>
 <filter task="xst" file="Xst" num="2677" type="warning"><arg index="1">q_cart_cfg_4</arg><arg index="2">hci_blk</arg></filter>
 <filter task="xst" file="Xst" num="1895" type="warning"><arg index="1">ppu_blk/palette_ram_0_120</arg><arg index="2">0</arg><arg index="3">nes_top</arg></filter>
+<filter task="par" file="Par" num="288" type="warning"><arg index="1">ppu_blk/ppu_spr_blk/Mram_m_stm4_RAMD_D1_O</arg></filter>
 <filter task="xst" file="Xst" num="2677" type="warning"><arg index="1">q_cart_cfg_34</arg><arg index="2">hci_blk</arg></filter>
 <filter task="xst" file="Xst" num="2677" type="warning"><arg index="1">hci_blk/q_cart_cfg_11</arg><arg index="2">nes_top</arg></filter>
 <filter task="xst" file="HDLCompiler" num="413" type="warning"><arg index="1">9</arg><arg index="2">8</arg></filter>
 <filter task="xst" file="HDLCompiler" num="413" type="warning"><arg index="1">8</arg><arg index="2">2</arg></filter>
-<filter task="xst" file="Xst" num="2677" type="warning"><arg index="1">q_cart_cfg_13</arg><arg index="2">hci_blk</arg></filter>
-<filter task="xst" file="Xst" num="2677" type="warning"><arg index="1">hci_blk/q_cart_cfg_23</arg><arg index="2">nes_top</arg></filter>
 <filter task="xst" file="Xst" num="2677" type="warning"><arg index="1">hci_blk/q_cart_cfg_4</arg><arg index="2">nes_top</arg></filter>
 <filter task="xst" file="Xst" num="1895" type="warning"><arg index="1">ppu_blk/palette_ram_0_172</arg><arg index="2">0</arg><arg index="3">nes_top</arg></filter>
+<filter task="xst" file="Xst" num="2677" type="warning"><arg index="1">q_cart_cfg_13</arg><arg index="2">hci_blk</arg></filter>
+<filter task="xst" file="Xst" num="2677" type="warning"><arg index="1">hci_blk/q_cart_cfg_23</arg><arg index="2">nes_top</arg></filter>
 <filter task="xst" file="Xst" num="2677" type="warning"><arg index="1">q_cart_cfg_28</arg><arg index="2">hci_blk</arg></filter>
 <filter task="xst" file="Xst" num="2677" type="warning"><arg index="1">q_cart_cfg_5</arg><arg index="2">hci_blk</arg></filter>
+<filter task="xst" file="Xst" num="1895" type="warning"><arg index="1">ppu_blk/palette_ram_0_122</arg><arg index="2">0</arg><arg index="3">nes_top</arg></filter>
 <filter task="xst" file="Xst" num="647" type="warning"><arg index="1">cfg_in&lt;32:17&gt;</arg></filter>
 <filter task="xst" file="Xst" num="2677" type="warning"><arg index="1">hci_blk/q_cart_cfg_upd</arg><arg index="2">nes_top</arg></filter>
-<filter task="xst" file="Xst" num="1895" type="warning"><arg index="1">ppu_blk/palette_ram_0_122</arg><arg index="2">0</arg><arg index="3">nes_top</arg></filter>
+<filter task="xst" file="Xst" num="1710" type="warning"><arg index="1">q_period_0</arg><arg index="2">0</arg><arg index="3">timer</arg></filter>
 <filter task="xst" file="Xst" num="1895" type="warning"><arg index="1">ppu_blk/palette_ram_0_169</arg><arg index="2">0</arg><arg index="3">nes_top</arg></filter>
 <filter task="xst" file="HDLCompiler" num="413" type="warning"><arg index="1">28</arg><arg index="2">8</arg></filter>
 <filter task="xst" file="Xst" num="2677" type="warning"><arg index="1">q_cart_cfg_12</arg><arg index="2">hci_blk</arg></filter>
 <filter task="xst" file="Xst" num="2677" type="warning"><arg index="1">hci_blk/q_cart_cfg_26</arg><arg index="2">nes_top</arg></filter>
 <filter task="xst" file="Xst" num="2677" type="warning"><arg index="1">hci_blk/q_cart_cfg_5</arg><arg index="2">nes_top</arg></filter>
 <filter task="xst" file="Xst" num="2677" type="warning"><arg index="1">q_cart_cfg_27</arg><arg index="2">hci_blk</arg></filter>
+<filter task="par" file="Par" num="288" type="warning"><arg index="1">ppu_blk/ppu_spr_blk/Mram_m_stm1_RAMD_D1_O</arg></filter>
 <filter task="xst" file="Xst" num="2677" type="warning"><arg index="1">hci_blk/q_cart_cfg_38</arg><arg index="2">nes_top</arg></filter>
 <filter task="xst" file="Xst" num="1895" type="warning"><arg index="1">ppu_blk/palette_ram_0_124</arg><arg index="2">0</arg><arg index="3">nes_top</arg></filter>
 <filter task="xst" file="Xst" num="2677" type="warning"><arg index="1">q_cart_cfg_32</arg><arg index="2">hci_blk</arg></filter>
-<filter task="xst" file="HDLCompiler" num="413" type="warning"><arg index="1">4</arg><arg index="2">2</arg></filter>
 <filter task="xst" file="Xst" num="2677" type="warning"><arg index="1">hci_blk/q_cart_cfg_18</arg><arg index="2">nes_top</arg></filter>
+<filter task="xst" file="HDLCompiler" num="413" type="warning"><arg index="1">4</arg><arg index="2">2</arg></filter>
 <filter task="xst" file="Xst" num="2677" type="warning"><arg index="1">q_cart_cfg_11</arg><arg index="2">hci_blk</arg></filter>
 <filter task="xst" file="Xst" num="2677" type="warning"><arg index="1">hci_blk/q_cart_cfg_29</arg><arg index="2">nes_top</arg></filter>
 <filter task="xst" file="Xst" num="2677" type="warning"><arg index="1">hci_blk/q_cart_cfg_2</arg><arg index="2">nes_top</arg></filter>
+<filter task="xst" file="Xst" num="647" type="warning"><arg index="1">vram_a_in&lt;7:0&gt;</arg></filter>
 <filter task="xst" file="Xst" num="2677" type="warning"><arg index="1">q_cart_cfg_26</arg><arg index="2">hci_blk</arg></filter>
 <filter task="xst" file="Xst" num="2677" type="warning"><arg index="1">hci_blk/q_cart_cfg_32</arg><arg index="2">nes_top</arg></filter>
-<filter task="xst" file="Xst" num="647" type="warning"><arg index="1">vram_a_in&lt;7:0&gt;</arg></filter>
 <filter task="xst" file="Xst" num="2677" type="warning"><arg index="1">hci_blk/q_cart_cfg_34</arg><arg index="2">nes_top</arg></filter>
 <filter task="xst" file="HDLCompiler" num="413" type="warning"><arg index="1">3</arg><arg index="2">1</arg></filter>
+<filter task="map" file="PhysDesignRules" num="367" type="warning"><arg index="1">ppu_blk/ppu_spr_blk/Mram_m_stm2_RAMD_D1_O</arg></filter>
 <filter task="xst" file="Xst" num="2677" type="warning"><arg index="1">q_cart_cfg_31</arg><arg index="2">hci_blk</arg></filter>
-<filter task="xst" file="HDLCompiler" num="413" type="warning"><arg index="1">2</arg><arg index="2">1</arg></filter>
 <filter task="xst" file="Xst" num="2677" type="warning"><arg index="1">hci_blk/q_cart_cfg_12</arg><arg index="2">nes_top</arg></filter>
+<filter task="xst" file="HDLCompiler" num="413" type="warning"><arg index="1">2</arg><arg index="2">1</arg></filter>
 <filter task="xst" file="Xst" num="1895" type="warning"><arg index="1">ppu_blk/palette_ram_0_145</arg><arg index="2">0</arg><arg index="3">nes_top</arg></filter>
-<filter task="xst" file="Xst" num="2677" type="warning"><arg index="1">q_cart_cfg_10</arg><arg index="2">hci_blk</arg></filter>
 <filter task="xst" file="Xst" num="2677" type="warning"><arg index="1">hci_blk/q_cart_cfg_14</arg><arg index="2">nes_top</arg></filter>
 <filter task="xst" file="Xst" num="2677" type="warning"><arg index="1">hci_blk/q_cart_cfg_3</arg><arg index="2">nes_top</arg></filter>
+<filter task="xst" file="Xst" num="2677" type="warning"><arg index="1">q_cart_cfg_10</arg><arg index="2">hci_blk</arg></filter>
 <filter task="xst" file="Xst" num="2677" type="warning"><arg index="1">hci_blk/q_cart_cfg_35</arg><arg index="2">nes_top</arg></filter>
-<filter task="xst" file="Xst" num="2677" type="warning"><arg index="1">q_cart_cfg_30</arg><arg index="2">hci_blk</arg></filter>
 <filter task="xst" file="Xst" num="1895" type="warning"><arg index="1">ppu_blk/palette_ram_0_100</arg><arg index="2">0</arg><arg index="3">nes_top</arg></filter>
+<filter task="xst" file="Xst" num="2677" type="warning"><arg index="1">q_cart_cfg_30</arg><arg index="2">hci_blk</arg></filter>
 <filter task="xst" file="Xst" num="2677" type="warning"><arg index="1">hci_blk/q_cart_cfg_15</arg><arg index="2">nes_top</arg></filter>
-<filter task="xst" file="Xst" num="2677" type="warning"><arg index="1">hci_blk/q_cart_cfg_27</arg><arg index="2">nes_top</arg></filter>
 <filter task="xst" file="Xst" num="1895" type="warning"><arg index="1">ppu_blk/palette_ram_0_147</arg><arg index="2">0</arg><arg index="3">nes_top</arg></filter>
+<filter task="xst" file="Xst" num="2677" type="warning"><arg index="1">hci_blk/q_cart_cfg_27</arg><arg index="2">nes_top</arg></filter>
 <filter task="xst" file="Xst" num="2677" type="warning"><arg index="1">q_cart_cfg_24</arg><arg index="2">hci_blk</arg></filter>
 <filter task="xst" file="Xst" num="2677" type="warning"><arg index="1">hci_blk/q_cart_cfg_30</arg><arg index="2">nes_top</arg></filter>
+<filter task="map" file="PhysDesignRules" num="367" type="warning"><arg index="1">ppu_blk/ppu_spr_blk/Mram_m_stm3_RAMD_D1_O</arg></filter>
 <filter task="xst" file="Xst" num="2677" type="warning"><arg index="1">q_cart_cfg_6</arg><arg index="2">hci_blk</arg></filter>
+<filter task="par" file="Par" num="288" type="warning"><arg index="1">ppu_blk/ppu_spr_blk/Mram_m_stm3_RAMD_D1_O</arg></filter>
 <filter task="xst" file="Xst" num="1895" type="warning"><arg index="1">ppu_blk/palette_ram_0_99</arg><arg index="2">0</arg><arg index="3">nes_top</arg></filter>
+<filter task="par" file="ParHelpers" num="361" type="warning"><arg index="1">4</arg></filter>
+<filter task="par" file="Par" num="283" type="warning"><arg index="1">4</arg></filter>
 <filter task="xst" file="HDLCompiler" num="413" type="warning"><arg index="1">10</arg><arg index="2">9</arg></filter>
 <filter task="xst" file="Xst" num="2677" type="warning"><arg index="1">hci_blk/q_cart_cfg_10</arg><arg index="2">nes_top</arg></filter>
 <filter task="xst" file="Xst" num="2677" type="warning"><arg index="1">q_cart_cfg_19</arg><arg index="2">hci_blk</arg></filter>
@@ -101,7 +110,9 @@
 <filter task="xst" file="Xst" num="2677" type="warning"><arg index="1">q_cart_cfg_21</arg><arg index="2">hci_blk</arg></filter>
 <filter task="xst" file="Xst" num="647" type="warning"><arg index="1">cfg_in&lt;39:34&gt;</arg></filter>
 <filter task="xst" file="Xst" num="2677" type="warning"><arg index="1">hci_blk/q_cart_cfg_39</arg><arg index="2">nes_top</arg></filter>
+<filter task="par" file="Par" num="288" type="warning"><arg index="1">ppu_blk/ppu_spr_blk/Mram_m_stm2_RAMD_D1_O</arg></filter>
 <filter task="xst" file="Xst" num="647" type="warning"><arg index="1">cfg_in&lt;15:0&gt;</arg></filter>
+<filter task="map" file="PhysDesignRules" num="367" type="warning"><arg index="1">ppu_blk/ppu_spr_blk/Mram_m_stm1_RAMD_D1_O</arg></filter>
 <filter task="xst" file="Xst" num="1895" type="warning"><arg index="1">ppu_blk/palette_ram_0_125</arg><arg index="2">0</arg><arg index="3">nes_top</arg></filter>
 <filter task="xst" file="HDLCompiler" num="413" type="warning"><arg index="1">21</arg><arg index="2">1</arg></filter>
 <filter task="xst" file="HDLCompiler" num="413" type="warning"><arg index="1">20</arg><arg index="2">8</arg></filter>
