@@ -67,29 +67,22 @@ assign envelope_generator_restart = wr_in && (a_in == 2'b11);
 // Timer
 //
 reg  [10:0] q_timer_period, d_timer_period;
-
-reg  [11:0] timer_period;
-reg         timer_period_wr;
 wire        timer_pulse;
 
 always @(posedge clk_in)
   begin
     if (rst_in)
-      begin
-        q_timer_period <= 11'h000;
-      end
+      q_timer_period <= 11'h000;
     else
-      begin
-        q_timer_period <= d_timer_period;
-      end
+      q_timer_period <= d_timer_period;
   end
 
 apu_div #(.PERIOD_BITS(12)) timer(
   .clk_in(clk_in),
   .rst_in(rst_in),
   .pulse_in(cpu_cycle_pulse_in),
-  .set_period_in(timer_period_wr),
-  .period_in(timer_period),
+  .reload_in(1'b0),
+  .period_in({ q_timer_period, 1'b0 }),
   .pulse_out(timer_pulse)
 );
 
@@ -166,7 +159,7 @@ assign d_sweep_reg    = (wr_in && (a_in == 2'b01)) ? d_in : q_sweep_reg;
 assign d_sweep_reload = (wr_in && (a_in == 2'b01)) ? 1'b1 :
                         (lc_pulse_in)              ? 1'b0 : q_sweep_reload;
 
-wire sweep_divider_period_wr;
+wire sweep_divider_reload;
 wire sweep_divider_pulse;
 
 reg        sweep_silence;
@@ -176,18 +169,15 @@ apu_div #(.PERIOD_BITS(3)) sweep_divider(
   .clk_in(clk_in),
   .rst_in(rst_in),
   .pulse_in(lc_pulse_in),
-  .set_period_in(sweep_divider_period_wr),
+  .reload_in(sweep_divider_reload),
   .period_in(q_sweep_reg[6:4]),
   .pulse_out(sweep_divider_pulse)
 );
 
-assign sweep_divider_period_wr = lc_pulse_in & q_sweep_reload;
+assign sweep_divider_reload = lc_pulse_in & q_sweep_reload;
 
 always @*
   begin
-    d_timer_period  = q_timer_period;
-    timer_period_wr = 1'b0;
-
     sweep_target_period =
       (!q_sweep_reg[3]) ? q_timer_period + (q_timer_period >> q_sweep_reg[2:0]) :
                           q_timer_period + ~(q_timer_period >> q_sweep_reg[2:0]) + CHANNEL;
@@ -195,22 +185,13 @@ always @*
     sweep_silence = (q_timer_period[10:3] == 8'h00) || sweep_target_period[11];
 
     if (wr_in && (a_in == 2'b10))
-      begin
-        d_timer_period  = { q_timer_period[10:8], d_in };
-        timer_period_wr = 1'b1;
-      end
+      d_timer_period = { q_timer_period[10:8], d_in };
     else if (wr_in && (a_in == 2'b11))
-      begin
-        d_timer_period  = { d_in[2:0], q_timer_period[7:0] };
-        timer_period_wr = 1'b1;
-      end
+      d_timer_period = { d_in[2:0], q_timer_period[7:0] };
     else if (sweep_divider_pulse && q_sweep_reg[7] && !sweep_silence && (q_sweep_reg[2:0] != 3'h0))
-      begin
-        d_timer_period  = sweep_target_period[10:0];
-        timer_period_wr = 1'b1;
-      end
-
-    timer_period = { d_timer_period, 1'b0 };
+      d_timer_period = sweep_target_period[10:0];
+    else
+      d_timer_period = q_timer_period;
   end
 
 //

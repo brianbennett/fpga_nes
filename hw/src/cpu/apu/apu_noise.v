@@ -40,60 +40,9 @@ module apu_noise
   output wire       active_out           // noise channel active (length counter > 0)
 );
 
-reg  [14:0] q_lfsr;
-wire [14:0] d_lfsr;
-reg         q_mode;
-wire        d_mode;
-reg         q_length_counter_halt;
-wire        d_length_counter_halt;
-
-wire [11:0] timer_period;
-wire        timer_period_wr;
-wire        timer_pulse;
-
-apu_div #(.PERIOD_BITS(12)) timer(
-  .clk_in(clk_in),
-  .rst_in(rst_in),
-  .pulse_in(apu_cycle_pulse_in),
-  .set_period_in(timer_period_wr),
-  .period_in(timer_period),
-  .pulse_out(timer_pulse)
-);
-
-assign timer_period_wr = wr_in && (a_in == 2'b10);
-assign timer_period = (d_in[3:0] == 4'h0) ? 12'h004 :
-                      (d_in[3:0] == 4'h1) ? 12'h008 :
-                      (d_in[3:0] == 4'h2) ? 12'h010 :
-                      (d_in[3:0] == 4'h3) ? 12'h020 :
-                      (d_in[3:0] == 4'h4) ? 12'h040 :
-                      (d_in[3:0] == 4'h5) ? 12'h060 :
-                      (d_in[3:0] == 4'h6) ? 12'h080 :
-                      (d_in[3:0] == 4'h7) ? 12'h0A0 :
-                      (d_in[3:0] == 4'h8) ? 12'h0CA :
-                      (d_in[3:0] == 4'h9) ? 12'h0FE :
-                      (d_in[3:0] == 4'hA) ? 12'h17C :
-                      (d_in[3:0] == 4'hB) ? 12'h1FC :
-                      (d_in[3:0] == 4'hC) ? 12'h2FA :
-                      (d_in[3:0] == 4'hD) ? 12'h3F8 :
-                      (d_in[3:0] == 4'hE) ? 12'h7F2 :
-                                            12'hFE4;
-
-wire length_counter_wr;
-wire length_counter_en;
-
-apu_length_counter length_counter(
-  .clk_in(clk_in),
-  .rst_in(rst_in),
-  .en_in(en_in),
-  .halt_in(q_length_counter_halt),
-  .length_pulse_in(lc_pulse_in),
-  .length_in(d_in[7:3]),
-  .length_wr_in(length_counter_wr),
-  .en_out(length_counter_en)
-);
-
-assign length_counter_wr = wr_in && (a_in == 2'b11);
-
+//
+// Envelope
+//
 wire       envelope_generator_wr;
 wire       envelope_generator_restart;
 wire [3:0] envelope_generator_out;
@@ -111,28 +60,110 @@ apu_envelope_generator envelope_generator(
 assign envelope_generator_wr      = wr_in && (a_in == 2'b00);
 assign envelope_generator_restart = wr_in && (a_in == 2'b11);
 
+//
+// Timer
+//
+reg  [10:0] q_timer_period;
+wire [10:0] d_timer_period;
+wire        timer_pulse;
+
+always @(posedge clk_in)
+  begin
+    if (rst_in)
+      q_timer_period <= 11'h000;
+    else
+      q_timer_period <= d_timer_period;
+  end
+
+apu_div #(.PERIOD_BITS(12)) timer(
+  .clk_in(clk_in),
+  .rst_in(rst_in),
+  .pulse_in(apu_cycle_pulse_in),
+  .reload_in(1'b0),
+  .period_in({ q_timer_period, 1'b0 }),
+  .pulse_out(timer_pulse)
+);
+
+assign d_timer_period = (!wr_in || (a_in != 2'b10)) ? q_timer_period :
+                        (d_in[3:0] == 4'h0)         ? 11'h002 :
+                        (d_in[3:0] == 4'h1)         ? 11'h004 :
+                        (d_in[3:0] == 4'h2)         ? 11'h008 :
+                        (d_in[3:0] == 4'h3)         ? 11'h010 :
+                        (d_in[3:0] == 4'h4)         ? 11'h020 :
+                        (d_in[3:0] == 4'h5)         ? 11'h030 :
+                        (d_in[3:0] == 4'h6)         ? 11'h040 :
+                        (d_in[3:0] == 4'h7)         ? 11'h050 :
+                        (d_in[3:0] == 4'h8)         ? 11'h065 :
+                        (d_in[3:0] == 4'h9)         ? 11'h07F :
+                        (d_in[3:0] == 4'hA)         ? 11'h0BE :
+                        (d_in[3:0] == 4'hB)         ? 11'h0FE :
+                        (d_in[3:0] == 4'hC)         ? 11'h17D :
+                        (d_in[3:0] == 4'hD)         ? 11'h1FC :
+                        (d_in[3:0] == 4'hE)         ? 11'h3F9 :
+                                                      11'h7F2;
+
+//
+// Shift Register
+//
+reg  [14:0] q_lfsr;
+wire [14:0] d_lfsr;
+reg         q_mode;
+wire        d_mode;
+
 always @(posedge clk_in)
   begin
     if (rst_in)
       begin
-        q_lfsr                <= 15'h0001;
-        q_mode                <= 1'b0;
-        q_length_counter_halt <= 1'b0;
+        q_lfsr <= 15'h0001;
+        q_mode <= 1'b0;
       end
     else
       begin
-        q_lfsr                <= d_lfsr;
-        q_mode                <= d_mode;
-        q_length_counter_halt <= d_length_counter_halt;
+        q_lfsr <= d_lfsr;
+        q_mode <= d_mode;
       end
   end
 
 assign d_lfsr = (timer_pulse) ? { q_lfsr[0] ^ ((q_mode) ? q_lfsr[6] : q_lfsr[1]), q_lfsr[14:1] } :
                                 q_lfsr;
 
-assign d_mode                = (wr_in && (a_in == 2'b10)) ? d_in[7]   : q_mode;
-assign d_length_counter_halt = (wr_in && (a_in == 2'b00)) ? d_in[5]   : q_length_counter_halt;
+assign d_mode = (wr_in && (a_in == 2'b10)) ? d_in[7] : q_mode;
 
+//
+// Length Counter
+//
+reg  q_length_counter_halt;
+wire d_length_counter_halt;
+
+always @(posedge clk_in)
+  begin
+    if (rst_in)
+      q_length_counter_halt <= 1'b0;
+    else
+      q_length_counter_halt <= d_length_counter_halt;
+  end
+
+assign d_length_counter_halt = (wr_in && (a_in == 2'b00)) ? d_in[5] : q_length_counter_halt;
+
+wire length_counter_wr;
+wire length_counter_en;
+
+apu_length_counter length_counter(
+  .clk_in(clk_in),
+  .rst_in(rst_in),
+  .en_in(en_in),
+  .halt_in(q_length_counter_halt),
+  .length_pulse_in(lc_pulse_in),
+  .length_in(d_in[7:3]),
+  .length_wr_in(length_counter_wr),
+  .en_out(length_counter_en)
+);
+
+assign length_counter_wr = wr_in && (a_in == 2'b11);
+
+//
+// Output
+//
 assign noise_out  = (q_lfsr[0] && length_counter_en) ? envelope_generator_out : 4'h0;
 assign active_out = length_counter_en;
 

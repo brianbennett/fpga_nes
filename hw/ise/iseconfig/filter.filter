@@ -22,7 +22,7 @@
 <filter task="xst" file="Xst" num="2677" type="warning"><arg index="1">q_cart_cfg_29</arg><arg index="2">hci_blk</arg></filter>
 <filter task="xst" file="Xst" num="2677" type="warning"><arg index="1">hci_blk/q_cart_cfg_31</arg><arg index="2">nes_top</arg></filter>
 <filter task="xst" file="Xst" num="1895" type="warning"><arg index="1">ppu_blk/palette_ram_0_148</arg><arg index="2">0</arg><arg index="3">nes_top</arg></filter>
-<filter task="map" file="PhysDesignRules" num="367" type="warning"><arg index="1">ppu_blk/ppu_spr_blk/Mram_m_stm4_RAMD_D1_O</arg></filter>
+<filter task="bitgen" file="PhysDesignRules" num="367" type="warning"><arg index="1">ppu_blk/ppu_spr_blk/Mram_m_stm4_RAMD_D1_O</arg></filter>
 <filter task="xst" file="HDLCompiler" num="413" type="warning"><arg index="1">17</arg><arg index="2">8</arg></filter>
 <filter task="xst" file="Xst" num="2677" type="warning"><arg index="1">q_cart_cfg_4</arg><arg index="2">hci_blk</arg></filter>
 <filter task="xst" file="Xst" num="1895" type="warning"><arg index="1">ppu_blk/palette_ram_0_120</arg><arg index="2">0</arg><arg index="3">nes_top</arg></filter>
@@ -61,7 +61,7 @@
 <filter task="xst" file="Xst" num="2677" type="warning"><arg index="1">hci_blk/q_cart_cfg_32</arg><arg index="2">nes_top</arg></filter>
 <filter task="xst" file="Xst" num="2677" type="warning"><arg index="1">hci_blk/q_cart_cfg_34</arg><arg index="2">nes_top</arg></filter>
 <filter task="xst" file="HDLCompiler" num="413" type="warning"><arg index="1">3</arg><arg index="2">1</arg></filter>
-<filter task="map" file="PhysDesignRules" num="367" type="warning"><arg index="1">ppu_blk/ppu_spr_blk/Mram_m_stm2_RAMD_D1_O</arg></filter>
+<filter task="bitgen" file="PhysDesignRules" num="367" type="warning"><arg index="1">ppu_blk/ppu_spr_blk/Mram_m_stm2_RAMD_D1_O</arg></filter>
 <filter task="xst" file="Xst" num="2677" type="warning"><arg index="1">q_cart_cfg_31</arg><arg index="2">hci_blk</arg></filter>
 <filter task="xst" file="Xst" num="2677" type="warning"><arg index="1">hci_blk/q_cart_cfg_12</arg><arg index="2">nes_top</arg></filter>
 <filter task="xst" file="HDLCompiler" num="413" type="warning"><arg index="1">2</arg><arg index="2">1</arg></filter>
@@ -77,7 +77,7 @@
 <filter task="xst" file="Xst" num="2677" type="warning"><arg index="1">hci_blk/q_cart_cfg_27</arg><arg index="2">nes_top</arg></filter>
 <filter task="xst" file="Xst" num="2677" type="warning"><arg index="1">q_cart_cfg_24</arg><arg index="2">hci_blk</arg></filter>
 <filter task="xst" file="Xst" num="2677" type="warning"><arg index="1">hci_blk/q_cart_cfg_30</arg><arg index="2">nes_top</arg></filter>
-<filter task="map" file="PhysDesignRules" num="367" type="warning"><arg index="1">ppu_blk/ppu_spr_blk/Mram_m_stm3_RAMD_D1_O</arg></filter>
+<filter task="bitgen" file="PhysDesignRules" num="367" type="warning"><arg index="1">ppu_blk/ppu_spr_blk/Mram_m_stm3_RAMD_D1_O</arg></filter>
 <filter task="xst" file="Xst" num="2677" type="warning"><arg index="1">q_cart_cfg_6</arg><arg index="2">hci_blk</arg></filter>
 <filter task="par" file="Par" num="288" type="warning"><arg index="1">ppu_blk/ppu_spr_blk/Mram_m_stm3_RAMD_D1_O</arg></filter>
 <filter task="xst" file="Xst" num="1895" type="warning"><arg index="1">ppu_blk/palette_ram_0_99</arg><arg index="2">0</arg><arg index="3">nes_top</arg></filter>
@@ -112,7 +112,7 @@
 <filter task="xst" file="Xst" num="2677" type="warning"><arg index="1">hci_blk/q_cart_cfg_39</arg><arg index="2">nes_top</arg></filter>
 <filter task="par" file="Par" num="288" type="warning"><arg index="1">ppu_blk/ppu_spr_blk/Mram_m_stm2_RAMD_D1_O</arg></filter>
 <filter task="xst" file="Xst" num="647" type="warning"><arg index="1">cfg_in&lt;15:0&gt;</arg></filter>
-<filter task="map" file="PhysDesignRules" num="367" type="warning"><arg index="1">ppu_blk/ppu_spr_blk/Mram_m_stm1_RAMD_D1_O</arg></filter>
+<filter task="bitgen" file="PhysDesignRules" num="367" type="warning"><arg index="1">ppu_blk/ppu_spr_blk/Mram_m_stm1_RAMD_D1_O</arg></filter>
 <filter task="xst" file="Xst" num="1895" type="warning"><arg index="1">ppu_blk/palette_ram_0_125</arg><arg index="2">0</arg><arg index="3">nes_top</arg></filter>
 <filter task="xst" file="HDLCompiler" num="413" type="warning"><arg index="1">21</arg><arg index="2">1</arg></filter>
 <filter task="xst" file="HDLCompiler" num="413" type="warning"><arg index="1">20</arg><arg index="2">8</arg></filter>

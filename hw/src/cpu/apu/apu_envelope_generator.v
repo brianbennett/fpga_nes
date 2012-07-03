@@ -60,14 +60,14 @@ always @(posedge clk_in)
   end
 
 reg  divider_pulse_in;
-reg  divider_set_period;
+reg  divider_reload;
 wire divider_pulse_out;
 
 apu_div #(.PERIOD_BITS(4)) divider(
   .clk_in(clk_in),
   .rst_in(rst_in),
   .pulse_in(divider_pulse_in),
-  .set_period_in(divider_set_period),
+  .reload_in(divider_reload),
   .period_in(q_reg[3:0]),
   .pulse_out(divider_pulse_out)
 );
@@ -77,14 +77,15 @@ always @*
     d_cnt        = q_cnt;
     d_start_flag = q_start_flag;
 
-    divider_pulse_in   = 1'b0;
-    divider_set_period = 1'b0;
+    divider_pulse_in = 1'b0;
+    divider_reload   = 1'b0;
 
     // When the divider outputs a clock, one of two actions occurs: If the counter is non-zero, it
     // is decremented, otherwise if the loop flag is set, the counter is loaded with 15.
     if (divider_pulse_out)
       begin
-        divider_set_period = 1'b1;
+        divider_reload = 1'b1;
+
         if (q_cnt != 4'h0)
           d_cnt = q_cnt - 4'h1;
         else if (q_reg[5])
@@ -102,9 +103,8 @@ always @*
           end
         else
           begin
-            d_start_flag       = 1'b0;
-            d_cnt              = 4'hF;
-            divider_set_period = 1'b1;
+            d_start_flag = 1'b0;
+            d_cnt        = 4'hF;
           end
       end
 

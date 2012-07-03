@@ -90,11 +90,12 @@ assign d_noise_en    = (~r_nw_in && (a_in == STATUS_MMR_ADDR)) ? d_in[3] : q_noi
 assign cpu_cycle_pulse = (q_clk_cnt == 6'h00);
 
 
-apu_div_const #(.PERIOD_BITS(1),
-                .PERIOD(1)) apu_div_gen_apu_pulse(
+apu_div #(.PERIOD_BITS(1)) apu_pulse_gen(
   .clk_in(clk_in),
   .rst_in(rst_in),
   .pulse_in(cpu_cycle_pulse),
+  .reload_in(1'b0),
+  .period_in(1'b1),
   .pulse_out(apu_cycle_pulse)
 );
 
