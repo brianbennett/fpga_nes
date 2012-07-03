@@ -94,12 +94,8 @@ wire [3:0] sequencer_out;
 reg  [1:0] q_duty;
 wire [1:0] d_duty;
 
-reg  [7:0] q_seq_12_5;
-wire [7:0] d_seq_12_5;
-reg  [7:0] q_seq_25;
-wire [7:0] d_seq_25;
-reg  [7:0] q_seq_50;
-wire [7:0] d_seq_50;
+reg  [2:0] q_sequencer_cnt;
+wire [2:0] d_sequencer_cnt;
 
 wire       seq_bit;
 
@@ -107,31 +103,24 @@ always @(posedge clk_in)
   begin
     if (rst_in)
       begin
-        q_duty     <= 2'h0;
-        q_seq_12_5 <= 8'h40;
-        q_seq_25   <= 8'h60;
-        q_seq_50   <= 8'h78;
+        q_duty          <= 2'h0;
+        q_sequencer_cnt <= 3'h0;
       end
     else
       begin
-        q_duty     <= d_duty;
-        q_seq_12_5 <= d_seq_12_5;
-        q_seq_25   <= d_seq_25;
-        q_seq_50   <= d_seq_50;
+        q_duty          <= d_duty;
+        q_sequencer_cnt <= d_sequencer_cnt;
       end
   end
 
-assign d_duty        = (wr_in && (a_in == 2'b00)) ? d_in[7:6] : q_duty;
+assign d_duty          = (wr_in && (a_in == 2'b00)) ? d_in[7:6] : q_duty;
+assign d_sequencer_cnt = (timer_pulse) ? q_sequencer_cnt - 3'h1 : q_sequencer_cnt;
 
-assign d_seq_12_5    = (timer_pulse) ? { q_seq_12_5[0], q_seq_12_5[7:1] } : q_seq_12_5;
-assign d_seq_25      = (timer_pulse) ? { q_seq_25[0],   q_seq_25[7:1] }   : q_seq_25;
-assign d_seq_50      = (timer_pulse) ? { q_seq_50[0],   q_seq_50[7:1] }   : q_seq_50;
+assign seq_bit         = (q_duty == 2'h0) ? &q_sequencer_cnt[2:0] :
+                         (q_duty == 2'h1) ? &q_sequencer_cnt[2:1] :
+                         (q_duty == 2'h2) ? q_sequencer_cnt[2]    : ~&q_sequencer_cnt[2:1];
 
-assign seq_bit       = (q_duty == 2'h0) ? q_seq_12_5[0] :
-                       (q_duty == 2'h1) ? q_seq_25[0]   :
-                       (q_duty == 2'h2) ? q_seq_50[0]   : ~q_seq_25[0];
-
-assign sequencer_out = (seq_bit) ? envelope_generator_out : 4'h0;
+assign sequencer_out   = (seq_bit) ? envelope_generator_out : 4'h0;
 
 //
 // Sweep
