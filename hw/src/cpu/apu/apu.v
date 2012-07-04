@@ -107,6 +107,7 @@ wire frame_counter_mode_wr;
 apu_frame_counter apu_frame_counter_blk(
   .clk_in(clk_in),
   .rst_in(rst_in),
+  .cpu_cycle_pulse_in(cpu_cycle_pulse),
   .apu_cycle_pulse_in(apu_cycle_pulse),
   .mode_in(d_in[7:6]),
   .mode_wr_in(frame_counter_mode_wr),

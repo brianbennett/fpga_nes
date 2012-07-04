@@ -29,6 +29,7 @@ module apu_frame_counter
 (
   input  wire       clk_in,              // system clock signal
   input  wire       rst_in,              // reset signal
+  input  wire       cpu_cycle_pulse_in,  // 1 clk pulse on every cpu cycle
   input  wire       apu_cycle_pulse_in,  // 1 clk pulse on every apu cycle
   input  wire [1:0] mode_in,             // mode ([0] = IRQ inhibit, [1] = sequence mode)
   input  wire       mode_wr_in,          // update mode
@@ -88,14 +89,17 @@ always @*
 
             d_apu_cycle_cnt = 15'h0000;
           end
-        else if (q_seq_mode && (q_apu_cycle_cnt == 15'h48d0))
+        else if ((q_apu_cycle_cnt == 15'h48d0))
           begin
-            e_pulse_out = 1'b1;
-            l_pulse_out = 1'b1;
+            e_pulse_out = q_seq_mode;
+            l_pulse_out = q_seq_mode;
 
             d_apu_cycle_cnt = 15'h0000;
           end
       end
+
+      if (cpu_cycle_pulse_in && mode_wr_in)
+        d_apu_cycle_cnt = 15'h48d0;
   end
 
 endmodule
