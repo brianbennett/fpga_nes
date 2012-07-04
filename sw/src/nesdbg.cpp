@@ -247,9 +247,9 @@ VOID NesDbg::LoadRom()
     if (success)
     {
         // Issue a debug break.
-        DbgBrkPacket dbgBrkPacket;
-        g_pNesDbg->GetSerialComm()->SendData(dbgBrkPacket.PacketData(),
-                                                dbgBrkPacket.SizeInBytes());
+        DbgHltPacket dbgHltPacket;
+        g_pNesDbg->GetSerialComm()->SendData(dbgHltPacket.PacketData(),
+                                             dbgHltPacket.SizeInBytes());
 
         PpuDisablePacket ppuDisablePacket;
         g_pNesDbg->GetSerialComm()->SendData(ppuDisablePacket.PacketData(),

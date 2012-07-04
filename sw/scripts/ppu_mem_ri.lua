@@ -34,7 +34,7 @@ local testTbl =
              Ops.LDA_ABS, 0x07, 0x20,
 
              Ops.STA_ZP, 0x00,
-             Ops.BRK },
+             Ops.HLT },
     cpuAddrs = { 0x0000, },
     cpuVals  = {   0x19, }
   },
@@ -82,7 +82,7 @@ local testTbl =
              Ops.LDA_ABS, 0x07, 0x20,
              Ops.STA_ZP, 0x04,
 
-             Ops.BRK },
+             Ops.HLT },
     cpuAddrs = { 0x0000, 0x0001, 0x0002, 0x0003, 0x0004, },
     cpuVals  = {   0x29,   0x03,   0x11,   0x39,   0x0E, }
   },
@@ -107,7 +107,7 @@ local testTbl =
              Ops.LDA_ABS, 0x07, 0x20,
 
              Ops.STA_ZP, 0x00,
-             Ops.BRK },
+             Ops.HLT },
     cpuAddrs = { 0x0000, },
     cpuVals  = {   0xE9, }
   },
@@ -157,7 +157,7 @@ local testTbl =
              Ops.LDA_ABS, 0x07, 0x20,
              Ops.STA_ZP, 0x04,
 
-             Ops.BRK },
+             Ops.HLT },
     cpuAddrs = { 0x0000, 0x0001, 0x0002, 0x0003, 0x0004, },
     cpuVals  = {   0xF1,   0x44,   0x41,   0xC9,   0x12, }
   },
@@ -184,7 +184,7 @@ local testTbl =
              Ops.LDA_ABS, 0x07, 0x20,
 
              Ops.STA_ZP, 0x00,
-             Ops.BRK },
+             Ops.HLT },
     cpuAddrs = { 0x0000, },
     cpuVals  = {   0x30, }
   },
@@ -209,7 +209,7 @@ local testTbl =
              Ops.LDA_ABS, 0x07, 0x20,
 
              Ops.STA_ZP, 0x00,
-             Ops.BRK },
+             Ops.HLT },
     cpuAddrs = { 0x0000, },
     cpuVals  = {   0x55, }
   },
@@ -259,7 +259,7 @@ local testTbl =
              Ops.LDA_ABS, 0x07, 0x20,
              Ops.STA_ZP, 0x04,
 
-             Ops.BRK },
+             Ops.HLT },
     cpuAddrs = { 0x0000, 0x0001, 0x0002, 0x0003, 0x0004, },
     cpuVals  = {   0xE1,   0x34,   0x31,   0xB9,   0x02, }
   },  
@@ -273,7 +273,7 @@ for subTestIdx = 1, #testTbl do
   SetPc(startPc)
 
   nesdbg.DbgRun()
-  nesdbg.WaitForBrk()
+  nesdbg.WaitForHlt()
 
   results[subTestIdx] = ScriptResult.Pass
   

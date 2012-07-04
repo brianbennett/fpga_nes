@@ -114,7 +114,7 @@ always @(posedge clk)
   begin
     if (rst)
       begin
-        q_state            <= S_DISABLED;
+        q_state            <= S_DECODE;
         q_decode_cnt       <= 0;
         q_execute_cnt      <= 0;
         q_addr             <= 16'h0000;

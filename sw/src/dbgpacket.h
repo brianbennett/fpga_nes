@@ -35,11 +35,11 @@ enum DbgPacketOpCode
     DbgPacketOpCodeEcho              = 0x00, // echo packet body back to debugger
     DbgPacketOpCodeCpuMemRd          = 0x01, // read CPU memory
     DbgPacketOpCodeCpuMemWr          = 0x02, // write CPU memory
-    DbgPacketOpCodeDbgBrk            = 0x03, // debugger break (stop execution)
+    DbgPacketOpCodeDbgHlt            = 0x03, // debugger break (stop execution)
     DbgPacketOpCodeDbgRun            = 0x04, // debugger run (resume execution)
     DbgPacketOpCodeCpuRegRd          = 0x05, // read CPU register
     DbgPacketOpCodeCpuRegWr          = 0x06, // read CPU register
-    DbgPacketOpCodeQueryDbgBrk       = 0x07, // query if we are currently in the dbg brk state
+    DbgPacketOpCodeQueryHlt          = 0x07, // query if the cpu is currently halted
     DbgPacketOpCodeQueryErrCode      = 0x08, // query NES error code
     DbgPacketOpCodePpuMemRd          = 0x09, // read PPU memory
     DbgPacketOpCodePpuMemWr          = 0x0A, // write PPU memory
@@ -142,21 +142,21 @@ private:
 };
 
 /***************************************************************************************************
-** % Class:       DbgBrkPacket
-*  % Description: Debug break debug packet.
+** % Class:       DbgHltPacket
+*  % Description: Debug halt packet.
 ***************************************************************************************************/
-class DbgBrkPacket : public DbgPacket
+class DbgHltPacket : public DbgPacket
 {
 public:
-    DbgBrkPacket();
-    virtual ~DbgBrkPacket() {};
+    DbgHltPacket();
+    virtual ~DbgHltPacket() {};
 
     virtual UINT SizeInBytes() const { return 1; }
     virtual UINT ReturnBytesExpected() const { return 0; }
 
 private:
-    DbgBrkPacket& operator=(const DbgBrkPacket&);
-    DbgBrkPacket(const DbgBrkPacket&);
+    DbgHltPacket& operator=(const DbgHltPacket&);
+    DbgHltPacket(const DbgHltPacket&);
 };
 
 /***************************************************************************************************
@@ -216,21 +216,21 @@ private:
 };
 
 /***************************************************************************************************
-** % Class:       QueryDbgBrkPacket
-*  % Description: Debug packet to query the current FPGA state (running or in debug break).
+** % Class:       QueryBltPacket
+*  % Description: Debug packet to query the current cpu state (running or halted).
 ***************************************************************************************************/
-class QueryDbgBrkPacket : public DbgPacket
+class QueryHltPacket : public DbgPacket
 {
 public:
-    QueryDbgBrkPacket();
-    virtual ~QueryDbgBrkPacket() {};
+    QueryHltPacket();
+    virtual ~QueryHltPacket() {};
 
     virtual UINT SizeInBytes() const;
     virtual UINT ReturnBytesExpected() const;
 
 private:
-    QueryDbgBrkPacket& operator=(const QueryDbgBrkPacket&);
-    QueryDbgBrkPacket(const QueryDbgBrkPacket&);
+    QueryHltPacket& operator=(const QueryHltPacket&);
+    QueryHltPacket(const QueryHltPacket&);
 };
 
 /***************************************************************************************************

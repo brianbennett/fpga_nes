@@ -1,6 +1,6 @@
 ----------------------------------------------------------------------------------------------------
--- Script:      cpu_nop_brk.lua
--- Description: CPU test.  Sanity test for NOP instructions, BRK instructions, and querying the PC.
+-- Script:      cpu_nop_hlt.lua
+-- Description: CPU test.  Sanity test for NOP instructions, HLT instructions, and querying the PC.
 ----------------------------------------------------------------------------------------------------
 dofile("../scripts/inc/nesdbg.lua")
 
@@ -9,27 +9,27 @@ local results = {}
 local testTbl =
 {
   -- Test 1
-  { code     = { Ops.BRK },
+  { code     = { Ops.HLT },
     pcOffset = 1 },
 
   -- Test 2
-  { code     = { Ops.NOP, Ops.BRK },
+  { code     = { Ops.NOP, Ops.HLT },
     pcOffset = 2 },
 
   -- Test 3
-  { code     = { Ops.NOP, Ops.NOP, Ops.BRK },
+  { code     = { Ops.NOP, Ops.NOP, Ops.HLT },
     pcOffset = 3 },
 
   -- Test 4
-  { code     = { Ops.NOP, Ops.NOP, Ops.BRK, Ops.NOP, Ops.NOP },
+  { code     = { Ops.NOP, Ops.NOP, Ops.HLT, Ops.NOP, Ops.NOP },
     pcOffset = 3 },
 
   -- Test 5
-  { code     = { Ops.NOP, Ops.NOP, Ops.NOP, Ops.NOP, Ops.NOP, Ops.NOP, Ops.NOP, Ops.BRK },
+  { code     = { Ops.NOP, Ops.NOP, Ops.NOP, Ops.NOP, Ops.NOP, Ops.NOP, Ops.NOP, Ops.HLT },
     pcOffset = 8 },
 
   -- Test 6
-  { code     = { Ops.NOP, Ops.NOP, Ops.NOP, Ops.NOP, Ops.NOP, Ops.NOP, Ops.NOP, Ops.BRK,
+  { code     = { Ops.NOP, Ops.NOP, Ops.NOP, Ops.NOP, Ops.NOP, Ops.NOP, Ops.NOP, Ops.HLT,
                  Ops.NOP, Ops.NOP, Ops.NOP, Ops.NOP, Ops.NOP, Ops.NOP, Ops.NOP, Ops.NOP },
     pcOffset = 8 },
 
@@ -39,9 +39,9 @@ local testTbl =
                  Ops.NOP, Ops.NOP, Ops.NOP, Ops.NOP, Ops.NOP, Ops.NOP, Ops.NOP, Ops.NOP,
                  Ops.NOP, Ops.NOP, Ops.NOP, Ops.NOP, Ops.NOP, Ops.NOP, Ops.NOP, Ops.NOP,
                  Ops.NOP, Ops.NOP, Ops.NOP, Ops.NOP, Ops.NOP, Ops.NOP, Ops.NOP, Ops.NOP,
-                 Ops.NOP, Ops.NOP, Ops.NOP, Ops.NOP, Ops.NOP, Ops.NOP, Ops.NOP, Ops.BRK,
-                 Ops.BRK, Ops.NOP, Ops.NOP, Ops.NOP, Ops.NOP, Ops.NOP, Ops.NOP, Ops.NOP,
-                 Ops.NOP, Ops.NOP, Ops.NOP, Ops.NOP, Ops.NOP, Ops.NOP, Ops.NOP, Ops.BRK },
+                 Ops.NOP, Ops.NOP, Ops.NOP, Ops.NOP, Ops.NOP, Ops.NOP, Ops.NOP, Ops.HLT,
+                 Ops.HLT, Ops.NOP, Ops.NOP, Ops.NOP, Ops.NOP, Ops.NOP, Ops.NOP, Ops.NOP,
+                 Ops.NOP, Ops.NOP, Ops.NOP, Ops.NOP, Ops.NOP, Ops.NOP, Ops.NOP, Ops.HLT },
     pcOffset = 48 },
 
   -- Test 7
@@ -101,7 +101,7 @@ local testTbl =
                  Ops.NOP, Ops.NOP, Ops.NOP, Ops.NOP, Ops.NOP, Ops.NOP, Ops.NOP, Ops.NOP,
                  Ops.NOP, Ops.NOP, Ops.NOP, Ops.NOP, Ops.NOP, Ops.NOP, Ops.NOP, Ops.NOP,
                  Ops.NOP, Ops.NOP, Ops.NOP, Ops.NOP, Ops.NOP, Ops.NOP, Ops.NOP, Ops.NOP,
-                 Ops.NOP, Ops.NOP, Ops.NOP, Ops.NOP, Ops.NOP, Ops.NOP, Ops.NOP, Ops.BRK },
+                 Ops.NOP, Ops.NOP, Ops.NOP, Ops.NOP, Ops.NOP, Ops.NOP, Ops.NOP, Ops.HLT },
     pcOffset = 456 },
 }
 
@@ -113,7 +113,7 @@ for subTestIdx = 1, #testTbl do
   nesdbg.CpuMemWr(startPc, #curTest.code, curTest.code)
 
   nesdbg.DbgRun()
-  nesdbg.WaitForBrk()
+  nesdbg.WaitForHlt()
 
   local endPc = GetPc()
 

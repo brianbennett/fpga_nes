@@ -15,7 +15,7 @@ local testTbl =
               Ops.LDX_IMM, 61,
               Ops.LDY_IMM, 103,
               Ops.STA_ZP,  48,
-              Ops.BRK },
+              Ops.HLT },
     aVal  = 7,
     xVal  = 61,
     yVal  = 103,
@@ -29,7 +29,7 @@ local testTbl =
   {
     code  = { Ops.LDX_IMM, 166,
               Ops.STX_ZP,  19,
-              Ops.BRK },
+              Ops.HLT },
     aVal  = 7,
     xVal  = 166,
     yVal  = 103,
@@ -43,7 +43,7 @@ local testTbl =
   {
     code  = { Ops.LDY_IMM, 45,
               Ops.STY_ZP,  136,
-              Ops.BRK },
+              Ops.HLT },
     aVal  = 7,
     xVal  = 166,
     yVal  = 45,
@@ -56,7 +56,7 @@ local testTbl =
   -- Test 4
   {
     code  = { Ops.LDA_ZP, 19,
-              Ops.BRK },
+              Ops.HLT },
     aVal  = 166,
     xVal  = 166,
     yVal  = 45,
@@ -69,7 +69,7 @@ local testTbl =
   -- Test 5
   {
     code  = { Ops.LDX_ZP, 136,
-              Ops.BRK },
+              Ops.HLT },
     aVal  = 166,
     xVal  = 45,
     yVal  = 45,
@@ -82,7 +82,7 @@ local testTbl =
   -- Test 6
   {
     code  = { Ops.LDY_ZP, 48,
-              Ops.BRK },
+              Ops.HLT },
     aVal  = 166,
     xVal  = 45,
     yVal  = 7,
@@ -95,7 +95,7 @@ local testTbl =
   -- Test 7
   {
     code  = { Ops.STA_ZPX, 171,
-              Ops.BRK },
+              Ops.HLT },
     aVal  = 166,
     xVal  = 45,
     yVal  = 7,
@@ -108,7 +108,7 @@ local testTbl =
   -- Test 8
   {
     code  = { Ops.STA_ZPX, 233,
-              Ops.BRK },
+              Ops.HLT },
     aVal  = 166,
     xVal  = 45,
     yVal  = 7,
@@ -121,7 +121,7 @@ local testTbl =
   -- Test 9
   {
     code  = { Ops.STX_ZPY, 224,
-              Ops.BRK },
+              Ops.HLT },
     aVal  = 166,
     xVal  = 45,
     yVal  = 7,
@@ -134,7 +134,7 @@ local testTbl =
   -- Test 10
   {
     code  = { Ops.STY_ZPX, 91,
-              Ops.BRK },
+              Ops.HLT },
     aVal  = 166,
     xVal  = 45,
     yVal  = 7,
@@ -147,7 +147,7 @@ local testTbl =
   -- Test 11
   {
     code  = { Ops.LDA_ZPX, 186,
-              Ops.BRK },
+              Ops.HLT },
     aVal  = 45,
     xVal  = 45,
     yVal  = 7,
@@ -160,7 +160,7 @@ local testTbl =
   -- Test 12
   {
     code  = { Ops.LDX_ZPY, 209,
-              Ops.BRK },
+              Ops.HLT },
     aVal  = 45,
     xVal  = 166,
     yVal  = 7,
@@ -173,7 +173,7 @@ local testTbl =
   -- Test 13
   {
     code  = { Ops.LDY_ZPX, 112,
-              Ops.BRK },
+              Ops.HLT },
     aVal  = 45,
     xVal  = 166,
     yVal  = 166,
@@ -226,7 +226,7 @@ for subTestIdx = 1, #testTbl do
   nesdbg.CpuMemWr(startPc, #curTest.code, curTest.code)
 
   nesdbg.DbgRun()
-  nesdbg.WaitForBrk()
+  nesdbg.WaitForHlt()
 
   if EvaluateSubtest(curTest) then
     results[subTestIdx] = ScriptResult.Pass

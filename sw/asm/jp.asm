@@ -29,11 +29,11 @@ POLL:   JSR READ_JP
 
         ; Test passed.
         LDA #$01
-        BRK
+        .byte $02  ; HLT
 
 FAIL:   JSR WAIT_ZERO
         LDA #$00
-        BRK
+        .byte $02  ; HLT
 
 
 

@@ -23,7 +23,7 @@ local testTbl =
              Ops.BEQ, 0x02,
              Ops.LDA_IMM, 0x17,
              Ops.LSR_ACC,
-             Ops.BRK },
+             Ops.HLT },
     sVal = 0xFF,
     aVal = 0x5D,
     xVal = 0xFF,
@@ -44,7 +44,7 @@ local testTbl =
              Ops.CMP_IMM, 0x64,
              Ops.BEQ, 0x02,
              Ops.LDA_IMM, 0x17,
-             Ops.BRK },
+             Ops.HLT },
     sVal = 0xFF,
     aVal = 0x17,
     xVal = 0xFF,
@@ -131,7 +131,7 @@ local testTbl =
              
              Ops.LDA_IMM, 0xFF,
              Ops.ASL_ACC,
-             Ops.BRK },
+             Ops.HLT },
     sVal = 0xFF,
     aVal = 0x22,
     xVal = 0xFF,
@@ -154,7 +154,7 @@ local testTbl =
              Ops.DEX,
              Ops.BNE, 0xFB,
              Ops.ASL_ACC,
-             Ops.BRK },
+             Ops.HLT },
     sVal = 0xFF,
     aVal = 0x60,
     xVal = 0x00,
@@ -242,7 +242,7 @@ local testTbl =
 
              Ops.BNE, 0x97,
              Ops.ASL_ACC,
-             Ops.BRK },
+             Ops.HLT },
     sVal = 0xFF,
     aVal = 0xEE,
     xVal = 0x00,
@@ -268,7 +268,7 @@ local testTbl =
              Ops.BCC, 0x02,
              Ops.LDX_IMM, 0x71,
              Ops.CLC,
-             Ops.BRK },
+             Ops.HLT },
     sVal = 0xFF,
     aVal = 0xFB,
     xVal = 0x71,
@@ -294,7 +294,7 @@ local testTbl =
              Ops.BCS, 0x02,
              Ops.LDX_IMM, 0x29,
              Ops.CLC,
-             Ops.BRK },
+             Ops.HLT },
     sVal = 0xFF,
     aVal = 0x49,
     xVal = 0x29,
@@ -317,7 +317,7 @@ local testTbl =
              Ops.LDX_IMM, 0x01,
              Ops.BMI, 0x02,
              Ops.LDX_IMM, 0x55,
-             Ops.BRK },
+             Ops.HLT },
     sVal = 0xFF,
     aVal = 0x80,
     xVal = 0x55,
@@ -340,7 +340,7 @@ local testTbl =
              Ops.LDX_IMM, 0x01,
              Ops.BPL, 0x02,
              Ops.LDX_IMM, 0x55,
-             Ops.BRK },
+             Ops.HLT },
     sVal = 0xFF,
     aVal = 0x00,
     xVal = 0x01,
@@ -366,7 +366,7 @@ local testTbl =
              Ops.ADC_IMM, 0x01,
              Ops.BVC, 0x02,
              Ops.LDA_IMM, 0x31,
-             Ops.BRK },
+             Ops.HLT },
     sVal = 0xFF,
     aVal = 0x31,
     xVal = 0x81,
@@ -392,7 +392,7 @@ local testTbl =
              Ops.ADC_IMM, 0x01,
              Ops.BVS, 0x02,
              Ops.LDA_IMM, 0x31,
-             Ops.BRK },
+             Ops.HLT },
     sVal = 0xFF,
     aVal = 0x80,
     xVal = 0x16,
@@ -417,7 +417,7 @@ for subTestIdx = 1, #testTbl do
   nesdbg.CpuMemWr(startPc, #curTest.code, curTest.code)
 
   nesdbg.DbgRun()
-  nesdbg.WaitForBrk()
+  nesdbg.WaitForHlt()
 
   local ac = GetAc()
   local x  = GetX()

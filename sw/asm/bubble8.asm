@@ -38,5 +38,5 @@ CHKEND:  DEX           ;END OF LIST?
          BNE NXTEL     ;NO. FETCH NEXT ELEMENT
          BIT $32       ;YES. EXCHANGE FLAG STILL OFF?
          BMI SORT8     ;NO. GO THROUGH LIST AGAIN
-         BRK           ;YES. LIST IS NOW ORDERED
+         .byte $02     ; HLT
 

@@ -253,13 +253,13 @@ UINT CpuMemWrPacket::ReturnBytesExpected() const
 }
 
 /***************************************************************************************************
-** % Method:      DbgBrkPacket::DbgBrkPacket()
-*  % Description: DbgBrkPacket constructor.
+** % Method:      DbgHltPacket::DbgHltPacket()
+*  % Description: DbgHltPacket constructor.
 ***************************************************************************************************/
-DbgBrkPacket::DbgBrkPacket()
+DbgHltPacket::DbgHltPacket()
 {
     m_pData    = new BYTE [1];
-    m_pData[0] = DbgPacketOpCodeDbgBrk;
+    m_pData[0] = DbgPacketOpCodeDbgHlt;
 }
 
 /***************************************************************************************************
@@ -339,31 +339,31 @@ UINT CpuRegWrPacket::ReturnBytesExpected() const
 }
 
 /***************************************************************************************************
-** % Method:      QueryDbgBrkPacket::QueryDbgBrkPacket()
-*  % Description: QueryDbgBrkPacket constructor.
+** % Method:      QueryHltPacket::QueryHltPacket()
+*  % Description: QueryHltPacket constructor.
 ***************************************************************************************************/
-QueryDbgBrkPacket::QueryDbgBrkPacket()
+QueryHltPacket::QueryHltPacket()
 {
     m_pData = new BYTE [1];
 
-    m_pData[0] = DbgPacketOpCodeQueryDbgBrk;
+    m_pData[0] = DbgPacketOpCodeQueryHlt;
 }
 
 /***************************************************************************************************
-** % Method:      QueryDbgBrkPacket::SizeInBytes()
+** % Method:      QueryHltPacket::SizeInBytes()
 *  % Description: Returns total packet size, in bytes.
 ***************************************************************************************************/
-UINT QueryDbgBrkPacket::SizeInBytes() const
+UINT QueryHltPacket::SizeInBytes() const
 {
     return sizeof(BYTE);
 }
 
 /***************************************************************************************************
-** % Method:      QueryDbgBrkPacket::ReturnBytesExpected()
+** % Method:      QueryHltPacket::ReturnBytesExpected()
 *  % Description: Returns how many bytes we expect to receive from the NES in response to this
 *                 packet.
 ***************************************************************************************************/
-UINT QueryDbgBrkPacket::ReturnBytesExpected() const
+UINT QueryHltPacket::ReturnBytesExpected() const
 {
     return 1;
 }

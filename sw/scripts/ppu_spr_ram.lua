@@ -30,7 +30,7 @@ local testTbl =
              Ops.LDA_ABS, 0x04, 0x20,
 
              Ops.STA_ZP, 0x00,
-             Ops.BRK },
+             Ops.HLT },
     cpuAddrs = { 0x0000, },
     cpuVals  = {   0x3D, }
   },
@@ -50,7 +50,7 @@ local testTbl =
              Ops.LDA_ABS, 0x04, 0x20,
 
              Ops.STA_ZP, 0x00,
-             Ops.BRK },
+             Ops.HLT },
     cpuAddrs = { 0x0000, },
     cpuVals  = {   0x93, }
   },
@@ -96,7 +96,7 @@ local testTbl =
              Ops.LDA_ABS, 0x04, 0x20,
              Ops.STA_ZP, 0x03,
 
-             Ops.BRK },
+             Ops.HLT },
     cpuAddrs = { 0x0000, 0x0001, 0x0002, 0x0003 },
     cpuVals  = {   0x22,   0xC1,   0xE4,   0x08 }
   },
@@ -173,7 +173,7 @@ local testTbl =
              Ops.STA_ABS, 0x03, 0x20,
              Ops.LDA_ABS, 0x04, 0x20, Ops.STA_ZP, 0x08,
 
-             Ops.BRK },
+             Ops.HLT },
     cpuAddrs = { 0x0000, 0x0001, 0x0002, 0x0003, 0x0004, 0x0005, 0x0006, 0x0007, 0x0008, },
     cpuVals  = {    176,    202,    122,    219,    227,    107,     85,    191,    151, }
   },
@@ -187,7 +187,7 @@ for subTestIdx = 1, #testTbl do
   SetPc(startPc)
 
   nesdbg.DbgRun()
-  nesdbg.WaitForBrk()
+  nesdbg.WaitForHlt()
 
   results[subTestIdx] = ScriptResult.Pass
 

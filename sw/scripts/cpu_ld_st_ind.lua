@@ -24,7 +24,7 @@ local testTbl =
               Ops.LDA_INDX, 0x93,
 
               Ops.LDY_IMM,  0x00,
-              Ops.BRK },
+              Ops.HLT },
     aVal  = 0x38,
     xVal  = 0x0F,
     yVal  = 0x00,
@@ -47,7 +47,7 @@ local testTbl =
 
               Ops.LDX_IMM,  0xF8,
               Ops.LDA_INDX, 0x21,
-              Ops.BRK },
+              Ops.HLT },
     aVal  = 0x89,
     xVal  = 0xF8,
     yVal  = 0x00,
@@ -62,7 +62,7 @@ local testTbl =
     code  = { Ops.LDA_IMM , 0xFE,
               Ops.LDX_IMM,  0x09,
               Ops.STA_INDX, 0x99,
-              Ops.BRK },
+              Ops.HLT },
     aVal  = 0xFE,
     xVal  = 0x09,
     yVal  = 0x00,
@@ -77,7 +77,7 @@ local testTbl =
     code  = { Ops.LDA_IMM , 0x77,
               Ops.LDX_IMM,  0x5C,
               Ops.STA_INDX, 0xBD,
-              Ops.BRK },
+              Ops.HLT },
     aVal  = 0x77,
     xVal  = 0x5C,
     yVal  = 0x00,
@@ -100,7 +100,7 @@ local testTbl =
 
               Ops.LDY_IMM,  0x6A,
               Ops.LDA_INDY, 0x1E,
-              Ops.BRK },
+              Ops.HLT },
     aVal  = 0xC1,
     xVal  = 0x5C,
     yVal  = 0x6A,
@@ -120,7 +120,7 @@ local testTbl =
 
               Ops.LDY_IMM,  0x45,
               Ops.LDA_INDY, 0x31,
-              Ops.BRK },
+              Ops.HLT },
     aVal  = 0xFE,
     xVal  = 0x5C,
     yVal  = 0x45,
@@ -135,7 +135,7 @@ local testTbl =
     code  = { Ops.LDA_IMM , 0x9D,
               Ops.LDY_IMM,  0x15,
               Ops.STA_INDY, 0xA2,
-              Ops.BRK },
+              Ops.HLT },
     aVal  = 0x9D,
     xVal  = 0x5C,
     yVal  = 0x15,
@@ -150,7 +150,7 @@ local testTbl =
     code  = { Ops.LDA_IMM , 0xC1,
               Ops.LDY_IMM,  0xF0,
               Ops.STA_INDY, 0x19,
-              Ops.BRK },
+              Ops.HLT },
     aVal  = 0xC1,
     xVal  = 0x5C,
     yVal  = 0xF0,
@@ -205,7 +205,7 @@ for subTestIdx = 1, #testTbl do
   nesdbg.CpuMemWr(startPc, #curTest.code, curTest.code)
 
   nesdbg.DbgRun()
-  nesdbg.WaitForBrk()
+  nesdbg.WaitForHlt()
 
   if EvaluateSubtest(curTest) then
     results[subTestIdx] = ScriptResult.Pass

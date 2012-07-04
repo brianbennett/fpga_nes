@@ -30,4 +30,4 @@ loop:
   cpy #0
   bne loop
  
-  brk
+  .byte $02  ; HLT

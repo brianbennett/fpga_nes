@@ -24,7 +24,7 @@ local testTbl =
              Ops.TXS,
              Ops.JMP_ABS, 0x10, 0x80,
              Ops.LDA_IMM, 0x00,
-             Ops.BRK },
+             Ops.HLT },
     sVal = 0xFF,
     aVal = 0xBB,
     xVal = 0xFF,
@@ -44,7 +44,7 @@ local testTbl =
     code = { Ops.LDA_IMM, 0x31,
              Ops.JMP_ABS, 0x08, 0x80,
              Ops.ADC_IMM, 0x10,
-             Ops.BRK,
+             Ops.HLT,
              Ops.ADC_IMM, 0x20,
              Ops.JMP_ABS, 0x05, 0x80 },
     sVal = 0xFF,
@@ -70,7 +70,7 @@ local testTbl =
              Ops.LDA_IMM, 0xAA,
              Ops.JMP_IND, 0x00, 0x03,
              Ops.LDA_IMM, 0x00,
-             Ops.BRK },
+             Ops.HLT },
     sVal = 0xFF,
     aVal = 0xAA,
     xVal = 0xFF,
@@ -101,7 +101,7 @@ for subTestIdx = 1, #testTbl do
   nesdbg.CpuMemWr(startPc, #curTest.code, curTest.code)
 
   nesdbg.DbgRun()
-  nesdbg.WaitForBrk()
+  nesdbg.WaitForHlt()
 
   local ac = GetAc()
   local x  = GetX()

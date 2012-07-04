@@ -22,7 +22,7 @@ local testTbl =
              Ops.PHA,
              Ops.LDA_IMM, 0xC3,
              Ops.PHA,
-             Ops.BRK },
+             Ops.HLT },
     sVal = 0xFC,
     aVal = 0xC3,
     xVal = 0xFF,
@@ -41,7 +41,7 @@ local testTbl =
   {
     code = { Ops.LDA_IMM, 0x00,
              Ops.PLA,
-             Ops.BRK },
+             Ops.HLT },
     sVal = 0xFD,
     aVal = 0xC3,
     xVal = 0xFF,
@@ -60,7 +60,7 @@ local testTbl =
   {
     code = { Ops.LDA_IMM, 0x33,
              Ops.PLA,
-             Ops.BRK },
+             Ops.HLT },
     sVal = 0xFE,
     aVal = 0x15,
     xVal = 0xFF,
@@ -91,7 +91,7 @@ local testTbl =
              Ops.PLA,
              Ops.PLA,
              Ops.PLA,
-             Ops.BRK },
+             Ops.HLT },
     sVal = 0xFF,
     aVal = 0x6A,
     xVal = 0xFF,
@@ -114,7 +114,7 @@ local testTbl =
              Ops.SEI,
              Ops.PHP,
              Ops.PLA,
-             Ops.BRK },
+             Ops.HLT },
     sVal = 0xFF,
     aVal = 0x3D,
     xVal = 0xFF,
@@ -134,7 +134,7 @@ local testTbl =
     code = { Ops.LDA_IMM, 0xC0,
              Ops.PHA,
              Ops.PLP,
-             Ops.BRK },
+             Ops.HLT },
     sVal = 0xFF,
     aVal = 0xC0,
     xVal = 0xFF,
@@ -168,7 +168,7 @@ local testTbl =
              Ops.TAX,
              Ops.PLP,
              Ops.PLA,
-             Ops.BRK },
+             Ops.HLT },
     sVal = 0xFD,
     aVal = 0xE3,
     xVal = 0xE5,
@@ -191,7 +191,7 @@ for subTestIdx = 1, #testTbl do
   nesdbg.CpuMemWr(startPc, #curTest.code, curTest.code)
 
   nesdbg.DbgRun()
-  nesdbg.WaitForBrk()
+  nesdbg.WaitForHlt()
 
   local ac = GetAc()
   local x  = GetX()

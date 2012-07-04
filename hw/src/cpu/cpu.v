@@ -91,10 +91,11 @@ localparam [7:0] ADC_ABS   = 8'h6D, ADC_ABSX  = 8'h7D, ADC_ABSY  = 8'h79, ADC_IM
                  EOR_ABS   = 8'h4D, EOR_ABSX  = 8'h5D, EOR_ABSY  = 8'h59, EOR_IMM   = 8'h49,
                                     EOR_INDX  = 8'h41, EOR_INDY  = 8'h51, EOR_ZP    = 8'h45,
                                     EOR_ZPX   = 8'h55,
+                 HLT       = 8'h02,
                  INC_ABS   = 8'hEE, INC_ABSX  = 8'hFE, INC_ZP    = 8'hE6, INC_ZPX   = 8'hF6,
                  INX       = 8'hE8,
                  INY       = 8'hC8,
-                 IRQ       = 8'h02,
+                 IRQ       = 8'h12,
                  JMP_ABS   = 8'h4C, JMP_IND   = 8'h6C,
                  JSR       = 8'h20,
                  LAX_ABS   = 8'hAF, LAX_ABSY  = 8'hBF, LAX_INDX  = 8'hA3, LAX_INDY  = 8'hB3,
@@ -164,35 +165,35 @@ localparam [7:0] ADC_ABS   = 8'h6D, ADC_ABSX  = 8'h7D, ADC_ABSY  = 8'h79, ADC_IM
      ((op) == DOP_ZPX  ) || ((op) == DOP_ZPX2 ) || ((op) == DOP_ZPX3 ) || ((op) == DOP_ZPX4 ) || \
      ((op) == DOP_ZPX5 ) || ((op) == DOP_ZPX6 ) || ((op) == EOR_ABS  ) || ((op) == EOR_ABSX ) || \
      ((op) == EOR_ABSY ) || ((op) == EOR_IMM  ) || ((op) == EOR_INDX ) || ((op) == EOR_INDY ) || \
-     ((op) == EOR_ZP   ) || ((op) == EOR_ZPX  ) || ((op) == INC_ABS  ) || ((op) == INC_ABSX ) || \
-     ((op) == INC_ZP   ) || ((op) == INC_ZPX  ) || ((op) == INX      ) || ((op) == INY      ) || \
-     ((op) == IRQ      ) || ((op) == JMP_ABS  ) || ((op) == JMP_IND  ) || ((op) == JSR      ) || \
-     ((op) == LAX_ABS  ) || ((op) == LAX_ABSY ) || ((op) == LAX_INDX ) || ((op) == LAX_INDY ) || \
-     ((op) == LAX_ZP   ) || ((op) == LAX_ZPY  ) || ((op) == LDA_ABS  ) || ((op) == LDA_ABSX ) || \
-     ((op) == LDA_ABSY ) || ((op) == LDA_IMM  ) || ((op) == LDA_INDX ) || ((op) == LDA_INDY ) || \
-     ((op) == LDA_ZP   ) || ((op) == LDA_ZPX  ) || ((op) == LDX_ABS  ) || ((op) == LDX_ABSY ) || \
-     ((op) == LDX_IMM  ) || ((op) == LDX_ZP   ) || ((op) == LDX_ZPY  ) || ((op) == LDY_ABS  ) || \
-     ((op) == LDY_ABSX ) || ((op) == LDY_IMM  ) || ((op) == LDY_ZP   ) || ((op) == LDY_ZPX  ) || \
-     ((op) == LSR_ABS  ) || ((op) == LSR_ABSX ) || ((op) == LSR_ACC  ) || ((op) == LSR_ZP   ) || \
-     ((op) == LSR_ZPX  ) || ((op) == NOP      ) || ((op) == NOP_1A   ) || ((op) == NOP_3A   ) || \
-     ((op) == NOP_5A   ) || ((op) == NOP_7A   ) || ((op) == NOP_DA   ) || ((op) == NOP_FA   ) || \
-     ((op) == ORA_ABS  ) || ((op) == ORA_ABSX ) || ((op) == ORA_ABSY ) || ((op) == ORA_IMM  ) || \
-     ((op) == ORA_INDX ) || ((op) == ORA_INDY ) || ((op) == ORA_ZP   ) || ((op) == ORA_ZPX  ) || \
-     ((op) == PHA      ) || ((op) == PHP      ) || ((op) == PLA      ) || ((op) == PLP      ) || \
-     ((op) == ROL_ABS  ) || ((op) == ROL_ABSX ) || ((op) == ROL_ACC  ) || ((op) == ROL_ZP   ) || \
-     ((op) == ROL_ZPX  ) || ((op) == ROR_ABS  ) || ((op) == ROR_ABSX ) || ((op) == ROR_ACC  ) || \
-     ((op) == ROR_ZP   ) || ((op) == ROR_ZPX  ) || ((op) == RTI      ) || ((op) == RTS      ) || \
-     ((op) == SAX_ABS  ) || ((op) == SAX_INDX ) || ((op) == SAX_ZP   ) || ((op) == SAX_ZPY  ) || \
-     ((op) == SBC_ABS  ) || ((op) == SBC_ABSX ) || ((op) == SBC_ABSY ) || ((op) == SBC_IMM  ) || \
-     ((op) == SBC_IMM2 ) || ((op) == SBC_INDX ) || ((op) == SBC_INDY ) || ((op) == SBC_ZP   ) || \
-     ((op) == SBC_ZPX  ) || ((op) == SEC      ) || ((op) == SED      ) || ((op) == SEI      ) || \
-     ((op) == STA_ABS  ) || ((op) == STA_ABSX ) || ((op) == STA_ABSY ) || ((op) == STA_INDX ) || \
-     ((op) == STA_INDY ) || ((op) == STA_ZP   ) || ((op) == STA_ZPX  ) || ((op) == STX_ABS  ) || \
-     ((op) == STX_ZP   ) || ((op) == STX_ZPY  ) || ((op) == STY_ABS  ) || ((op) == STY_ZP   ) || \
-     ((op) == STY_ZPX  ) || ((op) == TAX      ) || ((op) == TAY      ) || ((op) == TOP_ABS  ) || \
-     ((op) == TOP_ABSX ) || ((op) == TOP_ABSX2) || ((op) == TOP_ABSX3) || ((op) == TOP_ABSX4) || \
-     ((op) == TOP_ABSX5) || ((op) == TOP_ABSX6) || ((op) == TSX      ) || ((op) == TXA      ) || \
-     ((op) == TXS      ) || ((op) == TYA      ))
+     ((op) == EOR_ZP   ) || ((op) == EOR_ZPX  ) || ((op) == HLT      ) || ((op) == INC_ABS  ) || \
+     ((op) == INC_ABSX ) || ((op) == INC_ZP   ) || ((op) == INC_ZPX  ) || ((op) == INX      ) || \
+     ((op) == INY      ) || ((op) == IRQ      ) || ((op) == JMP_ABS  ) || ((op) == JMP_IND  ) || \
+     ((op) == JSR      ) || ((op) == LAX_ABS  ) || ((op) == LAX_ABSY ) || ((op) == LAX_INDX ) || \
+     ((op) == LAX_INDY ) || ((op) == LAX_ZP   ) || ((op) == LAX_ZPY  ) || ((op) == LDA_ABS  ) || \
+     ((op) == LDA_ABSX ) || ((op) == LDA_ABSY ) || ((op) == LDA_IMM  ) || ((op) == LDA_INDX ) || \
+     ((op) == LDA_INDY ) || ((op) == LDA_ZP   ) || ((op) == LDA_ZPX  ) || ((op) == LDX_ABS  ) || \
+     ((op) == LDX_ABSY ) || ((op) == LDX_IMM  ) || ((op) == LDX_ZP   ) || ((op) == LDX_ZPY  ) || \
+     ((op) == LDY_ABS  ) || ((op) == LDY_ABSX ) || ((op) == LDY_IMM  ) || ((op) == LDY_ZP   ) || \
+     ((op) == LDY_ZPX  ) || ((op) == LSR_ABS  ) || ((op) == LSR_ABSX ) || ((op) == LSR_ACC  ) || \
+     ((op) == LSR_ZP   ) || ((op) == LSR_ZPX  ) || ((op) == NOP      ) || ((op) == NOP_1A   ) || \
+     ((op) == NOP_3A   ) || ((op) == NOP_5A   ) || ((op) == NOP_7A   ) || ((op) == NOP_DA   ) || \
+     ((op) == NOP_FA   ) || ((op) == ORA_ABS  ) || ((op) == ORA_ABSX ) || ((op) == ORA_ABSY ) || \
+     ((op) == ORA_IMM  ) || ((op) == ORA_INDX ) || ((op) == ORA_INDY ) || ((op) == ORA_ZP   ) || \
+     ((op) == ORA_ZPX  ) || ((op) == PHA      ) || ((op) == PHP      ) || ((op) == PLA      ) || \
+     ((op) == PLP      ) || ((op) == ROL_ABS  ) || ((op) == ROL_ABSX ) || ((op) == ROL_ACC  ) || \
+     ((op) == ROL_ZP   ) || ((op) == ROL_ZPX  ) || ((op) == ROR_ABS  ) || ((op) == ROR_ABSX ) || \
+     ((op) == ROR_ACC  ) || ((op) == ROR_ZP   ) || ((op) == ROR_ZPX  ) || ((op) == RTI      ) || \
+     ((op) == RTS      ) || ((op) == SAX_ABS  ) || ((op) == SAX_INDX ) || ((op) == SAX_ZP   ) || \
+     ((op) == SAX_ZPY  ) || ((op) == SBC_ABS  ) || ((op) == SBC_ABSX ) || ((op) == SBC_ABSY ) || \
+     ((op) == SBC_IMM  ) || ((op) == SBC_IMM2 ) || ((op) == SBC_INDX ) || ((op) == SBC_INDY ) || \
+     ((op) == SBC_ZP   ) || ((op) == SBC_ZPX  ) || ((op) == SEC      ) || ((op) == SED      ) || \
+     ((op) == SEI      ) || ((op) == STA_ABS  ) || ((op) == STA_ABSX ) || ((op) == STA_ABSY ) || \
+     ((op) == STA_INDX ) || ((op) == STA_INDY ) || ((op) == STA_ZP   ) || ((op) == STA_ZPX  ) || \
+     ((op) == STX_ABS  ) || ((op) == STX_ZP   ) || ((op) == STX_ZPY  ) || ((op) == STY_ABS  ) || \
+     ((op) == STY_ZP   ) || ((op) == STY_ZPX  ) || ((op) == TAX      ) || ((op) == TAY      ) || \
+     ((op) == TOP_ABS  ) || ((op) == TOP_ABSX ) || ((op) == TOP_ABSX2) || ((op) == TOP_ABSX3) || \
+     ((op) == TOP_ABSX4) || ((op) == TOP_ABSX5) || ((op) == TOP_ABSX6) || ((op) == TSX      ) || \
+     ((op) == TXA      ) || ((op) == TXS      ) || ((op) == TYA      ))
 
 // Timing generation cycle states.
 localparam [2:0] T0  = 3'h0,
@@ -359,7 +360,7 @@ reg  q_ready; // latch external ready signal to delay 1 clk so top-level addr mu
 always @(posedge clk)
   begin
     if (rst)
-      q_ready <= 1;
+      q_ready <= 1'b0;
     else
       q_ready <= ready;
   end
@@ -452,7 +453,7 @@ always @(posedge clk)
         q_ai   <= 8'h00;
         q_bi   <= 8'h00;
         q_dor  <= 8'h00;
-        q_ir   <= BRK;
+        q_ir   <= NOP;
         q_pchs <= 8'h80;
         q_pcls <= 8'h00;
         q_s    <= 8'hFF;
@@ -555,13 +556,13 @@ always @*
           if ((q_ir == BRK)      || (q_ir == CLC)      || (q_ir == CLD)      ||
               (q_ir == CLI)      || (q_ir == CLV)      || (q_ir == DOP_IMM)  ||
               (q_ir == DOP_IMM2) || (q_ir == DOP_IMM3) || (q_ir == DOP_IMM4) ||
-              (q_ir == DOP_IMM5) || (q_ir == LDA_IMM)  || (q_ir == LDX_IMM)  ||
-              (q_ir == LDY_IMM)  || (q_ir == NOP)      || (q_ir == NOP_1A)   ||
-              (q_ir == NOP_3A)   || (q_ir == NOP_5A)   || (q_ir == NOP_7A)   ||
-              (q_ir == NOP_DA)   || (q_ir == NOP_FA)   || (q_ir == SEC)      ||
-              (q_ir == SED)      || (q_ir == SEI)      || (q_ir == TAX)      ||
-              (q_ir == TAY)      || (q_ir == TSX)      || (q_ir == TXA)      ||
-              (q_ir == TXS)      || (q_ir == TYA))
+              (q_ir == DOP_IMM5) || (q_ir == HLT)      || (q_ir == LDA_IMM)  ||
+              (q_ir == LDX_IMM)  || (q_ir == LDY_IMM)  || (q_ir == NOP)      ||
+              (q_ir == NOP_1A)   || (q_ir == NOP_3A)   || (q_ir == NOP_5A)   ||
+              (q_ir == NOP_7A)   || (q_ir == NOP_DA)   || (q_ir == NOP_FA)   ||
+              (q_ir == SEC)      || (q_ir == SED)      || (q_ir == SEI)      ||
+              (q_ir == TAX)      || (q_ir == TAY)      || (q_ir == TSX)      ||
+              (q_ir == TXA)      || (q_ir == TXS)      || (q_ir == TYA))
             d_t = T0;
 
           // Check for not-taken branches.  These instructions must setup the not-taken PC during
@@ -1038,11 +1039,10 @@ always @*
               dl_to_ai      = 1'b1;
               pcl_to_bi     = 1'b1;
             end
-          BRK:
+          HLT:
             begin
-              // Note that the BRK instruction is not implemented as on a true 6502 processor.
-              // Instead of firing an interrupt, it deasserts the rdy signal, effectively pausing
-              // the cpu and allowing the debug block to inspect the internal state.
+              // The HLT instruction asks hci to deassert the rdy signal, effectively pausing the
+              // cpu and allowing the debug block to inspect the internal state.
               brk = (q_clk_phase == 6'h01) && rdy;
             end
           CLC:

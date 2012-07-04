@@ -90,6 +90,7 @@ Ops =
   EOR_INDY = 0x51,
   EOR_ZP   = 0x45,
   EOR_ZPX  = 0x55,
+  HLT      = 0x02,
   INC_ABS  = 0xEE,
   INC_ABSX = 0xFE,
   INC_ZP   = 0xE6,

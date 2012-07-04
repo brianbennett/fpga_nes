@@ -15,7 +15,7 @@ local testTbl =
              Ops.LDX_IMM, 0x00,
              Ops.LDY_IMM, 0x00,
              Ops.CMP_IMM, 0x44,  -- M
-             Ops.BRK },
+             Ops.HLT },
     aVal = 0x70,
     xVal = 0x00,
     yVal = 0x00,
@@ -28,7 +28,7 @@ local testTbl =
   {
     code = { Ops.LDA_IMM, 0x3E,  -- A
              Ops.CMP_IMM, 0x3E,  -- M
-             Ops.BRK },
+             Ops.HLT },
     aVal = 0x3E,
     xVal = 0x00,
     yVal = 0x00,
@@ -41,7 +41,7 @@ local testTbl =
   {
     code = { Ops.LDA_IMM, 0x3E,  -- A
              Ops.CMP_IMM, 0x8E,  -- M
-             Ops.BRK },
+             Ops.HLT },
     aVal = 0x3E,
     xVal = 0x00,
     yVal = 0x00,
@@ -56,7 +56,7 @@ local testTbl =
              Ops.STA_ZP,  0x52,
              Ops.LDA_IMM, 0xF0,  -- A
              Ops.CMP_ZP,  0x52,
-             Ops.BRK },
+             Ops.HLT },
     aVal = 0xF0,
     xVal = 0x00,
     yVal = 0x00,
@@ -71,7 +71,7 @@ local testTbl =
              Ops.STA_ZP,  0x52,
              Ops.LDA_IMM, 0x27,  -- A
              Ops.CMP_ZP,  0x52,
-             Ops.BRK },
+             Ops.HLT },
     aVal = 0x27,
     xVal = 0x00,
     yVal = 0x00,
@@ -86,7 +86,7 @@ local testTbl =
              Ops.STA_ZP,  0x52,
              Ops.LDA_IMM, 0x10,  -- A
              Ops.CMP_ZP,  0x52,
-             Ops.BRK },
+             Ops.HLT },
     aVal = 0x10,
     xVal = 0x00,
     yVal = 0x00,
@@ -102,7 +102,7 @@ local testTbl =
              Ops.LDA_IMM, 0xFB,  -- A
              Ops.LDX_IMM, 0x13,
              Ops.CMP_ZPX, 0xAF,
-             Ops.BRK },
+             Ops.HLT },
     aVal = 0xFB,
     xVal = 0x13,
     yVal = 0x00,
@@ -118,7 +118,7 @@ local testTbl =
              Ops.LDA_IMM, 0x34,  -- A
              Ops.LDX_IMM, 0x13,
              Ops.CMP_ZPX, 0xAF,
-             Ops.BRK },
+             Ops.HLT },
     aVal = 0x34,
     xVal = 0x13,
     yVal = 0x00,
@@ -134,7 +134,7 @@ local testTbl =
              Ops.LDA_IMM, 0xB1,  -- A
              Ops.LDX_IMM, 0x13,
              Ops.CMP_ZPX, 0xAF,
-             Ops.BRK },
+             Ops.HLT },
     aVal = 0xB1,
     xVal = 0x13,
     yVal = 0x00,
@@ -150,7 +150,7 @@ local testTbl =
              Ops.LDA_IMM, 0xFF,        -- A
              Ops.LDX_IMM, 0x00,
              Ops.CMP_ABS, 0xC0, 0x05,
-             Ops.BRK },
+             Ops.HLT },
     aVal = 0xFF,
     xVal = 0x00,
     yVal = 0x00,
@@ -165,7 +165,7 @@ local testTbl =
              Ops.STA_ABS, 0x03, 0x03,
              Ops.LDA_IMM, 0x19,        -- A
              Ops.CMP_ABS, 0x03, 0x03,
-             Ops.BRK },
+             Ops.HLT },
     aVal = 0x19,
     xVal = 0x00,
     yVal = 0x00,
@@ -180,7 +180,7 @@ local testTbl =
              Ops.STA_ABS, 0x03, 0x03,
              Ops.LDA_IMM, 0x10,        -- A
              Ops.CMP_ABS, 0x03, 0x03,
-             Ops.BRK },
+             Ops.HLT },
     aVal = 0x10,
     xVal = 0x00,
     yVal = 0x00,
@@ -197,7 +197,7 @@ local testTbl =
              Ops.LDX_IMM,  0x73,
              Ops.LDY_IMM,  0x00,
              Ops.CMP_ABSX, 0x0D, 0x07,
-             Ops.BRK },
+             Ops.HLT },
     aVal = 0xF7,
     xVal = 0x73,
     yVal = 0x00,
@@ -213,7 +213,7 @@ local testTbl =
              Ops.LDA_IMM,  0x39,        -- A
              Ops.LDX_IMM,  0xF0,
              Ops.CMP_ABSX, 0x23, 0x01,
-             Ops.BRK },
+             Ops.HLT },
     aVal = 0x39,
     xVal = 0xF0,
     yVal = 0x00,
@@ -229,7 +229,7 @@ local testTbl =
              Ops.LDA_IMM,  0x13,        -- A
              Ops.LDX_IMM,  0xF0,
              Ops.CMP_ABSX, 0x23, 0x01,
-             Ops.BRK },
+             Ops.HLT },
     aVal = 0x13,
     xVal = 0xF0,
     yVal = 0x00,
@@ -246,7 +246,7 @@ local testTbl =
              Ops.LDY_IMM,  0x86,
              Ops.LDX_IMM,  0x00,
              Ops.CMP_ABSY, 0x8A, 0x02,
-             Ops.BRK },
+             Ops.HLT },
     aVal = 0x92,
     xVal = 0x00,
     yVal = 0x86,
@@ -262,7 +262,7 @@ local testTbl =
              Ops.LDA_IMM,  0x2D,        -- A
              Ops.LDY_IMM,  0xE0,
              Ops.CMP_ABSY, 0x51, 0x05,
-             Ops.BRK },
+             Ops.HLT },
     aVal = 0x2D,
     xVal = 0x00,
     yVal = 0xE0,
@@ -278,7 +278,7 @@ local testTbl =
              Ops.LDA_IMM,  0x01,        -- A
              Ops.LDY_IMM,  0xE0,
              Ops.CMP_ABSY, 0x51, 0x05,
-             Ops.BRK },
+             Ops.HLT },
     aVal = 0x01,
     xVal = 0x00,
     yVal = 0xE0,
@@ -299,7 +299,7 @@ local testTbl =
              Ops.LDX_IMM,  0x14,
              Ops.LDY_IMM,  0x00,
              Ops.CMP_INDX, 0x30,
-             Ops.BRK },
+             Ops.HLT },
     aVal = 0xF5,
     xVal = 0x14,
     yVal = 0x00,
@@ -319,7 +319,7 @@ local testTbl =
              Ops.LDA_IMM,  0x1E,        -- A
              Ops.LDX_IMM,  0xD2,
              Ops.CMP_INDX, 0x42,
-             Ops.BRK },
+             Ops.HLT },
     aVal = 0x1E,
     xVal = 0xD2,
     yVal = 0x00,
@@ -339,7 +339,7 @@ local testTbl =
              Ops.LDA_IMM,  0x10,        -- A
              Ops.LDX_IMM,  0xD2,
              Ops.CMP_INDX, 0x42,
-             Ops.BRK },
+             Ops.HLT },
     aVal = 0x10,
     xVal = 0xD2,
     yVal = 0x00,
@@ -360,7 +360,7 @@ local testTbl =
              Ops.LDY_IMM,  0x71,
              Ops.LDX_IMM,  0x00,
              Ops.CMP_INDY, 0xD6,
-             Ops.BRK },
+             Ops.HLT },
     aVal = 0xA2,
     xVal = 0x00,
     yVal = 0x71,
@@ -381,7 +381,7 @@ local testTbl =
              Ops.LDY_IMM,  0x71,
              Ops.LDX_IMM,  0x00,
              Ops.CMP_INDY, 0xD6,
-             Ops.BRK },
+             Ops.HLT },
     aVal = 0xE4,
     xVal = 0x00,
     yVal = 0x71,
@@ -402,7 +402,7 @@ local testTbl =
              Ops.LDY_IMM,  0x71,
              Ops.LDX_IMM,  0x00,
              Ops.CMP_INDY, 0xD6,
-             Ops.BRK },
+             Ops.HLT },
     aVal = 0x19,
     xVal = 0x00,
     yVal = 0x71,
@@ -415,7 +415,7 @@ local testTbl =
   {
     code = { Ops.LDX_IMM, 0x70,  -- X
              Ops.CPX_IMM, 0x44,  -- M
-             Ops.BRK },
+             Ops.HLT },
     aVal = 0x19,
     xVal = 0x70,
     yVal = 0x71,
@@ -428,7 +428,7 @@ local testTbl =
   {
     code = { Ops.LDX_IMM, 0x3E,  -- X
              Ops.CPX_IMM, 0x3E,  -- M
-             Ops.BRK },
+             Ops.HLT },
     aVal = 0x19,
     xVal = 0x3E,
     yVal = 0x71,
@@ -441,7 +441,7 @@ local testTbl =
   {
     code = { Ops.LDX_IMM, 0x3E,  -- X
              Ops.CPX_IMM, 0x8E,  -- M
-             Ops.BRK },
+             Ops.HLT },
     aVal = 0x19,
     xVal = 0x3E,
     yVal = 0x71,
@@ -454,7 +454,7 @@ local testTbl =
   {
     code = { Ops.LDY_IMM, 0x70,  -- Y
              Ops.CPY_IMM, 0x44,  -- M
-             Ops.BRK },
+             Ops.HLT },
     aVal = 0x19,
     xVal = 0x3E,
     yVal = 0x70,
@@ -467,7 +467,7 @@ local testTbl =
   {
     code = { Ops.LDY_IMM, 0x3E,  -- Y
              Ops.CPY_IMM, 0x3E,  -- M
-             Ops.BRK },
+             Ops.HLT },
     aVal = 0x19,
     xVal = 0x3E,
     yVal = 0x3E,
@@ -480,7 +480,7 @@ local testTbl =
   {
     code = { Ops.LDY_IMM, 0x3E,  -- Y
              Ops.CPY_IMM, 0x8E,  -- M
-             Ops.BRK },
+             Ops.HLT },
     aVal = 0x19,
     xVal = 0x3E,
     yVal = 0x3E,
@@ -495,7 +495,7 @@ local testTbl =
              Ops.STA_ZP,  0x52,
              Ops.LDX_IMM, 0xF0,  -- X
              Ops.CPX_ZP,  0x52,
-             Ops.BRK },
+             Ops.HLT },
     aVal = 0x99,
     xVal = 0xF0,
     yVal = 0x3E,
@@ -510,7 +510,7 @@ local testTbl =
              Ops.STA_ZP,  0x52,
              Ops.LDX_IMM, 0x27,  -- X
              Ops.CPX_ZP,  0x52,
-             Ops.BRK },
+             Ops.HLT },
     aVal = 0x27,
     xVal = 0x27,
     yVal = 0x3E,
@@ -525,7 +525,7 @@ local testTbl =
              Ops.STA_ZP,  0x52,
              Ops.LDX_IMM, 0x10,  -- X
              Ops.CPX_ZP,  0x52,
-             Ops.BRK },
+             Ops.HLT },
     aVal = 0x91,
     xVal = 0x10,
     yVal = 0x3E,
@@ -540,7 +540,7 @@ local testTbl =
              Ops.STA_ZP,  0x52,
              Ops.LDY_IMM, 0xF0,  -- Y
              Ops.CPY_ZP,  0x52,
-             Ops.BRK },
+             Ops.HLT },
     aVal = 0x99,
     xVal = 0x10,
     yVal = 0xF0,
@@ -555,7 +555,7 @@ local testTbl =
              Ops.STA_ZP,  0x52,
              Ops.LDY_IMM, 0x27,  -- Y
              Ops.CPY_ZP,  0x52,
-             Ops.BRK },
+             Ops.HLT },
     aVal = 0x27,
     xVal = 0x10,
     yVal = 0x27,
@@ -570,7 +570,7 @@ local testTbl =
              Ops.STA_ZP,  0x52,
              Ops.LDY_IMM, 0x10,  -- Y
              Ops.CPY_ZP,  0x52,
-             Ops.BRK },
+             Ops.HLT },
     aVal = 0x91,
     xVal = 0x10,
     yVal = 0x10,
@@ -585,7 +585,7 @@ local testTbl =
              Ops.STA_ABS, 0xC0, 0x05,
              Ops.LDX_IMM, 0xFF,        -- X
              Ops.CPX_ABS, 0xC0, 0x05,
-             Ops.BRK },
+             Ops.HLT },
     aVal = 0x00,
     xVal = 0xFF,
     yVal = 0x10,
@@ -600,7 +600,7 @@ local testTbl =
              Ops.STA_ABS, 0x03, 0x03,
              Ops.LDX_IMM, 0x19,        -- X
              Ops.CPX_ABS, 0x03, 0x03,
-             Ops.BRK },
+             Ops.HLT },
     aVal = 0x19,
     xVal = 0x19,
     yVal = 0x10,
@@ -615,7 +615,7 @@ local testTbl =
              Ops.STA_ABS, 0x03, 0x03,
              Ops.LDX_IMM, 0x10,        -- X
              Ops.CPX_ABS, 0x03, 0x03,
-             Ops.BRK },
+             Ops.HLT },
     aVal = 0x11,
     xVal = 0x10,
     yVal = 0x10,
@@ -630,7 +630,7 @@ local testTbl =
              Ops.STA_ABS, 0xC0, 0x05,
              Ops.LDY_IMM, 0xFF,        -- Y
              Ops.CPY_ABS, 0xC0, 0x05,
-             Ops.BRK },
+             Ops.HLT },
     aVal = 0x00,
     xVal = 0x10,
     yVal = 0xFF,
@@ -645,7 +645,7 @@ local testTbl =
              Ops.STA_ABS, 0x03, 0x03,
              Ops.LDY_IMM, 0x19,        -- Y
              Ops.CPY_ABS, 0x03, 0x03,
-             Ops.BRK },
+             Ops.HLT },
     aVal = 0x19,
     xVal = 0x10,
     yVal = 0x19,
@@ -660,7 +660,7 @@ local testTbl =
              Ops.STA_ABS, 0x03, 0x03,
              Ops.LDY_IMM, 0x10,        -- Y
              Ops.CPY_ABS, 0x03, 0x03,
-             Ops.BRK },
+             Ops.HLT },
     aVal = 0x11,
     xVal = 0x10,
     yVal = 0x10,
@@ -677,7 +677,7 @@ for subTestIdx = 1, #testTbl do
   nesdbg.CpuMemWr(startPc, #curTest.code, curTest.code)
 
   nesdbg.DbgRun()
-  nesdbg.WaitForBrk()
+  nesdbg.WaitForHlt()
 
   local ac = GetAc()
   local x  = GetX()

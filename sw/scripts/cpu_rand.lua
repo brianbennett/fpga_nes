@@ -2131,7 +2131,7 @@ for subTestIdx = 1, numSubtests do
     curCodeOffset = tblEntry.gen(tblEntry.op, code, curCodeOffset)
   end
 
-  code[curCodeOffset] = Ops.BRK
+  code[curCodeOffset] = Ops.HLT
 
   -- Load code into hardware.
   local startPc = 0x8000
@@ -2140,11 +2140,11 @@ for subTestIdx = 1, numSubtests do
 
   -- Execute random code.
   nesdbg.DbgRun()
-  nesdbg.WaitForBrk()
+  nesdbg.WaitForHlt()
 
   -- Emulate random code.
   curCodeOffset = 1
-  while code[curCodeOffset] ~= 0 do
+  while code[curCodeOffset] ~= Ops.HLT do
     local instr = GetInstr(code[curCodeOffset])
     curCodeOffset = instr.emu(code, curCodeOffset)
   end

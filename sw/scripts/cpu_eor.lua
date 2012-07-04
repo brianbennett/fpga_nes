@@ -14,7 +14,7 @@ local testTbl =
              Ops.LDX_IMM, 0x00,
              Ops.LDY_IMM, 0x00,
              Ops.EOR_IMM, 0x19,  -- M
-             Ops.BRK },
+             Ops.HLT },
     aVal = 0x95,
     xVal = 0x00,
     yVal = 0x00,
@@ -27,7 +27,7 @@ local testTbl =
     code = { Ops.LDA_IMM, 0x85,  -- A
              Ops.LDY_IMM, 0xA1,
              Ops.EOR_IMM, 0x85,  -- M
-             Ops.BRK },
+             Ops.HLT },
     aVal = 0x00,
     xVal = 0x00,
     yVal = 0xA1,
@@ -42,7 +42,7 @@ local testTbl =
              Ops.LDA_IMM, 0xA4,  -- A
              Ops.LDX_IMM, 0x00,
              Ops.EOR_ZP,  0x52,
-             Ops.BRK },
+             Ops.HLT },
     aVal = 0x98,
     xVal = 0x00,
     yVal = 0xA1,
@@ -56,7 +56,7 @@ local testTbl =
              Ops.STA_ZP,  0x08,
              Ops.LDA_IMM, 0xC3,  -- A
              Ops.EOR_ZP,  0x08,
-             Ops.BRK },
+             Ops.HLT },
     aVal = 0x00,
     xVal = 0x00,
     yVal = 0xA1,
@@ -71,7 +71,7 @@ local testTbl =
              Ops.LDA_IMM, 0x91,  -- A
              Ops.LDX_IMM, 0x13,
              Ops.EOR_ZPX, 0xAF,
-             Ops.BRK },
+             Ops.HLT },
     aVal = 0x80,
     xVal = 0x13,
     yVal = 0xA1,
@@ -86,7 +86,7 @@ local testTbl =
              Ops.LDA_IMM, 0xD2,  -- A
              Ops.LDX_IMM, 0x7F,
              Ops.EOR_ZPX, 0xBB,
-             Ops.BRK },
+             Ops.HLT },
     aVal = 0x00,
     xVal = 0x7F,
     yVal = 0xA1,
@@ -101,7 +101,7 @@ local testTbl =
              Ops.LDA_IMM, 0x7F,        -- A
              Ops.LDX_IMM, 0x00,
              Ops.EOR_ABS, 0xC0, 0x05,
-             Ops.BRK },
+             Ops.HLT },
     aVal = 0xAE,
     xVal = 0x00,
     yVal = 0xA1,
@@ -115,7 +115,7 @@ local testTbl =
              Ops.STA_ABS, 0x03, 0x03,
              Ops.LDA_IMM, 0x51,        -- A
              Ops.EOR_ABS, 0x03, 0x03,
-             Ops.BRK },
+             Ops.HLT },
     aVal = 0x00,
     xVal = 0x00,
     yVal = 0xA1,
@@ -131,7 +131,7 @@ local testTbl =
              Ops.LDX_IMM,  0x73,
              Ops.LDY_IMM,  0x00,
              Ops.EOR_ABSX, 0x0D, 0x07,
-             Ops.BRK },
+             Ops.HLT },
     aVal = 0xD8,
     xVal = 0x73,
     yVal = 0x00,
@@ -146,7 +146,7 @@ local testTbl =
              Ops.LDA_IMM,  0x28,        -- A
              Ops.LDX_IMM,  0xF0,
              Ops.EOR_ABSX, 0x23, 0x01,
-             Ops.BRK },
+             Ops.HLT },
     aVal = 0x00,
     xVal = 0xF0,
     yVal = 0x00,
@@ -162,7 +162,7 @@ local testTbl =
              Ops.LDY_IMM,  0x86,
              Ops.LDX_IMM,  0x00,
              Ops.EOR_ABSY, 0x8A, 0x02,
-             Ops.BRK },
+             Ops.HLT },
     aVal = 0xA8,
     xVal = 0x00,
     yVal = 0x86,
@@ -177,7 +177,7 @@ local testTbl =
              Ops.LDA_IMM,  0xF5,        -- A
              Ops.LDY_IMM,  0xE0,
              Ops.EOR_ABSY, 0x51, 0x05,
-             Ops.BRK },
+             Ops.HLT },
     aVal = 0x00,
     xVal = 0x00,
     yVal = 0xE0,
@@ -197,7 +197,7 @@ local testTbl =
              Ops.LDX_IMM,  0x14,
              Ops.LDY_IMM,  0x00,
              Ops.EOR_INDX, 0x30,
-             Ops.BRK },
+             Ops.HLT },
     aVal = 0xD5,
     xVal = 0x14,
     yVal = 0x00,
@@ -216,7 +216,7 @@ local testTbl =
              Ops.LDA_IMM,  0x91,        -- A
              Ops.LDX_IMM,  0xD2,
              Ops.EOR_INDX, 0x42,
-             Ops.BRK },
+             Ops.HLT },
     aVal = 0x00,
     xVal = 0xD2,
     yVal = 0x00,
@@ -236,7 +236,7 @@ local testTbl =
              Ops.LDY_IMM,  0x71,
              Ops.LDX_IMM,  0x00,
              Ops.EOR_INDY, 0xD6,
-             Ops.BRK },
+             Ops.HLT },
     aVal = 0x8E,
     xVal = 0x00,
     yVal = 0x71,
@@ -252,7 +252,7 @@ for subTestIdx = 1, #testTbl do
   nesdbg.CpuMemWr(startPc, #curTest.code, curTest.code)
 
   nesdbg.DbgRun()
-  nesdbg.WaitForBrk()
+  nesdbg.WaitForHlt()
 
   local ac = GetAc()
   local x  = GetX()

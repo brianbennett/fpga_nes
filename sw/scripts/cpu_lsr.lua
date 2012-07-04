@@ -14,7 +14,7 @@ local testTbl =
               Ops.LDX_IMM, 0x00,
               Ops.LDY_IMM, 0x00,
               Ops.LSR_ACC,
-              Ops.BRK },
+              Ops.HLT },
     aVal  = 0x46,
     xVal  = 0x00,
     yVal  = 0x00,
@@ -29,7 +29,7 @@ local testTbl =
   {
     code  = { Ops.LDA_IMM, 0x00,  -- A
               Ops.LSR_ACC,
-              Ops.BRK },
+              Ops.HLT },
     aVal  = 0x00,
     xVal  = 0x00,
     yVal  = 0x00,
@@ -44,7 +44,7 @@ local testTbl =
   {
     code  = { Ops.LDA_IMM, 0x83,  -- A
               Ops.LSR_ACC,
-              Ops.BRK },
+              Ops.HLT },
     aVal  = 0x41,
     xVal  = 0x00,
     yVal  = 0x00,
@@ -59,7 +59,7 @@ local testTbl =
   {
     code  = { Ops.LDA_IMM, 0x01,  -- A
               Ops.LSR_ACC,
-              Ops.BRK },
+              Ops.HLT },
     aVal  = 0x00,
     xVal  = 0x00,
     yVal  = 0x00,
@@ -75,7 +75,7 @@ local testTbl =
     code  = { Ops.LDA_IMM, 0x99,  -- M
               Ops.STA_ZP,  0x52,
               Ops.LSR_ZP,  0x52,
-              Ops.BRK },
+              Ops.HLT },
     aVal  = 0x99,
     xVal  = 0x00,
     yVal  = 0x00,
@@ -92,7 +92,7 @@ local testTbl =
               Ops.STA_ZP,  0xC2,
               Ops.LDX_IMM, 0x13,
               Ops.LSR_ZPX, 0xAF,
-              Ops.BRK },
+              Ops.HLT },
     aVal  = 0x01,
     xVal  = 0x13,
     yVal  = 0x00,
@@ -108,7 +108,7 @@ local testTbl =
     code  = { Ops.LDA_IMM, 0x8E,        -- M
               Ops.STA_ABS, 0xC0, 0x05,
               Ops.LSR_ABS, 0xC0, 0x05,
-              Ops.BRK },
+              Ops.HLT },
     aVal  = 0x8E,
     xVal  = 0x13,
     yVal  = 0x00,
@@ -125,7 +125,7 @@ local testTbl =
               Ops.STA_ABS,  0x80, 0x07,
               Ops.LDX_IMM,  0x73,
               Ops.LSR_ABSX, 0x0D, 0x07,
-              Ops.BRK },
+              Ops.HLT },
     aVal  = 0x56,
     xVal  = 0x73,
     yVal  = 0x00,
@@ -144,7 +144,7 @@ for subTestIdx = 1, #testTbl do
   nesdbg.CpuMemWr(startPc, #curTest.code, curTest.code)
 
   nesdbg.DbgRun()
-  nesdbg.WaitForBrk()
+  nesdbg.WaitForHlt()
 
   local ac = GetAc()
   local x  = GetX()

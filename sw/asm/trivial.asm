@@ -7,7 +7,8 @@
 .org  $8000
 
   lda data
-  brk
+
+  .byte $02  ; HLT
 
 data:
   .byte $BB

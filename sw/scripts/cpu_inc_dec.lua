@@ -15,7 +15,7 @@ local testTbl =
               Ops.LDX_IMM, 0x00,  -- X
               Ops.LDY_IMM, 0x00,
               Ops.INX,
-              Ops.BRK },
+              Ops.HLT },
     aVal  = 0x00,
     xVal  = 0x01,
     yVal  = 0x00,
@@ -29,7 +29,7 @@ local testTbl =
   {
     code  = { Ops.LDX_IMM, 0x7F,  -- X
               Ops.INX,
-              Ops.BRK },
+              Ops.HLT },
     aVal  = 0x00,
     xVal  = 0x80,
     yVal  = 0x00,
@@ -43,7 +43,7 @@ local testTbl =
   {
     code  = { Ops.LDY_IMM, 0xFF,  -- Y
               Ops.INY,
-              Ops.BRK },
+              Ops.HLT },
     aVal  = 0x00,
     xVal  = 0x80,
     yVal  = 0x00,
@@ -57,7 +57,7 @@ local testTbl =
   {
     code  = { Ops.LDX_IMM, 0x80,  -- X
               Ops.DEX,
-              Ops.BRK },
+              Ops.HLT },
     aVal  = 0x00,
     xVal  = 0x7F,
     yVal  = 0x00,
@@ -71,7 +71,7 @@ local testTbl =
   {
     code  = { Ops.LDX_IMM, 0x81,  -- X
               Ops.DEX,
-              Ops.BRK },
+              Ops.HLT },
     aVal  = 0x00,
     xVal  = 0x80,
     yVal  = 0x00,
@@ -85,7 +85,7 @@ local testTbl =
   {
     code  = { Ops.LDY_IMM, 0x01,  -- Y
               Ops.DEY,
-              Ops.BRK },
+              Ops.HLT },
     aVal  = 0x00,
     xVal  = 0x80,
     yVal  = 0x00,
@@ -100,7 +100,7 @@ local testTbl =
     code  = { Ops.LDA_IMM, 0x99,  -- M
               Ops.STA_ZP,  0x52,
               Ops.INC_ZP,  0x52,
-              Ops.BRK },
+              Ops.HLT },
     aVal  = 0x99,
     xVal  = 0x80,
     yVal  = 0x00,
@@ -116,7 +116,7 @@ local testTbl =
               Ops.STA_ZP,  0xC2,
               Ops.LDX_IMM, 0x13,
               Ops.INC_ZPX, 0xAF,
-              Ops.BRK },
+              Ops.HLT },
     aVal  = 0xFF,
     xVal  = 0x13,
     yVal  = 0x00,
@@ -131,7 +131,7 @@ local testTbl =
     code  = { Ops.LDA_IMM, 0x8F,        -- M
               Ops.STA_ABS, 0xC0, 0x05,
               Ops.INC_ABS, 0xC0, 0x05,
-              Ops.BRK },
+              Ops.HLT },
     aVal  = 0x8F,
     xVal  = 0x13,
     yVal  = 0x00,
@@ -147,7 +147,7 @@ local testTbl =
               Ops.STA_ABS,  0x80, 0x07,
               Ops.LDX_IMM,  0x73,
               Ops.INC_ABSX, 0x0D, 0x07,
-              Ops.BRK },
+              Ops.HLT },
     aVal  = 0x56,
     xVal  = 0x73,
     yVal  = 0x00,
@@ -162,7 +162,7 @@ local testTbl =
     code  = { Ops.LDA_IMM, 0x99,  -- M
               Ops.STA_ZP,  0x52,
               Ops.DEC_ZP,  0x52,
-              Ops.BRK },
+              Ops.HLT },
     aVal  = 0x99,
     xVal  = 0x73,
     yVal  = 0x00,
@@ -178,7 +178,7 @@ local testTbl =
               Ops.STA_ZP,  0xC2,
               Ops.LDX_IMM, 0x13,
               Ops.DEC_ZPX, 0xAF,
-              Ops.BRK },
+              Ops.HLT },
     aVal  = 0x01,
     xVal  = 0x13,
     yVal  = 0x00,
@@ -193,7 +193,7 @@ local testTbl =
     code  = { Ops.LDA_IMM, 0x8F,        -- M
               Ops.STA_ABS, 0xC0, 0x05,
               Ops.DEC_ABS, 0xC0, 0x05,
-              Ops.BRK },
+              Ops.HLT },
     aVal  = 0x8F,
     xVal  = 0x13,
     yVal  = 0x00,
@@ -209,7 +209,7 @@ local testTbl =
               Ops.STA_ABS,  0x80, 0x07,
               Ops.LDX_IMM,  0x73,
               Ops.DEC_ABSX, 0x0D, 0x07,
-              Ops.BRK },
+              Ops.HLT },
     aVal  = 0x56,
     xVal  = 0x73,
     yVal  = 0x00,
@@ -227,7 +227,7 @@ for subTestIdx = 1, #testTbl do
   nesdbg.CpuMemWr(startPc, #curTest.code, curTest.code)
 
   nesdbg.DbgRun()
-  nesdbg.WaitForBrk()
+  nesdbg.WaitForHlt()
 
   local ac = GetAc()
   local x  = GetX()

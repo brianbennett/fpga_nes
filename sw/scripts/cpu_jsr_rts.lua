@@ -12,7 +12,7 @@ local subRoutineTbl =
   {
     addr = 0x9010,
     code = {  Ops.ADC_IMM, 0x01,
-              Ops.BRK },
+              Ops.HLT },
   },
 
   -- Subroutine 2: Nested JSR, adds 3 without returning.
@@ -131,7 +131,7 @@ local testTbl =
              Ops.TXS,
              Ops.JSR, 0x30, 0x90,
              Ops.ADC_IMM, 0x03,
-             Ops.BRK },
+             Ops.HLT },
     sVal = 0xFF,
     aVal = 0x04,
     xVal = 0xFF,
@@ -154,7 +154,7 @@ local testTbl =
              Ops.ADC_IMM, 0x03,
              Ops.JSR, 0x30, 0x90,
              Ops.ADC_IMM, 0x10,
-             Ops.BRK },
+             Ops.HLT },
     sVal = 0xFF,
     aVal = 0x27,
     xVal = 0xFF,
@@ -175,7 +175,7 @@ local testTbl =
              Ops.TXS,
              Ops.JSR, 0x60, 0x90,
              Ops.ADC_IMM, 0x07,
-             Ops.BRK },
+             Ops.HLT },
     sVal = 0xFF,
     aVal = 0xC3,
     xVal = 0xFF,
@@ -200,7 +200,7 @@ local testTbl =
              Ops.PHA,
              Ops.JSR, 0x00, 0xA0,
              Ops.PLA,
-             Ops.BRK },
+             Ops.HLT },
     sVal = 0xFD,
     aVal = 0xDC,
     xVal = 0xFF,
@@ -232,7 +232,7 @@ for subTestIdx = 1, #testTbl do
   nesdbg.CpuMemWr(startPc, #curTest.code, curTest.code)
 
   nesdbg.DbgRun()
-  nesdbg.WaitForBrk()
+  nesdbg.WaitForHlt()
 
   local ac = GetAc()
   local x  = GetX()

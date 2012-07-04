@@ -96,11 +96,11 @@ BOOL ScriptMgr::Init()
             { "Echo",        LuaEcho        },
             { "CpuMemRd",    LuaCpuMemRd    },
             { "CpuMemWr",    LuaCpuMemWr    },
-            { "DbgBrk",      LuaDbgBrk      },
+            { "DbgHlt",      LuaDbgHlt      },
             { "DbgRun",      LuaDbgRun      },
             { "CpuRegRd",    LuaCpuRegRd    },
             { "CpuRegWr",    LuaCpuRegWr    },
-            { "WaitForBrk",  LuaWaitForBrk  },
+            { "WaitForHlt",  LuaWaitForHlt  },
             { "LoadAsm",     LuaLoadAsm     },
             { "PpuMemRd",    LuaPpuMemRd    },
             { "PpuMemWr",    LuaPpuMemWr    },
@@ -312,23 +312,23 @@ INT ScriptMgr::LuaCpuMemWr(
 }
 
 /***************************************************************************************************
-** % Method:      ScriptMgr::LuaDbgBrk()
-*  % Description: Issues a DbgBrk debug packet to the FPGA, halting its execution and allowing it
+** % Method:      ScriptMgr::LuaDbgHlt()
+*  % Description: Issues a DbgHlt debug packet to the FPGA, halting its execution and allowing it
 *                 to interact with the debugger.
 *  % Returns:     Number of values returned to lua.  (0)
 ***************************************************************************************************/
-INT ScriptMgr::LuaDbgBrk(
+INT ScriptMgr::LuaDbgHlt(
     lua_State* pLuaVm)  // lua state
 {
-    DbgBrkPacket dbgBrkPacket;
-    g_pNesDbg->GetSerialComm()->SendData(dbgBrkPacket.PacketData(), dbgBrkPacket.SizeInBytes());
+    DbgHltPacket dbgHltPacket;
+    g_pNesDbg->GetSerialComm()->SendData(dbgHltPacket.PacketData(), dbgHltPacket.SizeInBytes());
 
     return 0;
 }
 
 /***************************************************************************************************
 ** % Method:      ScriptMgr::LuaDbgRun()
-*  % Description: Issues a DbgRun debug packet to the FPGA, resuming its execution after a DbgBrk.
+*  % Description: Issues a DbgRun debug packet to the FPGA, resuming its execution after a DbgHlt.
 *  % Returns:     Number of values returned to lua.  (0)
 ***************************************************************************************************/
 INT ScriptMgr::LuaDbgRun(
@@ -404,26 +404,26 @@ INT ScriptMgr::LuaCpuRegWr(
 }
 
 /***************************************************************************************************
-** % Method:      ScriptMgr::LuaWaitForBrk()
-*  % Description: Returns control to the lua script once the NES is in a debug break state.
+** % Method:      ScriptMgr::LuaWaitForHlt()
+*  % Description: Returns control to the lua script once the NES CPU is halted.
 *  % Returns:     Number of values returned to lua.  (0)
 ***************************************************************************************************/
-INT ScriptMgr::LuaWaitForBrk(
+INT ScriptMgr::LuaWaitForHlt(
     lua_State* pLuaVm)  // lua state
 {
     // Create a debug break query packet, and issue it to the FPGA until we detect a debug break.
-    QueryDbgBrkPacket queryDbgBrkPacket;
+    QueryHltPacket queryDbgHltPacket;
 
     // Allocate space to receive the FPGA returned data.
-    UINT bytesToReceive = queryDbgBrkPacket.ReturnBytesExpected();
+    UINT bytesToReceive = queryDbgHltPacket.ReturnBytesExpected();
     assert(bytesToReceive == 1);
     BYTE* pReceivedData = new BYTE[bytesToReceive];
     assert(pReceivedData);
 
     do
     {
-        g_pNesDbg->GetSerialComm()->SendData(queryDbgBrkPacket.PacketData(),
-                                             queryDbgBrkPacket.SizeInBytes());
+        g_pNesDbg->GetSerialComm()->SendData(queryDbgHltPacket.PacketData(),
+                                             queryDbgHltPacket.SizeInBytes());
         g_pNesDbg->GetSerialComm()->ReceiveData(pReceivedData, bytesToReceive);
 
         Sleep(10);

@@ -82,11 +82,11 @@ private:
     static INT LuaEcho(lua_State* pLuaVm);
     static INT LuaCpuMemRd(lua_State* pLuaVm);
     static INT LuaCpuMemWr(lua_State* pLuaVm);
-    static INT LuaDbgBrk(lua_State* pLuaVm);
+    static INT LuaDbgHlt(lua_State* pLuaVm);
     static INT LuaDbgRun(lua_State* pLuaVm);
     static INT LuaCpuRegRd(lua_State* pLuaVm);
     static INT LuaCpuRegWr(lua_State* pLuaVm);
-    static INT LuaWaitForBrk(lua_State* pLuaVm);
+    static INT LuaWaitForHlt(lua_State* pLuaVm);
     static INT LuaLoadAsm(lua_State* pLuaVm);
     static INT LuaPpuMemRd(lua_State* pLuaVm);
     static INT LuaPpuMemWr(lua_State* pLuaVm);

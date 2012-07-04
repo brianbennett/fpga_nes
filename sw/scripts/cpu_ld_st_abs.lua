@@ -15,7 +15,7 @@ local testTbl =
               Ops.LDX_IMM, 69,
               Ops.LDY_IMM, 245,
               Ops.STA_ABS, 0x0C, 0x07,
-              Ops.BRK },
+              Ops.HLT },
     aVal  = 169,
     xVal  = 69,
     yVal  = 245,
@@ -28,7 +28,7 @@ local testTbl =
   -- Test 2
   {
     code  = { Ops.STX_ABS, 0xA1, 0x03,
-              Ops.BRK },
+              Ops.HLT },
     aVal  = 169,
     xVal  = 69,
     yVal  = 245,
@@ -41,7 +41,7 @@ local testTbl =
   -- Test 3
   {
     code  = { Ops.STY_ABS, 0x09, 0x04,
-              Ops.BRK },
+              Ops.HLT },
     aVal  = 169,
     xVal  = 69,
     yVal  = 245,
@@ -54,7 +54,7 @@ local testTbl =
   -- Test 4
   {
     code  = { Ops.LDA_ABS, 0xA1, 0x03,
-              Ops.BRK },
+              Ops.HLT },
     aVal  = 69,
     xVal  = 69,
     yVal  = 245,
@@ -67,7 +67,7 @@ local testTbl =
   -- Test 5
   {
     code  = { Ops.LDX_ABS, 0x09, 0x04,
-              Ops.BRK },
+              Ops.HLT },
     aVal  = 69,
     xVal  = 245,
     yVal  = 245,
@@ -80,7 +80,7 @@ local testTbl =
   -- Test 6
   {
     code  = { Ops.LDY_ABS, 0x0C, 0x07,
-              Ops.BRK },
+              Ops.HLT },
     aVal  = 69,
     xVal  = 245,
     yVal  = 169,
@@ -95,7 +95,7 @@ local testTbl =
     code  = { Ops.LDA_IMM,  222,
               Ops.LDX_IMM,  0x11,
               Ops.STA_ABSX, 0x22, 0x03,
-              Ops.BRK },
+              Ops.HLT },
     aVal  = 222,
     xVal  = 17,
     yVal  = 169,
@@ -110,7 +110,7 @@ local testTbl =
     code  = { Ops.LDA_IMM,  194,
               Ops.LDX_IMM,  0xE9,
               Ops.STA_ABSX, 0x3B, 0x03,
-              Ops.BRK },
+              Ops.HLT },
     aVal  = 194,
     xVal  = 0xE9,
     yVal  = 169,
@@ -125,7 +125,7 @@ local testTbl =
     code  = { Ops.LDA_IMM,  71,
               Ops.LDY_IMM,  0x37,
               Ops.STA_ABSY, 0x19, 0x07,
-              Ops.BRK },
+              Ops.HLT },
     aVal  = 71,
     xVal  = 0xE9,
     yVal  = 0x37,
@@ -140,7 +140,7 @@ local testTbl =
     code  = { Ops.LDA_IMM,  122,
               Ops.LDY_IMM,  0x93,
               Ops.STA_ABSY, 0xAD, 0x05,
-              Ops.BRK },
+              Ops.HLT },
     aVal  = 122,
     xVal  = 0xE9,
     yVal  = 0x93,
@@ -154,7 +154,7 @@ local testTbl =
   {
     code  = { Ops.LDX_IMM,  0x1C,
               Ops.LDA_ABSX, 0x34, 0x07,
-              Ops.BRK },
+              Ops.HLT },
     aVal  = 71,
     xVal  = 0x1C,
     yVal  = 0x93,
@@ -168,7 +168,7 @@ local testTbl =
   {
     code  = { Ops.LDX_IMM,  0x4F,
               Ops.LDA_ABSX, 0xE4, 0x02,
-              Ops.BRK },
+              Ops.HLT },
     aVal  = 222,
     xVal  = 0x4F,
     yVal  = 0x93,
@@ -182,7 +182,7 @@ local testTbl =
   {
     code  = { Ops.LDY_IMM,  0x79,
               Ops.LDA_ABSY, 0x28, 0x03,
-              Ops.BRK },
+              Ops.HLT },
     aVal  = 69,
     xVal  = 0x4F,
     yVal  = 0x79,
@@ -196,7 +196,7 @@ local testTbl =
   {
     code  = { Ops.LDY_IMM,  0x0A,
               Ops.LDA_ABSY, 0xFF, 0x03,
-              Ops.BRK },
+              Ops.HLT },
     aVal  = 245,
     xVal  = 0x4F,
     yVal  = 0x0A,
@@ -210,7 +210,7 @@ local testTbl =
   {
     code  = { Ops.LDY_IMM,  0x20,
               Ops.LDX_ABSY, 0x30, 0x07,
-              Ops.BRK },
+              Ops.HLT },
     aVal  = 245,
     xVal  = 71,
     yVal  = 0x20,
@@ -224,7 +224,7 @@ local testTbl =
   {
     code  = { Ops.LDY_IMM,  0xA2,
               Ops.LDX_ABSY, 0xFF, 0x02,
-              Ops.BRK },
+              Ops.HLT },
     aVal  = 245,
     xVal  = 69,
     yVal  = 0xA2,
@@ -238,7 +238,7 @@ local testTbl =
   {
     code  = { Ops.LDX_IMM,  0x01,
               Ops.LDY_ABSX, 0x0B, 0x07,
-              Ops.BRK },
+              Ops.HLT },
     aVal  = 245,
     xVal  = 0x01,
     yVal  = 169,
@@ -252,7 +252,7 @@ local testTbl =
   {
     code  = { Ops.LDX_IMM,  0x41,
               Ops.LDY_ABSX, 0xFF, 0x05,
-              Ops.BRK },
+              Ops.HLT },
     aVal  = 245,
     xVal  = 0x41,
     yVal  = 122,
@@ -305,7 +305,7 @@ for subTestIdx = 1, #testTbl do
   nesdbg.CpuMemWr(startPc, #curTest.code, curTest.code)
 
   nesdbg.DbgRun()
-  nesdbg.WaitForBrk()
+  nesdbg.WaitForHlt()
 
   if EvaluateSubtest(curTest) then
     results[subTestIdx] = ScriptResult.Pass

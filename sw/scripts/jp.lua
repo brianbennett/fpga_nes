@@ -173,7 +173,7 @@ for testIdx = 1, #testTbl do
   SetPc(startPc)
 
   nesdbg.DbgRun()
-  nesdbg.WaitForBrk()
+  nesdbg.WaitForHlt()
 
   -- 
   -- Check result.

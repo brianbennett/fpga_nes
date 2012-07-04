@@ -144,7 +144,7 @@ for asmIdx = 1, #asmTbl do
     SetPc(startPc)
 
     nesdbg.DbgRun()
-    nesdbg.WaitForBrk()
+    nesdbg.WaitForHlt()
 
     -- 
     -- Check result.
