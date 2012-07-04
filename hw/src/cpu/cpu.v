@@ -385,7 +385,7 @@ always @(posedge clk)
       q_clk_phase <= 6'h01;
   end
 
-assign d_clk_phase = (q_clk_phase == 6'h38) ? 6'h00 : q_clk_phase + 6'h01;
+assign d_clk_phase = (q_clk_phase == 6'h37) ? 6'h00 : q_clk_phase + 6'h01;
 
 //
 // Interrupt and Reset Control.
