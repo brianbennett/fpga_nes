@@ -77,6 +77,7 @@ cpu cpu_blk(
   .din(cpu_din),
   .nnmi(nnmi_in),
   .nres(nres_in),
+  .nirq(1'b1),
   .dout(cpu_dout),
   .a(cpu_a),
   .r_nw(cpu_r_nw),

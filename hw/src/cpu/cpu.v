@@ -35,7 +35,8 @@ module cpu
   input  wire        dbgreg_wr,   // dbg reg rd/wr select
   input  wire [ 7:0] din,         // data input bus
   input  wire        nnmi,        // /nmi interrupt signal (active low)
-  input  wire        nres,        // /res interrupt signal (console reset)
+  input  wire        nres,        // /res interrupt signal (console reset, active low)
+  input  wire        nirq,        // /irq intterupt signal (active low)
   output wire [ 7:0] dout,        // data output bus
   output wire [15:0] a,           // address bus
   output reg         r_nw,        // R/!W signal
@@ -95,7 +96,6 @@ localparam [7:0] ADC_ABS   = 8'h6D, ADC_ABSX  = 8'h7D, ADC_ABSY  = 8'h79, ADC_IM
                  INC_ABS   = 8'hEE, INC_ABSX  = 8'hFE, INC_ZP    = 8'hE6, INC_ZPX   = 8'hF6,
                  INX       = 8'hE8,
                  INY       = 8'hC8,
-                 IRQ       = 8'h12,
                  JMP_ABS   = 8'h4C, JMP_IND   = 8'h6C,
                  JSR       = 8'h20,
                  LAX_ABS   = 8'hAF, LAX_ABSY  = 8'hBF, LAX_INDX  = 8'hA3, LAX_INDY  = 8'hB3,
@@ -167,33 +167,33 @@ localparam [7:0] ADC_ABS   = 8'h6D, ADC_ABSX  = 8'h7D, ADC_ABSY  = 8'h79, ADC_IM
      ((op) == EOR_ABSY ) || ((op) == EOR_IMM  ) || ((op) == EOR_INDX ) || ((op) == EOR_INDY ) || \
      ((op) == EOR_ZP   ) || ((op) == EOR_ZPX  ) || ((op) == HLT      ) || ((op) == INC_ABS  ) || \
      ((op) == INC_ABSX ) || ((op) == INC_ZP   ) || ((op) == INC_ZPX  ) || ((op) == INX      ) || \
-     ((op) == INY      ) || ((op) == IRQ      ) || ((op) == JMP_ABS  ) || ((op) == JMP_IND  ) || \
-     ((op) == JSR      ) || ((op) == LAX_ABS  ) || ((op) == LAX_ABSY ) || ((op) == LAX_INDX ) || \
-     ((op) == LAX_INDY ) || ((op) == LAX_ZP   ) || ((op) == LAX_ZPY  ) || ((op) == LDA_ABS  ) || \
-     ((op) == LDA_ABSX ) || ((op) == LDA_ABSY ) || ((op) == LDA_IMM  ) || ((op) == LDA_INDX ) || \
-     ((op) == LDA_INDY ) || ((op) == LDA_ZP   ) || ((op) == LDA_ZPX  ) || ((op) == LDX_ABS  ) || \
-     ((op) == LDX_ABSY ) || ((op) == LDX_IMM  ) || ((op) == LDX_ZP   ) || ((op) == LDX_ZPY  ) || \
-     ((op) == LDY_ABS  ) || ((op) == LDY_ABSX ) || ((op) == LDY_IMM  ) || ((op) == LDY_ZP   ) || \
-     ((op) == LDY_ZPX  ) || ((op) == LSR_ABS  ) || ((op) == LSR_ABSX ) || ((op) == LSR_ACC  ) || \
-     ((op) == LSR_ZP   ) || ((op) == LSR_ZPX  ) || ((op) == NOP      ) || ((op) == NOP_1A   ) || \
-     ((op) == NOP_3A   ) || ((op) == NOP_5A   ) || ((op) == NOP_7A   ) || ((op) == NOP_DA   ) || \
-     ((op) == NOP_FA   ) || ((op) == ORA_ABS  ) || ((op) == ORA_ABSX ) || ((op) == ORA_ABSY ) || \
-     ((op) == ORA_IMM  ) || ((op) == ORA_INDX ) || ((op) == ORA_INDY ) || ((op) == ORA_ZP   ) || \
-     ((op) == ORA_ZPX  ) || ((op) == PHA      ) || ((op) == PHP      ) || ((op) == PLA      ) || \
-     ((op) == PLP      ) || ((op) == ROL_ABS  ) || ((op) == ROL_ABSX ) || ((op) == ROL_ACC  ) || \
-     ((op) == ROL_ZP   ) || ((op) == ROL_ZPX  ) || ((op) == ROR_ABS  ) || ((op) == ROR_ABSX ) || \
-     ((op) == ROR_ACC  ) || ((op) == ROR_ZP   ) || ((op) == ROR_ZPX  ) || ((op) == RTI      ) || \
-     ((op) == RTS      ) || ((op) == SAX_ABS  ) || ((op) == SAX_INDX ) || ((op) == SAX_ZP   ) || \
-     ((op) == SAX_ZPY  ) || ((op) == SBC_ABS  ) || ((op) == SBC_ABSX ) || ((op) == SBC_ABSY ) || \
-     ((op) == SBC_IMM  ) || ((op) == SBC_IMM2 ) || ((op) == SBC_INDX ) || ((op) == SBC_INDY ) || \
-     ((op) == SBC_ZP   ) || ((op) == SBC_ZPX  ) || ((op) == SEC      ) || ((op) == SED      ) || \
-     ((op) == SEI      ) || ((op) == STA_ABS  ) || ((op) == STA_ABSX ) || ((op) == STA_ABSY ) || \
-     ((op) == STA_INDX ) || ((op) == STA_INDY ) || ((op) == STA_ZP   ) || ((op) == STA_ZPX  ) || \
-     ((op) == STX_ABS  ) || ((op) == STX_ZP   ) || ((op) == STX_ZPY  ) || ((op) == STY_ABS  ) || \
-     ((op) == STY_ZP   ) || ((op) == STY_ZPX  ) || ((op) == TAX      ) || ((op) == TAY      ) || \
-     ((op) == TOP_ABS  ) || ((op) == TOP_ABSX ) || ((op) == TOP_ABSX2) || ((op) == TOP_ABSX3) || \
-     ((op) == TOP_ABSX4) || ((op) == TOP_ABSX5) || ((op) == TOP_ABSX6) || ((op) == TSX      ) || \
-     ((op) == TXA      ) || ((op) == TXS      ) || ((op) == TYA      ))
+     ((op) == INY      ) || ((op) == JMP_ABS  ) || ((op) == JMP_IND  ) || ((op) == JSR      ) || \
+     ((op) == LAX_ABS  ) || ((op) == LAX_ABSY ) || ((op) == LAX_INDX ) || ((op) == LAX_INDY ) || \
+     ((op) == LAX_ZP   ) || ((op) == LAX_ZPY  ) || ((op) == LDA_ABS  ) || ((op) == LDA_ABSX ) || \
+     ((op) == LDA_ABSY ) || ((op) == LDA_IMM  ) || ((op) == LDA_INDX ) || ((op) == LDA_INDY ) || \
+     ((op) == LDA_ZP   ) || ((op) == LDA_ZPX  ) || ((op) == LDX_ABS  ) || ((op) == LDX_ABSY ) || \
+     ((op) == LDX_IMM  ) || ((op) == LDX_ZP   ) || ((op) == LDX_ZPY  ) || ((op) == LDY_ABS  ) || \
+     ((op) == LDY_ABSX ) || ((op) == LDY_IMM  ) || ((op) == LDY_ZP   ) || ((op) == LDY_ZPX  ) || \
+     ((op) == LSR_ABS  ) || ((op) == LSR_ABSX ) || ((op) == LSR_ACC  ) || ((op) == LSR_ZP   ) || \
+     ((op) == LSR_ZPX  ) || ((op) == NOP      ) || ((op) == NOP_1A   ) || ((op) == NOP_3A   ) || \
+     ((op) == NOP_5A   ) || ((op) == NOP_7A   ) || ((op) == NOP_DA   ) || ((op) == NOP_FA   ) || \
+     ((op) == ORA_ABS  ) || ((op) == ORA_ABSX ) || ((op) == ORA_ABSY ) || ((op) == ORA_IMM  ) || \
+     ((op) == ORA_INDX ) || ((op) == ORA_INDY ) || ((op) == ORA_ZP   ) || ((op) == ORA_ZPX  ) || \
+     ((op) == PHA      ) || ((op) == PHP      ) || ((op) == PLA      ) || ((op) == PLP      ) || \
+     ((op) == ROL_ABS  ) || ((op) == ROL_ABSX ) || ((op) == ROL_ACC  ) || ((op) == ROL_ZP   ) || \
+     ((op) == ROL_ZPX  ) || ((op) == ROR_ABS  ) || ((op) == ROR_ABSX ) || ((op) == ROR_ACC  ) || \
+     ((op) == ROR_ZP   ) || ((op) == ROR_ZPX  ) || ((op) == RTI      ) || ((op) == RTS      ) || \
+     ((op) == SAX_ABS  ) || ((op) == SAX_INDX ) || ((op) == SAX_ZP   ) || ((op) == SAX_ZPY  ) || \
+     ((op) == SBC_ABS  ) || ((op) == SBC_ABSX ) || ((op) == SBC_ABSY ) || ((op) == SBC_IMM  ) || \
+     ((op) == SBC_IMM2 ) || ((op) == SBC_INDX ) || ((op) == SBC_INDY ) || ((op) == SBC_ZP   ) || \
+     ((op) == SBC_ZPX  ) || ((op) == SEC      ) || ((op) == SED      ) || ((op) == SEI      ) || \
+     ((op) == STA_ABS  ) || ((op) == STA_ABSX ) || ((op) == STA_ABSY ) || ((op) == STA_INDX ) || \
+     ((op) == STA_INDY ) || ((op) == STA_ZP   ) || ((op) == STA_ZPX  ) || ((op) == STX_ABS  ) || \
+     ((op) == STX_ZP   ) || ((op) == STX_ZPY  ) || ((op) == STY_ABS  ) || ((op) == STY_ZP   ) || \
+     ((op) == STY_ZPX  ) || ((op) == TAX      ) || ((op) == TAY      ) || ((op) == TOP_ABS  ) || \
+     ((op) == TOP_ABSX ) || ((op) == TOP_ABSX2) || ((op) == TOP_ABSX3) || ((op) == TOP_ABSX4) || \
+     ((op) == TOP_ABSX5) || ((op) == TOP_ABSX6) || ((op) == TSX      ) || ((op) == TXA      ) || \
+     ((op) == TXS      ) || ((op) == TYA      ))
 
 // Timing generation cycle states.
 localparam [2:0] T0  = 3'h0,
@@ -205,8 +205,10 @@ localparam [2:0] T0  = 3'h0,
                  T6  = 3'h6;
 
 // Interrupt types.
-localparam INTERRUPT_RST = 1'b0,
-           INTERRUPT_NMI = 1'b1;
+localparam [1:0] INTERRUPT_RST = 2'h0,
+                 INTERRUPT_NMI = 2'h1,
+                 INTERRUPT_IRQ = 2'h2,
+                 INTERRUPT_BRK = 2'h3;
 
 // User registers.
 reg  [7:0] q_ac;     // accumulator register
@@ -391,19 +393,22 @@ assign d_clk_phase = (q_clk_phase == 6'h37) ? 6'h00 : q_clk_phase + 6'h01;
 //
 // Interrupt and Reset Control.
 //
-reg q_irq_sel;       // interrupt selected for service
-reg d_irq_sel;
+reg [1:0] q_irq_sel, d_irq_sel;  // interrupt selected for service
 
-reg       q_rst;           // rst interrupt needs to be serviced
+reg       q_rst;                 // rst interrupt needs to be serviced
 wire      d_rst;
-reg       q_nres;          // latch last nres input signal for falling edge detection
-reg       q_nmi;           // nmi interrupt needs to be serviced
+reg       q_nres;                // latch last nres input signal for falling edge detection
+reg       q_nmi;                 // nmi interrupt needs to be serviced
 wire      d_nmi;
-reg       q_nnmi;          // latch last nnmi input signal for falling edge detection
+reg       q_nnmi;                // latch last nnmi input signal for falling edge detection
+reg       q_irq;                 // irq interrupt needs to be serviced
+wire      d_irq;
+reg       q_nirq;                // latch last nirq input signal for falling edge detection
 
-reg       clear_rst;       // clear rst interrupt
-reg       clear_nmi;       // clear nmi interrupt
-reg       force_noinc_pc;  // override stage-0 PC increment
+reg       clear_rst;             // clear rst interrupt
+reg       clear_nmi;             // clear nmi interrupt
+reg       clear_irq;             // clear irq interrupt
+reg       force_noinc_pc;        // override stage-0 PC increment
 
 always @(posedge clk)
   begin
@@ -414,6 +419,8 @@ always @(posedge clk)
         q_nres    <= 1'b1;
         q_nmi     <= 1'b0;
         q_nnmi    <= 1'b1;
+        q_irq     <= 1'b0;
+        q_nirq    <= 1'b1;
       end
     else if (q_clk_phase == 6'h00)
       begin
@@ -422,6 +429,8 @@ always @(posedge clk)
         q_nres    <= nres;
         q_nmi     <= d_nmi;
         q_nnmi    <= nnmi;
+        q_irq     <= d_irq;
+        q_nirq    <= nirq;
       end
   end
 
@@ -431,6 +440,9 @@ assign d_rst = (clear_rst)       ? 1'b0 :
 assign d_nmi = (clear_nmi)       ? 1'b0 :
                (!nnmi && q_nnmi) ? 1'b1 :
                q_nmi;
+assign d_irq = (clear_irq)       ? 1'b0 :
+               (!nirq && q_nirq) ? 1'b1 :
+               q_irq;
 
 //
 // Update phase-1 clocked registers.
@@ -553,16 +565,16 @@ always @*
       T1:
         begin
           // These instructions are in their last cycle but do not prefetch.
-          if ((q_ir == BRK)      || (q_ir == CLC)      || (q_ir == CLD)      ||
-              (q_ir == CLI)      || (q_ir == CLV)      || (q_ir == DOP_IMM)  ||
-              (q_ir == DOP_IMM2) || (q_ir == DOP_IMM3) || (q_ir == DOP_IMM4) ||
-              (q_ir == DOP_IMM5) || (q_ir == HLT)      || (q_ir == LDA_IMM)  ||
-              (q_ir == LDX_IMM)  || (q_ir == LDY_IMM)  || (q_ir == NOP)      ||
-              (q_ir == NOP_1A)   || (q_ir == NOP_3A)   || (q_ir == NOP_5A)   ||
-              (q_ir == NOP_7A)   || (q_ir == NOP_DA)   || (q_ir == NOP_FA)   ||
-              (q_ir == SEC)      || (q_ir == SED)      || (q_ir == SEI)      ||
-              (q_ir == TAX)      || (q_ir == TAY)      || (q_ir == TSX)      ||
-              (q_ir == TXA)      || (q_ir == TXS)      || (q_ir == TYA))
+          if ((q_ir == CLC)      || (q_ir == CLD)      || (q_ir == CLI)      ||
+              (q_ir == CLV)      || (q_ir == DOP_IMM)  || (q_ir == DOP_IMM2) ||
+              (q_ir == DOP_IMM3) || (q_ir == DOP_IMM4) || (q_ir == DOP_IMM5) ||
+              (q_ir == HLT)      || (q_ir == LDA_IMM)  || (q_ir == LDX_IMM)  ||
+              (q_ir == LDY_IMM)  || (q_ir == NOP)      || (q_ir == NOP_1A)   ||
+              (q_ir == NOP_3A)   || (q_ir == NOP_5A)   || (q_ir == NOP_7A)   ||
+              (q_ir == NOP_DA)   || (q_ir == NOP_FA)   || (q_ir == SEC)      ||
+              (q_ir == SED)      || (q_ir == SEI)      || (q_ir == TAX)      ||
+              (q_ir == TAY)      || (q_ir == TSX)      || (q_ir == TXA)      ||
+              (q_ir == TXS)      || (q_ir == TYA))
             d_t = T0;
 
           // Check for not-taken branches.  These instructions must setup the not-taken PC during
@@ -730,21 +742,28 @@ always @*
     // Update IR register on cycle 1, otherwise retain current IR.
     if (d_t == T1)
       begin
-        if (q_rst || q_nmi)
+        if (q_rst || q_nmi || q_irq)
           begin
-            d_ir           = IRQ;
+            d_ir           = BRK;
             force_noinc_pc = 1'b1;
 
             if (q_rst)
               d_irq_sel = INTERRUPT_RST;
             else if (q_nmi)
               d_irq_sel = INTERRUPT_NMI;
+            else
+              d_irq_sel = INTERRUPT_IRQ;
           end
         else
-          d_ir = q_pd;
+          begin
+            d_ir      = q_pd;
+            d_irq_sel = INTERRUPT_BRK;
+          end
       end
     else
-      d_ir = q_ir;
+      begin
+        d_ir = q_ir;
+      end
   end
 
 //
@@ -821,8 +840,10 @@ reg alusum_to_abl;         // load abl with ai+bi (adl)
 reg dl_to_abl;             // load abl with dl (adl)
 reg fa_to_abl;             // load abl with 8'hfa (adl)
 reg fb_to_abl;             // load abl with 8'hfb (adl)
-reg fc_to_abl;             // load abl with 8'hfe (adl)
-reg fd_to_abl;             // load abl with 8'hff (adl)
+reg fc_to_abl;             // load abl with 8'hfc (adl)
+reg fd_to_abl;             // load abl with 8'hfd (adl)
+reg fe_to_abl;             // load abl with 8'hfe (adl)
+reg ff_to_abl;             // load abl with 8'hff (adl)
 reg pcl_to_abl;            // load abl with pcl (adl)
 reg s_to_abl;              // load abl with s (adl)
 
@@ -855,6 +876,7 @@ reg dl_to_s;               // load s with current data latch register (db, sb)
 // Process status register controls.
 reg dl_bits67_to_p;        // latch bits 6 and 7 into P V and N bits (db)
 reg dl_to_p;               // load dl into p (db)
+reg one_to_i;              // used to supress irqs while processing an interrupt
 
 // Sets all decode ROM output signals to the specified value (0 for init, X for con't care states.
 `define SET_ALL_CONTROL_SIGNALS(val) \
@@ -924,6 +946,8 @@ reg dl_to_p;               // load dl into p (db)
     fb_to_abl            = (val);    \
     fc_to_abl            = (val);    \
     fd_to_abl            = (val);    \
+    fe_to_abl            = (val);    \
+    ff_to_abl            = (val);    \
     pcl_to_abl           = (val);    \
     s_to_abl             = (val);    \
                                      \
@@ -952,7 +976,8 @@ reg dl_to_p;               // load dl into p (db)
     dl_to_s              = (val);    \
                                      \
     dl_to_p              = (val);    \
-    dl_bits67_to_p       = (val);
+    dl_bits67_to_p       = (val);    \
+    one_to_i             = (val);
 
 //
 // Decode ROM logic.
@@ -967,6 +992,7 @@ always @*
     brk       = 1'b0;
     clear_rst = 1'b0;
     clear_nmi = 1'b0;
+    clear_irq = 1'b0;
 
     if (q_t == T0)
       begin
@@ -1095,8 +1121,10 @@ always @*
               zero_to_ai = 1'b1;
               y_to_bi    = 1'b1;
             end
-          IRQ:
+          BRK:
             begin
+              if (q_irq_sel == INTERRUPT_BRK)
+                incpc_noload = 1'b1;
               pch_to_dor   = 1'b1;
               one_to_abh   = 1'b1;
               s_to_abl     = 1'b1;
@@ -1340,7 +1368,7 @@ always @*
               load_prg_byte = 1'b1;
               iny_op        = 1'b1;
             end
-          IRQ:
+          BRK:
             begin
               pcl_to_dor    = 1'b1;
               alusum_to_abl = 1'b1;
@@ -1597,7 +1625,7 @@ always @*
             end
           INC_ZP:
             inc_op = 1'b1;
-          IRQ:
+          BRK:
             begin
               p_to_dor      = 1'b1;
               alusum_to_abl = 1'b1;
@@ -1784,13 +1812,15 @@ always @*
               zero_to_ai = 1'b1;
               dl_to_bi   = 1'b1;
             end
-          IRQ:
+          BRK:
             begin
               ff_to_abh = 1'b1;
               r_nw      = 1'b0;
+              one_to_i  = 1'b1;
               case (q_irq_sel)
-                INTERRUPT_RST: fc_to_abl = 1'b1;
-                INTERRUPT_NMI: fa_to_abl = 1'b1;
+                INTERRUPT_RST:                fc_to_abl = 1'b1;
+                INTERRUPT_NMI:                fa_to_abl = 1'b1;
+                INTERRUPT_IRQ, INTERRUPT_BRK: fe_to_abl = 1'b1;
               endcase
             end
           JMP_IND:
@@ -1936,13 +1966,14 @@ always @*
             end
           INC_ABSX:
             inc_op = 1'b1;
-          IRQ:
+          BRK:
             begin
               ff_to_abh = 1'b1;
               dl_to_s   = 1'b1;
               case (q_irq_sel)
-                INTERRUPT_RST: fd_to_abl = 1'b1;
-                INTERRUPT_NMI: fb_to_abl = 1'b1;
+                INTERRUPT_RST:                fd_to_abl = 1'b1;
+                INTERRUPT_NMI:                fb_to_abl = 1'b1;
+                INTERRUPT_IRQ, INTERRUPT_BRK: ff_to_abl = 1'b1;
               endcase
             end
           JSR:
@@ -2026,7 +2057,7 @@ always @*
               load_prg_byte = 1'b1;
               eor_op        = 1'b1;
             end
-          IRQ:
+          BRK:
             begin
               dl_to_pch   = 1'b1;
               s_to_pcl    = 1'b1;
@@ -2037,6 +2068,7 @@ always @*
               case (q_irq_sel)
                 INTERRUPT_RST: clear_rst = 1'b1;
                 INTERRUPT_NMI: clear_nmi = 1'b1;
+                INTERRUPT_IRQ: clear_irq = 1'b1;
               endcase
             end
           ORA_INDX,
@@ -2087,7 +2119,7 @@ assign dl_adl     = dl_to_abl            | dl_to_pcl;
 assign pcl_adl    = load_prg_byte        | load_prg_byte_noinc  | pcl_to_abl           |
                     pcl_to_bi;
 assign s_adl      = s_to_abl             | s_to_bi              | s_to_pcl;
-assign zero_adl0  = fa_to_abl            | fc_to_abl;
+assign zero_adl0  = fa_to_abl            | fc_to_abl            | fe_to_abl;
 assign zero_adl1  = fc_to_abl            | fd_to_abl;
 assign zero_adl2  = fa_to_abl            | fb_to_abl;
 assign dl_adh     = dl_to_abh            | dl_to_pch;
@@ -2117,26 +2149,27 @@ assign y_sb       = tya_op               | y_to_ai              | y_to_bi       
                     y_to_dor;
 assign s_sb       = s_to_ai              | tsx_op;
 assign sb_adh     = aluacrinc_to_abh     | alusum_to_abh        | alusum_to_pch        |
-                    one_to_ai;
+                    one_to_ai            | one_to_i;
 assign sb_db      = adc_op               | and_op               | asl_acc_op           |
                     asl_mem_op           | bit_op               | cmp_op               |
                     dl_to_s              | dec_op               | dex_op               |
                     dey_op               | dl_to_ai             | eor_op               |
                     inc_op               | inx_op               | iny_op               |
                     lda_op               | ldx_op               | ldy_op               |
-                    lsr_acc_op           | lsr_mem_op           | ora_op               |
-                    rol_acc_op           | rol_mem_op           | ror_acc_op           |
-                    ror_mem_op           | tax_op               | tay_op               |
-                    tsx_op               | txa_op               | tya_op               |
-                    x_to_bi              | x_to_dor             | y_to_bi              |
-                    y_to_dor;
+                    lsr_acc_op           | lsr_mem_op           | one_to_i             |
+                    ora_op               | rol_acc_op           | rol_mem_op           |
+                    ror_acc_op           | ror_mem_op           | tax_op               |
+                    tay_op               | tsx_op               | txa_op               |
+                    tya_op               | x_to_bi              | x_to_dor             |
+                    y_to_bi              | y_to_dor;
 assign adh_abh    = aluacrinc_to_abh     | alusum_to_abh        | dl_to_abh            |
                     ff_to_abh            | load_prg_byte        | load_prg_byte_noinc  |
                     one_to_abh           | zero_to_abh;
 assign adl_abl    = aluinc_to_abl        | alusum_to_abl        | dl_to_abl            |
                     fa_to_abl            | fb_to_abl            | fc_to_abl            |
-                    fd_to_abl            | load_prg_byte        | load_prg_byte_noinc  |
-                    pcl_to_abl           | s_to_abl;
+                    fd_to_abl            | fe_to_abl            | ff_to_abl            |
+                    load_prg_byte        | load_prg_byte_noinc  | pcl_to_abl           |
+                    s_to_abl;
 assign adl_add    = aluinc_to_bi         | alusum_to_bi         | pcl_to_bi            |
                     s_to_bi;
 assign db_add     = ac_to_bi             | dl_to_bi             | neg1_to_bi           |
@@ -2166,7 +2199,7 @@ assign db0_c      = dl_to_p;
 assign ir5_c      = clc_op               | sec_op;
 assign db3_d      = dl_to_p;
 assign ir5_d      = cld_op               | sed_op;
-assign db2_i      = dl_to_p;
+assign db2_i      = dl_to_p              | one_to_i;
 assign ir5_i      = cli_op               | sei_op;
 assign db7_n      = adc_op               | and_op               | asl_acc_op           |
                     asl_mem_op           | cmp_op               | dec_op               |
@@ -2302,7 +2335,7 @@ assign d_pcls           = (adl_pcl)   ? adl                           : q_pcl;
 assign { d_pch, d_pcl } = (i_pc)      ? { q_pchs, q_pcls } + 16'h0001 : { q_pchs, q_pcls };
 
 // Combine full processor status register.
-assign p = { q_n, q_v, 2'b11, q_d, q_i, q_z, q_c };
+assign p = { q_n, q_v, 1'b1, q_irq_sel[1], q_d, q_i, q_z, q_c };
 
 //
 // Assign output signals.
