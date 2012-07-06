@@ -1219,10 +1219,6 @@ always @*
             txs_op = 1'b1;
           TYA:
             tya_op = 1'b1;
-          default:
-            begin
-              `SET_ALL_CONTROL_SIGNALS(1'bx)
-            end
         endcase
       end
     else if (q_t == T2)
