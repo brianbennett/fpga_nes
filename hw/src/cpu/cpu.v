@@ -424,13 +424,9 @@ reg       q_nres;                // latch last nres input signal for falling edg
 reg       q_nmi;                 // nmi interrupt needs to be serviced
 wire      d_nmi;
 reg       q_nnmi;                // latch last nnmi input signal for falling edge detection
-reg       q_irq;                 // irq interrupt needs to be serviced
-wire      d_irq;
-reg       q_nirq;                // latch last nirq input signal for falling edge detection
 
 reg       clear_rst;             // clear rst interrupt
 reg       clear_nmi;             // clear nmi interrupt
-reg       clear_irq;             // clear irq interrupt
 reg       force_noinc_pc;        // override stage-0 PC increment
 
 always @(posedge clk)
@@ -442,8 +438,6 @@ always @(posedge clk)
         q_nres    <= 1'b1;
         q_nmi     <= 1'b0;
         q_nnmi    <= 1'b1;
-        q_irq     <= 1'b0;
-        q_nirq    <= 1'b1;
       end
     else if (q_clk_phase == 6'h00)
       begin
@@ -452,8 +446,6 @@ always @(posedge clk)
         q_nres    <= nres;
         q_nmi     <= d_nmi;
         q_nnmi    <= nnmi;
-        q_irq     <= d_irq;
-        q_nirq    <= nirq;
       end
   end
 
@@ -463,9 +455,6 @@ assign d_rst = (clear_rst)       ? 1'b0 :
 assign d_nmi = (clear_nmi)       ? 1'b0 :
                (!nnmi && q_nnmi) ? 1'b1 :
                q_nmi;
-assign d_irq = (clear_irq)       ? 1'b0 :
-               (!nirq && q_nirq) ? 1'b1 :
-               q_irq;
 
 //
 // Update phase-1 clocked registers.
@@ -786,7 +775,7 @@ always @*
     // Update IR register on cycle 1, otherwise retain current IR.
     if (d_t == T1)
       begin
-        if (q_rst || q_nmi || q_irq)
+        if (q_rst || q_nmi || !nirq)
           begin
             d_ir           = BRK;
             force_noinc_pc = 1'b1;
@@ -1044,7 +1033,6 @@ always @*
     brk       = 1'b0;
     clear_rst = 1'b0;
     clear_nmi = 1'b0;
-    clear_irq = 1'b0;
 
     if (q_t == T0)
       begin
@@ -2333,7 +2321,6 @@ always @*
               case (q_irq_sel)
                 INTERRUPT_RST: clear_rst = 1'b1;
                 INTERRUPT_NMI: clear_nmi = 1'b1;
-                INTERRUPT_IRQ: clear_irq = 1'b1;
               endcase
             end
           CMP_INDX,
