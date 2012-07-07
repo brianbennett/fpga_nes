@@ -101,7 +101,7 @@ BOOL SerialComm::Init()
 
     if (ret)
     {
-        serialConfig.BaudRate = CBR_19200;
+        serialConfig.BaudRate = CBR_38400;
         serialConfig.ByteSize = 8;
         serialConfig.StopBits = ONESTOPBIT;
         serialConfig.Parity   = ODDPARITY;

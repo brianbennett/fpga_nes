@@ -140,7 +140,7 @@ always @(posedge clk)
 
 // Instantiate the serial controller block.
 uart #(.SYS_CLK_FREQ(100000000),
-       .BAUD_RATE(19200),
+       .BAUD_RATE(38400),
        .DATA_BITS(8),
        .STOP_BITS(1),
        .PARITY_MODE(1)) uart_blk
