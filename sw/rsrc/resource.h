@@ -2,6 +2,7 @@
 #define IDC_STATIC (-1)
 #endif
 
+#define IDC_ROMLOAD_PROGRESS                    1002
 #define IDM_FILE_EXIT                           40000
 #define IDM_TOOLS_RAWDEBUG                      40001
 #define IDM_TOOLS_TESTSCRIPTS                   40002

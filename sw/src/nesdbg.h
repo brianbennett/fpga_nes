@@ -63,6 +63,11 @@ private:
     NesDbg(const NesDbg&);
 
     static BOOL CALLBACK RawDbgDlgProc(HWND hWndDlg, UINT msg, WPARAM wParam, LPARAM lParam);
+    static BOOL CALLBACK RomLoadProgressDlgProc(
+        HWND   hWndDlg,
+        UINT   msg,
+        WPARAM wParam,
+        LPARAM lParam);
 
     HINSTANCE   m_hInstance;        // handle to application instance
     HWND        m_hWnd;             // handle to main application window

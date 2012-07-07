@@ -246,6 +246,20 @@ VOID NesDbg::LoadRom()
 
     if (success)
     {
+        FLOAT pctDone = 0.0f;
+
+        HWND hDlg = CreateDialog(m_hInstance,
+                                 _T("RomLoadProgressDlg"),
+                                 m_hWnd,
+                                 RomLoadProgressDlgProc);
+
+        PBRANGE pbRange;
+        SendDlgItemMessage(hDlg,
+                           IDC_ROMLOAD_PROGRESS,
+                           PBM_GETRANGE,
+                           0,
+                           (LPARAM)&pbRange);
+
         // Issue a debug break.
         DbgHltPacket dbgHltPacket;
         g_pNesDbg->GetSerialComm()->SendData(dbgHltPacket.PacketData(),
@@ -261,19 +275,48 @@ VOID NesDbg::LoadRom()
         g_pNesDbg->GetSerialComm()->SendData(cartSetCfgPacket.PacketData(),
                                              cartSetCfgPacket.SizeInBytes());
 
-        // Copy PRG ROM data.
-        const UINT prgRomDataSize = prgRomBanks * 0x4000;
-        CpuMemWrPacket prgRomMemWrPacket(0x8000, prgRomDataSize, &pFileData[16]);
+        const UINT prgRomDataSize    = prgRomBanks * 0x4000;
+        const UINT chrRomDataSize    = chrRomBanks * 0x2000;
+        const UINT totalBytes        = prgRomDataSize + chrRomDataSize;
+        const UINT transferBlockSize = 0x400;
 
-        g_pNesDbg->GetSerialComm()->SendData(prgRomMemWrPacket.PacketData(),
-                                             prgRomMemWrPacket.SizeInBytes());
+        UINT transferredBytes = 0;
+
+        // Copy PRG ROM data.
+        for (UINT i = 0; i < (prgRomDataSize / transferBlockSize); i++)
+        {
+            const UINT prgRomOffset = transferBlockSize * i;
+            CpuMemWrPacket prgRomMemWrPacket(0x8000 + prgRomOffset,
+                                             transferBlockSize,
+                                             &pFileData[16 + prgRomOffset]);
+
+            g_pNesDbg->GetSerialComm()->SendData(prgRomMemWrPacket.PacketData(),
+                                                 prgRomMemWrPacket.SizeInBytes());
+
+            transferredBytes += transferBlockSize;
+            pctDone = (FLOAT)transferredBytes / totalBytes;
+
+            const INT pos = (INT)(((pbRange.iHigh - pbRange.iLow) * pctDone) + pbRange.iLow);
+            SendDlgItemMessage(hDlg, IDC_ROMLOAD_PROGRESS, PBM_SETPOS, (WPARAM)pos, 0);
+        }
 
         // Copy CHR ROM data.
-        const UINT chrRomDataSize = chrRomBanks * 0x2000;
-        PpuMemWrPacket ppuMemWrPacket(0x0, chrRomDataSize, &pFileData[16 + prgRomDataSize]);
+        for (UINT i = 0; i < (chrRomDataSize / transferBlockSize); i++)
+        {
+            const UINT chrRomOffset = transferBlockSize * i;
+            PpuMemWrPacket ppuMemWrPacket(chrRomOffset,
+                                          transferBlockSize,
+                                          &pFileData[16 + prgRomDataSize + chrRomOffset]);
 
-        g_pNesDbg->GetSerialComm()->SendData(ppuMemWrPacket.PacketData(),
-                                             ppuMemWrPacket.SizeInBytes());
+            g_pNesDbg->GetSerialComm()->SendData(ppuMemWrPacket.PacketData(),
+                                                 ppuMemWrPacket.SizeInBytes());
+
+            transferredBytes += transferBlockSize;
+            pctDone = (FLOAT)transferredBytes / totalBytes;
+
+            const INT pos = (INT)(((pbRange.iHigh - pbRange.iLow) * pctDone) + pbRange.iLow);
+            SendDlgItemMessage(hDlg, IDC_ROMLOAD_PROGRESS, PBM_SETPOS, (WPARAM)pos, 0);
+        }
 
         // Update PC to point at the reset interrupt vector location.
         BYTE pclVal = pFileData[16 + prgRomDataSize - 4];
@@ -290,6 +333,8 @@ VOID NesDbg::LoadRom()
         DbgRunPacket dbgRunPacket;
         g_pNesDbg->GetSerialComm()->SendData(dbgRunPacket.PacketData(),
                                              dbgRunPacket.SizeInBytes());
+
+        DestroyWindow(hDlg);
     }
 
     if (pFileData != NULL)
@@ -427,6 +472,31 @@ BOOL CALLBACK NesDbg::RawDbgDlgProc(
                     ret = FALSE;
                     break;
             }
+            break;
+        default:
+            ret = FALSE;
+            break;
+    }
+
+    return ret;
+}
+
+/***************************************************************************************************
+** % Method:      NesDbg::RomLoadProgressDlgProc()
+*  % Description: Modeless dialog to show progress of ROM loads.
+*  % Returns:     TRUE if message was handled, FALSE otherwise.
+***************************************************************************************************/
+BOOL CALLBACK NesDbg::RomLoadProgressDlgProc(
+    HWND   hWndDlg,  // handle to the dialog box
+    UINT   msg,      // message
+    WPARAM wParam,   // message-specific information
+    LPARAM lParam)   // additional message-specific information
+{
+    BOOL ret = TRUE;
+
+    switch (msg)
+    {
+        case WM_INITDIALOG:
             break;
         default:
             ret = FALSE;
