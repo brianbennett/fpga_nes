@@ -2745,7 +2745,7 @@ assign d_pcls           = (adl_pcl)         ? adl                           : q_
 assign { d_pch, d_pcl } = (i_pc)            ? { q_pchs, q_pcls } + 16'h0001 : { q_pchs, q_pcls };
 
 // Combine full processor status register.
-assign p = { q_n, q_v, 1'b1, q_irq_sel[1], q_d, q_i, q_z, q_c };
+assign p = { q_n, q_v, 1'b1, (q_irq_sel == INTERRUPT_BRK), q_d, q_i, q_z, q_c };
 
 //
 // Assign output signals.
