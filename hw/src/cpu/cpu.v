@@ -147,6 +147,8 @@ localparam [7:0] ADC_ABS   = 8'h6D, ADC_ABSX  = 8'h7D, ADC_ABSY  = 8'h79, ADC_IM
                                     STA_INDY  = 8'h91, STA_ZP    = 8'h85, STA_ZPX   = 8'h95,
                  STX_ABS   = 8'h8E, STX_ZP    = 8'h86, STX_ZPY   = 8'h96,
                  STY_ABS   = 8'h8C, STY_ZP    = 8'h84, STY_ZPX   = 8'h94,
+                 SXA_ABSY  = 8'h9E,
+                 SYA_ABSX  = 8'h9C,
                  TAX       = 8'hAA,
                  TAY       = 8'hA8,
                  TOP_ABS   = 8'h0C, TOP_ABSX  = 8'h1C, TOP_ABSX2 = 8'h3C, TOP_ABSX3 = 8'h5C,
@@ -212,10 +214,11 @@ localparam [7:0] ADC_ABS   = 8'h6D, ADC_ABSX  = 8'h7D, ADC_ABSY  = 8'h79, ADC_IM
      ((op) == SRE_ZP   ) || ((op) == SRE_ZPX  ) || ((op) == STA_ABS  ) || ((op) == STA_ABSX ) || \
      ((op) == STA_ABSY ) || ((op) == STA_INDX ) || ((op) == STA_INDY ) || ((op) == STA_ZP   ) || \
      ((op) == STA_ZPX  ) || ((op) == STX_ABS  ) || ((op) == STX_ZP   ) || ((op) == STX_ZPY  ) || \
-     ((op) == STY_ABS  ) || ((op) == STY_ZP   ) || ((op) == STY_ZPX  ) || ((op) == TAX      ) || \
-     ((op) == TAY      ) || ((op) == TOP_ABS  ) || ((op) == TOP_ABSX ) || ((op) == TOP_ABSX2) || \
-     ((op) == TOP_ABSX3) || ((op) == TOP_ABSX4) || ((op) == TOP_ABSX5) || ((op) == TOP_ABSX6) || \
-     ((op) == TSX      ) || ((op) == TXA      ) || ((op) == TXS      ) || ((op) == TYA      ))
+     ((op) == STY_ABS  ) || ((op) == STY_ZP   ) || ((op) == STY_ZPX  ) || ((op) == SXA_ABSY ) || \
+     ((op) == SYA_ABSX ) || ((op) == TAX      ) || ((op) == TAY      ) || ((op) == TOP_ABS  ) || \
+     ((op) == TOP_ABSX ) || ((op) == TOP_ABSX2) || ((op) == TOP_ABSX3) || ((op) == TOP_ABSX4) || \
+     ((op) == TOP_ABSX5) || ((op) == TOP_ABSX6) || ((op) == TSX      ) || ((op) == TXA      ) || \
+     ((op) == TXS      ) || ((op) == TYA      ))
 
 // Timing generation cycle states.
 localparam [2:0] T0 = 3'h0,
@@ -474,6 +477,7 @@ always @(posedge clk)
         q_z    <= 1'b0;
         q_abh  <= 8'h80;
         q_abl  <= 8'h00;
+        q_acr  <= 1'b0;
         q_ai   <= 8'h00;
         q_bi   <= 8'h00;
         q_dor  <= 8'h00;
@@ -496,6 +500,7 @@ always @(posedge clk)
         q_z    <= d_z;
         q_abh  <= d_abh;
         q_abl  <= d_abl;
+        q_acr  <= acr;
         q_ai   <= d_ai;
         q_bi   <= d_bi;
         q_dor  <= d_dor;
@@ -544,7 +549,6 @@ always @(posedge clk)
         q_dl  <= 8'h00;
         q_pd  <= 8'h00;
         q_add <= 8'h00;
-        q_acr <= 1'b0;
       end
     else if (rdy && (q_clk_phase == 6'h1C))
       begin
@@ -553,7 +557,6 @@ always @(posedge clk)
         q_dl  <= d_dl;
         q_pd  <= d_pd;
         q_add <= d_add;
-        q_acr <= acr;
       end
     else if (!rdy && dbgreg_wr)
       begin
@@ -700,9 +703,10 @@ always @*
                    (q_ir == LDX_ABSY)  || (q_ir == LDY_ABSX)  || (q_ir == LSR_ZP)    ||
                    (q_ir == RLA_ZP)    || (q_ir == ROL_ZP)    || (q_ir == ROR_ZP)    ||
                    (q_ir == RRA_ZP)    || (q_ir == SLO_ZP)    || (q_ir == SRE_ZP)    ||
-                   (q_ir == STA_ABSX)  || (q_ir == STA_ABSY)  || (q_ir == TOP_ABSX)  ||
-                   (q_ir == TOP_ABSX2) || (q_ir == TOP_ABSX3) || (q_ir == TOP_ABSX4) ||
-                   (q_ir == TOP_ABSX5) || (q_ir == TOP_ABSX6))
+                   (q_ir == STA_ABSX)  || (q_ir == STA_ABSY)  || (q_ir == SXA_ABSY)  ||
+                   (q_ir == SYA_ABSX)  || (q_ir == TOP_ABSX)  || (q_ir == TOP_ABSX2) ||
+                   (q_ir == TOP_ABSX3) || (q_ir == TOP_ABSX4) || (q_ir == TOP_ABSX5) ||
+                   (q_ir == TOP_ABSX6))
             d_t = T0;
 
           else if (`IS_VALID_OPCODE(q_ir))
@@ -855,6 +859,7 @@ reg tya_op;                // transfer y to a (db, sb)
 
 // DOR (data output register) load controls.
 reg ac_to_dor;             // load current ac value into dor (db)
+reg aluinc_to_dor;         // load aluinc value into dor (sb, db)
 reg p_to_dor;              // load current p value into dor (db)
 reg pch_to_dor;            // load current pch value into dor (db)
 reg pcl_to_dor;            // load current pcl value into dor (db)
@@ -862,7 +867,7 @@ reg x_to_dor;              // load current x value into dor (db, sb)
 reg y_to_dor;              // load current y value into dor (db, sb)
 
 // AB (address bus hold registers) load controls.
-reg aluacrinc_to_abh;      // load abh with ai+bi+q_acr (adh, sb)
+reg aluinc_to_abh;         // load abh with ai+bi+1 (adh, sb)
 reg alusum_to_abh;         // load abh with ai+bi (adh, sb)
 reg dl_to_abh;             // load abh with dl (adh)
 reg ff_to_abh;             // load abh with 8'hff (adh)
@@ -883,8 +888,8 @@ reg s_to_abl;              // load abl with s (adl)
 // AI/BI (ALU input registers) load controls.
 reg ac_to_ai;              // load ai with ac (sb)
 reg ac_to_ai_no_bus;       // load ai with ac without using SB bus.  This magical ability seems
-                           // required to implement some unofficial opcodes, maybe Visual6502 will
-                           // explain it someday.
+                           // required to implement some unofficial opcodes, maybe Visual6502
+                           // will explain it someday.
 reg dl_to_ai;              // load ai with dl (db, sb)
 reg one_to_ai;             // load ai with 1 (adh, sb)
 reg neg1_to_ai;            // load ai with -1 (sb)
@@ -965,13 +970,14 @@ reg one_to_i;              // used to supress irqs while processing an interrupt
     tya_op               = (val);    \
                                      \
     ac_to_dor            = (val);    \
+    aluinc_to_dor        = (val);    \
     p_to_dor             = (val);    \
     pch_to_dor           = (val);    \
     pcl_to_dor           = (val);    \
     x_to_dor             = (val);    \
     y_to_dor             = (val);    \
                                      \
-    aluacrinc_to_abh     = (val);    \
+    aluinc_to_abh        = (val);    \
     alusum_to_abh        = (val);    \
     dl_to_abh            = (val);    \
     ff_to_abh            = (val);    \
@@ -1050,17 +1056,17 @@ always @*
               zero_to_ai    = 1'b1;
               dl_to_bi      = 1'b1;
             end
-          ADC_ABSX, AND_ABSX,  ASL_ABSX,  CMP_ABSX,  DCP_ABSX,  DEC_ABSX,  EOR_ABSX, INC_ABSX,
-                    ISC_ABSX,  LDA_ABSX,  LDY_ABSX,  LSR_ABSX,  ORA_ABSX,  RLA_ABSX, ROL_ABSX,
-                    ROR_ABSX,  RRA_ABSX,  SBC_ABSX,  SLO_ABSX,  SRE_ABSX,  STA_ABSX, TOP_ABSX,
-                    TOP_ABSX2, TOP_ABSX3, TOP_ABSX4, TOP_ABSX5, TOP_ABSX6:
+          ADC_ABSX, AND_ABSX, ASL_ABSX,  CMP_ABSX,  DCP_ABSX,  DEC_ABSX,  EOR_ABSX, INC_ABSX,
+                    ISC_ABSX, LDA_ABSX,  LDY_ABSX,  LSR_ABSX,  ORA_ABSX,  RLA_ABSX, ROL_ABSX,
+                    ROR_ABSX, RRA_ABSX,  SBC_ABSX,  SLO_ABSX,  SRE_ABSX,  STA_ABSX, SYA_ABSX,
+                    TOP_ABSX, TOP_ABSX2, TOP_ABSX3, TOP_ABSX4, TOP_ABSX5, TOP_ABSX6:
             begin
               load_prg_byte = 1'b1;
               x_to_ai       = 1'b1;
               dl_to_bi      = 1'b1;
             end
           ADC_ABSY, AND_ABSY, CMP_ABSY, DCP_ABSY, EOR_ABSY, ISC_ABSY, LAX_ABSY, LDA_ABSY, LDX_ABSY,
-                    ORA_ABSY, RLA_ABSY, RRA_ABSY, SBC_ABSY, SLO_ABSY, SRE_ABSY, STA_ABSY:
+                    ORA_ABSY, RLA_ABSY, RRA_ABSY, SBC_ABSY, SLO_ABSY, SRE_ABSY, STA_ABSY, SXA_ABSY:
             begin
               load_prg_byte = 1'b1;
               y_to_ai       = 1'b1;
@@ -1275,13 +1281,13 @@ always @*
               dl_to_abh     = 1'b1;
               alusum_to_abl = 1'b1;
             end
-          ADC_ABSX, AND_ABSX,  ASL_ABSX,  CMP_ABSX,  DCP_ABSX,  DEC_ABSX,  EOR_ABSX, INC_ABSX,
-                    ISC_ABSX,  LDA_ABSX,  LDY_ABSX,  LSR_ABSX,  ORA_ABSX,  RLA_ABSX, ROL_ABSX,
-                    ROR_ABSX,  RRA_ABSX,  SBC_ABSX,  SLO_ABSX,  SRE_ABSX,  STA_ABSX, TOP_ABSX,
-                    TOP_ABSX2, TOP_ABSX3, TOP_ABSX4, TOP_ABSX5, TOP_ABSX6,
-          ADC_ABSY, AND_ABSY,  CMP_ABSY,  DCP_ABSY,  EOR_ABSY,  ISC_ABSY,  LAX_ABSY, LDA_ABSY,
-                    LDX_ABSY,  ORA_ABSY,  RLA_ABSY,  RRA_ABSY,  SBC_ABSY,  SLO_ABSY, SRE_ABSY,
-                    STA_ABSY:
+          ADC_ABSX, AND_ABSX, ASL_ABSX,  CMP_ABSX,  DCP_ABSX,  DEC_ABSX,  EOR_ABSX, INC_ABSX,
+                    ISC_ABSX, LDA_ABSX,  LDY_ABSX,  LSR_ABSX,  ORA_ABSX,  RLA_ABSX, ROL_ABSX,
+                    ROR_ABSX, RRA_ABSX,  SBC_ABSX,  SLO_ABSX,  SRE_ABSX,  STA_ABSX, SYA_ABSX,
+                    TOP_ABSX, TOP_ABSX2, TOP_ABSX3, TOP_ABSX4, TOP_ABSX5, TOP_ABSX6,
+          ADC_ABSY, AND_ABSY, CMP_ABSY,  DCP_ABSY,  EOR_ABSY,  ISC_ABSY,  LAX_ABSY, LDA_ABSY,
+                    LDX_ABSY, ORA_ABSY,  RLA_ABSY,  RRA_ABSY,  SBC_ABSY,  SLO_ABSY, SRE_ABSY,
+                    STA_ABSY, SXA_ABSY:
             begin
               dl_to_abh     = 1'b1;
               alusum_to_abl = 1'b1;
@@ -1569,7 +1575,7 @@ always @*
           ADC_ABSY, AND_ABSY,  CMP_ABSY,  DCP_ABSY,  EOR_ABSY,  ISC_ABSY, LAX_ABSY, LDA_ABSY,
                     LDX_ABSY,  ORA_ABSY,  RLA_ABSY,  RRA_ABSY,  SBC_ABSY, SLO_ABSY, SRE_ABSY:
             begin
-              aluacrinc_to_abh = 1'b1;
+              aluinc_to_abh = q_acr;
             end
           ADC_INDX, AND_INDX, CMP_INDX, DCP_INDX, EOR_INDX, ISC_INDX, LAX_INDX, LDA_INDX, ORA_INDX,
                     RLA_INDX, RRA_INDX, SAX_INDX, SLO_INDX, SRE_INDX, STA_INDX, SBC_INDX:
@@ -1795,8 +1801,20 @@ always @*
           STA_ABSX,
           STA_ABSY:
             begin
-              ac_to_dor        = 1'b1;
-              aluacrinc_to_abh = 1'b1;
+              ac_to_dor     = 1'b1;
+              aluinc_to_abh = q_acr;
+            end
+          SXA_ABSY:
+            begin
+              x_to_dor      = 1'b1;
+              aluinc_to_dor = 1'b1;
+              aluinc_to_abh = q_acr;
+            end
+          SYA_ABSX:
+            begin
+              y_to_dor      = 1'b1;
+              aluinc_to_dor = 1'b1;
+              aluinc_to_abh = q_acr;
             end
           TOP_ABS:
             begin
@@ -1833,7 +1851,7 @@ always @*
           ADC_INDY, AND_INDY, CMP_INDY, DCP_INDY, EOR_INDY, ISC_INDY, LAX_INDY, LDA_INDY, ORA_INDY,
                     RLA_INDY, RRA_INDY, SBC_INDY, SLO_INDY, SRE_INDY:
             begin
-              aluacrinc_to_abh = 1'b1;
+              aluinc_to_abh = q_acr;
             end
           AND_ABS,
           AND_ZPX:
@@ -1844,9 +1862,9 @@ always @*
           ASL_ABS,
           ASL_ZPX:
             asl_mem_op = 1'b1;
-          ASL_ZP, DEC_ZP, INC_ZP, LSR_ZP, ROL_ZP, ROR_ZP,
-          STA_ABSX,
-          STA_ABSY:
+          ASL_ZP,   DEC_ZP, INC_ZP, LSR_ZP, ROL_ZP, ROR_ZP,
+          STA_ABSX, SYA_ABSX,
+          STA_ABSY, SXA_ABSY:
             begin
               load_prg_byte = 1'b1;
               r_nw          = 1'b0;
@@ -2062,8 +2080,8 @@ always @*
             end
           STA_INDY:
             begin
-              ac_to_dor        = 1'b1;
-              aluacrinc_to_abh = 1'b1;
+              ac_to_dor     = 1'b1;
+              aluinc_to_abh = q_acr;
             end
           TOP_ABSX, TOP_ABSX2, TOP_ABSX3, TOP_ABSX4, TOP_ABSX5, TOP_ABSX6:
             begin
@@ -2529,35 +2547,35 @@ assign p_db       = p_to_dor;
 assign pch_db     = pch_to_bi            | pch_to_dor;
 assign pcl_db     = pcl_to_dor;
 assign ac_sb      = ac_to_ai             | tax_op               | tay_op;
-assign add_sb     = adc_op               | aluacrinc_to_abh     | aluinc_to_s          |
-                    alusum_to_abh        | alusum_to_pch        | alusum_to_s          |
-                    and_op               | asl_acc_op           | asl_mem_op           |
-                    bit_op               | cmp_op               | dec_op               |
-                    dex_op               | dey_op               | eor_op               |
-                    inc_op               | inx_op               | iny_op               |
-                    lsr_acc_op           | lsr_mem_op           | ora_op               |
-                    rol_acc_op           | rol_mem_op           | ror_acc_op           |
-                    ror_mem_op;
+assign add_sb     = adc_op               | aluinc_to_abh        | aluinc_to_dor        |
+                    aluinc_to_s          | alusum_to_abh        | alusum_to_pch        |
+                    alusum_to_s          | and_op               | asl_acc_op           |
+                    asl_mem_op           | bit_op               | cmp_op               |
+                    dec_op               | dex_op               | dey_op               |
+                    eor_op               | inc_op               | inx_op               |
+                    iny_op               | lsr_acc_op           | lsr_mem_op           |
+                    ora_op               | rol_acc_op           | rol_mem_op           |
+                    ror_acc_op           | ror_mem_op;
 assign x_sb       = txa_op               | txs_op               | x_to_ai              |
                     x_to_bi              | x_to_dor;
 assign y_sb       = tya_op               | y_to_ai              | y_to_bi              |
                     y_to_dor;
 assign s_sb       = s_to_ai              | tsx_op;
-assign sb_adh     = aluacrinc_to_abh     | alusum_to_abh        | alusum_to_pch        |
+assign sb_adh     = aluinc_to_abh        | alusum_to_abh        | alusum_to_pch        |
                     one_to_ai            | one_to_i;
-assign sb_db      = adc_op               | and_op               | asl_acc_op           |
-                    asl_mem_op           | bit_op               | cmp_op               |
-                    dl_to_s              | dec_op               | dex_op               |
-                    dey_op               | dl_to_ai             | eor_op               |
-                    inc_op               | inx_op               | iny_op               |
-                    lda_op               | ldx_op               | ldy_op               |
-                    lsr_acc_op           | lsr_mem_op           | one_to_i             |
-                    ora_op               | rol_acc_op           | rol_mem_op           |
-                    ror_acc_op           | ror_mem_op           | tax_op               |
-                    tay_op               | tsx_op               | txa_op               |
-                    tya_op               | x_to_bi              | x_to_dor             |
-                    y_to_bi              | y_to_dor;
-assign adh_abh    = aluacrinc_to_abh     | alusum_to_abh        | dl_to_abh            |
+assign sb_db      = adc_op               | aluinc_to_dor        | and_op               |
+                    asl_acc_op           | asl_mem_op           | bit_op               |
+                    cmp_op               | dl_to_s              | dec_op               |
+                    dex_op               | dey_op               | dl_to_ai             |
+                    eor_op               | inc_op               | inx_op               |
+                    iny_op               | lda_op               | ldx_op               |
+                    ldy_op               | lsr_acc_op           | lsr_mem_op           |
+                    one_to_i             | ora_op               | rol_acc_op           |
+                    rol_mem_op           | ror_acc_op           | ror_mem_op           |
+                    tax_op               | tay_op               | tsx_op               |
+                    txa_op               | tya_op               | x_to_bi              |
+                    x_to_dor             | y_to_bi              | y_to_dor;
+assign adh_abh    = aluinc_to_abh        | alusum_to_abh        | dl_to_abh            |
                     ff_to_abh            | load_prg_byte        | load_prg_byte_noinc  |
                     one_to_abh           | zero_to_abh;
 assign adl_abl    = aluinc_to_abl        | alusum_to_abl        | dl_to_abl            |
@@ -2624,22 +2642,21 @@ assign dbz_z      = adc_op               | and_op               | asl_acc_op    
 assign ands       = and_op               | bit_op;
 assign eors       = eor_op;
 assign ors        = ora_op;
-assign sums       = adc_op               | aluacrinc_to_abh     | aluinc_to_abl        |
-                    aluinc_to_bi         | aluinc_to_s          | alusum_to_abh        |
-                    alusum_to_abl        | alusum_to_bi         | alusum_to_pch        |
-                    alusum_to_pcl        | alusum_to_s          | asl_acc_op           |
-                    asl_mem_op           | cmp_op               | dec_op               |
-                    dex_op               | dey_op               | inc_op               |
-                    inx_op               | iny_op               | rol_acc_op           |
-                    rol_mem_op;
+assign sums       = adc_op               | aluinc_to_abh        | aluinc_to_abl        |
+                    aluinc_to_bi         | aluinc_to_dor        | aluinc_to_s          |
+                    alusum_to_abh        | alusum_to_abl        | alusum_to_bi         |
+                    alusum_to_pch        | alusum_to_pcl        | alusum_to_s          |
+                    asl_acc_op           | asl_mem_op           | cmp_op               |
+                    dec_op               | dex_op               | dey_op               |
+                    inc_op               | inx_op               | iny_op               |
+                    rol_acc_op           | rol_mem_op;
 assign srs        = lsr_acc_op           | lsr_mem_op           | ror_acc_op           |
                     ror_mem_op;
 
-assign addc       = (adc_op | rol_acc_op | rol_mem_op | ror_acc_op | ror_mem_op) ? q_c   :
-                    (aluacrinc_to_abh)                                           ? q_acr :
-                    aluinc_to_abl        | aluinc_to_bi         | aluinc_to_s          |
-                    cmp_op               | inc_op               | inx_op               |
-                    iny_op;
+assign addc       = (adc_op | rol_acc_op | rol_mem_op | ror_acc_op | ror_mem_op) ? q_c :
+                    aluinc_to_abh        | aluinc_to_abl        | aluinc_to_bi         |
+                    aluinc_to_dor        | aluinc_to_s          | cmp_op               |
+                    inc_op               | inx_op               | iny_op;
 assign i_pc       = (incpc_noload        | load_prg_byte)       & !force_noinc_pc;
 
 //
@@ -2678,11 +2695,12 @@ assign db_in   = (ac_db)   ? q_ac  :
                  (p_db)    ? p     :
                  (pch_db)  ? q_pch :
                  (pcl_db)  ? q_pcl : 8'hFF;
-assign sb_in   = (ac_sb)   ? q_ac  :
-                 (add_sb)  ? q_add :
-                 (x_sb)    ? q_x   :
-                 (y_sb)    ? q_y   :
-                 (s_sb)    ? q_s   : 8'hFF;
+
+assign sb_in = 8'hFF & ({8{~ac_sb}}  | q_ac)  &
+                       ({8{~add_sb}} | q_add) &
+                       ({8{~s_sb}}   | q_s)   &
+                       ({8{~x_sb}}   | q_x)   &
+                       ({8{~y_sb}}   | q_y);
 
 assign adh_out = (sb_adh & sb_db) ? (adh_in & sb_in & db_in) :
                  (sb_adh)         ? (adh_in & sb_in)         :
