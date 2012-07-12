@@ -54,14 +54,19 @@ module cpu
 `define REGSEL_S   6
 
 // Opcodes.
-localparam [7:0] ADC_ABS   = 8'h6D, ADC_ABSX  = 8'h7D, ADC_ABSY  = 8'h79, ADC_IMM   = 8'h69,
+localparam [7:0] AAC_IMM   = 8'h0B, AAC_IMM2  = 8'h2B,
+                 ADC_ABS   = 8'h6D, ADC_ABSX  = 8'h7D, ADC_ABSY  = 8'h79, ADC_IMM   = 8'h69,
                                     ADC_INDX  = 8'h61, ADC_INDY  = 8'h71, ADC_ZP    = 8'h65,
                                     ADC_ZPX   = 8'h75,
                  AND_ABS   = 8'h2D, AND_ABSX  = 8'h3D, AND_ABSY  = 8'h39, AND_IMM   = 8'h29,
                                     AND_INDX  = 8'h21, AND_INDY  = 8'h31, AND_ZP    = 8'h25,
                                     AND_ZPX   = 8'h35,
+                 ARR_IMM   = 8'h6B,
                  ASL_ABS   = 8'h0E, ASL_ABSX  = 8'h1E, ASL_ACC   = 8'h0A, ASL_ZP    = 8'h06,
                                     ASL_ZPX   = 8'h16,
+                 ASR_IMM   = 8'h4B,
+                 ATX_IMM   = 8'hAB,
+                 AXS_IMM   = 8'hCB,
                  BCC       = 8'h90,
                  BCS       = 8'hB0,
                  BEQ       = 8'hF0,
@@ -160,65 +165,66 @@ localparam [7:0] ADC_ABS   = 8'h6D, ADC_ABSX  = 8'h7D, ADC_ABSY  = 8'h79, ADC_IM
 
 // Macro to check if a value is a valid opcode.
 `define IS_VALID_OPCODE(op) \
-    (((op) == ADC_ABS  ) || ((op) == ADC_ABSX ) || ((op) == ADC_ABSY ) || ((op) == ADC_IMM  ) || \
-     ((op) == ADC_INDX ) || ((op) == ADC_INDY ) || ((op) == ADC_ZP   ) || ((op) == ADC_ZPX  ) || \
-     ((op) == AND_ABS  ) || ((op) == AND_ABSX ) || ((op) == AND_ABSY ) || ((op) == AND_IMM  ) || \
-     ((op) == AND_INDX ) || ((op) == AND_INDY ) || ((op) == AND_ZP   ) || ((op) == AND_ZPX  ) || \
-     ((op) == ASL_ABS  ) || ((op) == ASL_ABSX ) || ((op) == ASL_ACC  ) || ((op) == ASL_ZP   ) || \
-     ((op) == ASL_ZPX  ) || ((op) == BCC      ) || ((op) == BCS      ) || ((op) == BEQ      ) || \
-     ((op) == BIT_ABS  ) || ((op) == BIT_ZP   ) || ((op) == BMI      ) || ((op) == BNE      ) || \
-     ((op) == BPL      ) || ((op) == BRK      ) || ((op) == BVC      ) || ((op) == BVS      ) || \
-     ((op) == CLC      ) || ((op) == CLD      ) || ((op) == CLI      ) || ((op) == CLV      ) || \
-     ((op) == CMP_ABS  ) || ((op) == CMP_ABSX ) || ((op) == CMP_ABSY ) || ((op) == CMP_IMM  ) || \
-     ((op) == CMP_INDX ) || ((op) == CMP_INDY ) || ((op) == CMP_ZP   ) || ((op) == CMP_ZPX  ) || \
-     ((op) == CPX_ABS  ) || ((op) == CPX_IMM  ) || ((op) == CPX_ZP   ) || ((op) == CPY_ABS  ) || \
-     ((op) == CPY_IMM  ) || ((op) == CPY_ZP   ) || ((op) == DCP_ABS  ) || ((op) == DCP_ABSX ) || \
-     ((op) == DCP_ABSY ) || ((op) == DCP_INDX ) || ((op) == DCP_INDY ) || ((op) == DCP_ZP   ) || \
-     ((op) == DCP_ZPX  ) || ((op) == DEC_ABS  ) || ((op) == DEC_ABSX ) || ((op) == DEC_ZP   ) || \
-     ((op) == DEC_ZPX  ) || ((op) == DEX      ) || ((op) == DEY      ) || ((op) == DOP_IMM  ) || \
-     ((op) == DOP_IMM2 ) || ((op) == DOP_IMM3 ) || ((op) == DOP_IMM4 ) || ((op) == DOP_IMM5 ) || \
-     ((op) == DOP_ZP   ) || ((op) == DOP_ZP2  ) || ((op) == DOP_ZP3  ) || ((op) == DOP_ZPX  ) || \
-     ((op) == DOP_ZPX2 ) || ((op) == DOP_ZPX3 ) || ((op) == DOP_ZPX4 ) || ((op) == DOP_ZPX5 ) || \
-     ((op) == DOP_ZPX6 ) || ((op) == EOR_ABS  ) || ((op) == EOR_ABSX ) || ((op) == EOR_ABSY ) || \
-     ((op) == EOR_IMM  ) || ((op) == EOR_INDX ) || ((op) == EOR_INDY ) || ((op) == EOR_ZP   ) || \
-     ((op) == EOR_ZPX  ) || ((op) == HLT      ) || ((op) == INC_ABS  ) || ((op) == INC_ABSX ) || \
-     ((op) == INC_ZP   ) || ((op) == INC_ZPX  ) || ((op) == INX      ) || ((op) == INY      ) || \
-     ((op) == ISC_ABS  ) || ((op) == ISC_ABSX ) || ((op) == ISC_ABSY ) || ((op) == ISC_INDX ) || \
-     ((op) == ISC_INDY ) || ((op) == ISC_ZP   ) || ((op) == ISC_ZPX  ) || ((op) == JMP_ABS  ) || \
-     ((op) == JMP_IND  ) || ((op) == JSR      ) || ((op) == LAX_ABS  ) || ((op) == LAX_ABSY ) || \
-     ((op) == LAX_INDX ) || ((op) == LAX_INDY ) || ((op) == LAX_ZP   ) || ((op) == LAX_ZPY  ) || \
-     ((op) == LDA_ABS  ) || ((op) == LDA_ABSX ) || ((op) == LDA_ABSY ) || ((op) == LDA_IMM  ) || \
-     ((op) == LDA_INDX ) || ((op) == LDA_INDY ) || ((op) == LDA_ZP   ) || ((op) == LDA_ZPX  ) || \
-     ((op) == LDX_ABS  ) || ((op) == LDX_ABSY ) || ((op) == LDX_IMM  ) || ((op) == LDX_ZP   ) || \
-     ((op) == LDX_ZPY  ) || ((op) == LDY_ABS  ) || ((op) == LDY_ABSX ) || ((op) == LDY_IMM  ) || \
-     ((op) == LDY_ZP   ) || ((op) == LDY_ZPX  ) || ((op) == LSR_ABS  ) || ((op) == LSR_ABSX ) || \
-     ((op) == LSR_ACC  ) || ((op) == LSR_ZP   ) || ((op) == LSR_ZPX  ) || ((op) == NOP      ) || \
-     ((op) == NOP_1A   ) || ((op) == NOP_3A   ) || ((op) == NOP_5A   ) || ((op) == NOP_7A   ) || \
-     ((op) == NOP_DA   ) || ((op) == NOP_FA   ) || ((op) == ORA_ABS  ) || ((op) == ORA_ABSX ) || \
-     ((op) == ORA_ABSY ) || ((op) == ORA_IMM  ) || ((op) == ORA_INDX ) || ((op) == ORA_INDY ) || \
-     ((op) == ORA_ZP   ) || ((op) == ORA_ZPX  ) || ((op) == PHA      ) || ((op) == PHP      ) || \
-     ((op) == PLA      ) || ((op) == PLP      ) || ((op) == RLA_ABS  ) || ((op) == RLA_ABSX ) || \
-     ((op) == RLA_ABSY ) || ((op) == RLA_INDX ) || ((op) == RLA_INDY ) || ((op) == RLA_ZP   ) || \
-     ((op) == RLA_ZPX  ) || ((op) == ROL_ABS  ) || ((op) == ROL_ABSX ) || ((op) == ROL_ACC  ) || \
-     ((op) == ROL_ZP   ) || ((op) == ROL_ZPX  ) || ((op) == ROR_ABS  ) || ((op) == ROR_ABSX ) || \
-     ((op) == ROR_ACC  ) || ((op) == ROR_ZP   ) || ((op) == ROR_ZPX  ) || ((op) == RRA_ABS  ) || \
-     ((op) == RRA_ABSX ) || ((op) == RRA_ABSY ) || ((op) == RRA_INDX ) || ((op) == RRA_INDY ) || \
-     ((op) == RRA_ZP   ) || ((op) == RRA_ZPX  ) || ((op) == RTI      ) || ((op) == RTS      ) || \
-     ((op) == SAX_ABS  ) || ((op) == SAX_INDX ) || ((op) == SAX_ZP   ) || ((op) == SAX_ZPY  ) || \
-     ((op) == SBC_ABS  ) || ((op) == SBC_ABSX ) || ((op) == SBC_ABSY ) || ((op) == SBC_IMM  ) || \
-     ((op) == SBC_IMM2 ) || ((op) == SBC_INDX ) || ((op) == SBC_INDY ) || ((op) == SBC_ZP   ) || \
-     ((op) == SBC_ZPX  ) || ((op) == SEC      ) || ((op) == SED      ) || ((op) == SEI      ) || \
-     ((op) == SLO_ABS  ) || ((op) == SLO_ABSX ) || ((op) == SLO_ABSY ) || ((op) == SLO_INDX ) || \
-     ((op) == SLO_INDY ) || ((op) == SLO_ZP   ) || ((op) == SLO_ZPX  ) || ((op) == SRE_ABS  ) || \
-     ((op) == SRE_ABSX ) || ((op) == SRE_ABSY ) || ((op) == SRE_INDX ) || ((op) == SRE_INDY ) || \
-     ((op) == SRE_ZP   ) || ((op) == SRE_ZPX  ) || ((op) == STA_ABS  ) || ((op) == STA_ABSX ) || \
-     ((op) == STA_ABSY ) || ((op) == STA_INDX ) || ((op) == STA_INDY ) || ((op) == STA_ZP   ) || \
-     ((op) == STA_ZPX  ) || ((op) == STX_ABS  ) || ((op) == STX_ZP   ) || ((op) == STX_ZPY  ) || \
-     ((op) == STY_ABS  ) || ((op) == STY_ZP   ) || ((op) == STY_ZPX  ) || ((op) == SXA_ABSY ) || \
-     ((op) == SYA_ABSX ) || ((op) == TAX      ) || ((op) == TAY      ) || ((op) == TOP_ABS  ) || \
-     ((op) == TOP_ABSX ) || ((op) == TOP_ABSX2) || ((op) == TOP_ABSX3) || ((op) == TOP_ABSX4) || \
-     ((op) == TOP_ABSX5) || ((op) == TOP_ABSX6) || ((op) == TSX      ) || ((op) == TXA      ) || \
-     ((op) == TXS      ) || ((op) == TYA      ))
+    (((op) == AAC_IMM  ) || ((op) == AAC_IMM2 ) || ((op) == ADC_ABS  ) || ((op) == ADC_ABSX ) || \
+     ((op) == ADC_ABSY ) || ((op) == ADC_IMM  ) || ((op) == ADC_INDX ) || ((op) == ADC_INDY ) || \
+     ((op) == ADC_ZP   ) || ((op) == ADC_ZPX  ) || ((op) == AND_ABS  ) || ((op) == AND_ABSX ) || \
+     ((op) == AND_ABSY ) || ((op) == AND_IMM  ) || ((op) == AND_INDX ) || ((op) == AND_INDY ) || \
+     ((op) == AND_ZP   ) || ((op) == AND_ZPX  ) || ((op) == ARR_IMM  ) || ((op) == ASL_ABS  ) || \
+     ((op) == ASL_ABSX ) || ((op) == ASL_ACC  ) || ((op) == ASL_ZP   ) || ((op) == ASL_ZPX  ) || \
+     ((op) == ASR_IMM  ) || ((op) == ATX_IMM  ) || ((op) == AXS_IMM  ) || ((op) == BCC      ) || \
+     ((op) == BCS      ) || ((op) == BEQ      ) || ((op) == BIT_ABS  ) || ((op) == BIT_ZP   ) || \
+     ((op) == BMI      ) || ((op) == BNE      ) || ((op) == BPL      ) || ((op) == BRK      ) || \
+     ((op) == BVC      ) || ((op) == BVS      ) || ((op) == CLC      ) || ((op) == CLD      ) || \
+     ((op) == CLI      ) || ((op) == CLV      ) || ((op) == CMP_ABS  ) || ((op) == CMP_ABSX ) || \
+     ((op) == CMP_ABSY ) || ((op) == CMP_IMM  ) || ((op) == CMP_INDX ) || ((op) == CMP_INDY ) || \
+     ((op) == CMP_ZP   ) || ((op) == CMP_ZPX  ) || ((op) == CPX_ABS  ) || ((op) == CPX_IMM  ) || \
+     ((op) == CPX_ZP   ) || ((op) == CPY_ABS  ) || ((op) == CPY_IMM  ) || ((op) == CPY_ZP   ) || \
+     ((op) == DCP_ABS  ) || ((op) == DCP_ABSX ) || ((op) == DCP_ABSY ) || ((op) == DCP_INDX ) || \
+     ((op) == DCP_INDY ) || ((op) == DCP_ZP   ) || ((op) == DCP_ZPX  ) || ((op) == DEC_ABS  ) || \
+     ((op) == DEC_ABSX ) || ((op) == DEC_ZP   ) || ((op) == DEC_ZPX  ) || ((op) == DEX      ) || \
+     ((op) == DEY      ) || ((op) == DOP_IMM  ) || ((op) == DOP_IMM2 ) || ((op) == DOP_IMM3 ) || \
+     ((op) == DOP_IMM4 ) || ((op) == DOP_IMM5 ) || ((op) == DOP_ZP   ) || ((op) == DOP_ZP2  ) || \
+     ((op) == DOP_ZP3  ) || ((op) == DOP_ZPX  ) || ((op) == DOP_ZPX2 ) || ((op) == DOP_ZPX3 ) || \
+     ((op) == DOP_ZPX4 ) || ((op) == DOP_ZPX5 ) || ((op) == DOP_ZPX6 ) || ((op) == EOR_ABS  ) || \
+     ((op) == EOR_ABSX ) || ((op) == EOR_ABSY ) || ((op) == EOR_IMM  ) || ((op) == EOR_INDX ) || \
+     ((op) == EOR_INDY ) || ((op) == EOR_ZP   ) || ((op) == EOR_ZPX  ) || ((op) == HLT      ) || \
+     ((op) == INC_ABS  ) || ((op) == INC_ABSX ) || ((op) == INC_ZP   ) || ((op) == INC_ZPX  ) || \
+     ((op) == INX      ) || ((op) == INY      ) || ((op) == ISC_ABS  ) || ((op) == ISC_ABSX ) || \
+     ((op) == ISC_ABSY ) || ((op) == ISC_INDX ) || ((op) == ISC_INDY ) || ((op) == ISC_ZP   ) || \
+     ((op) == ISC_ZPX  ) || ((op) == JMP_ABS  ) || ((op) == JMP_IND  ) || ((op) == JSR      ) || \
+     ((op) == LAX_ABS  ) || ((op) == LAX_ABSY ) || ((op) == LAX_INDX ) || ((op) == LAX_INDY ) || \
+     ((op) == LAX_ZP   ) || ((op) == LAX_ZPY  ) || ((op) == LDA_ABS  ) || ((op) == LDA_ABSX ) || \
+     ((op) == LDA_ABSY ) || ((op) == LDA_IMM  ) || ((op) == LDA_INDX ) || ((op) == LDA_INDY ) || \
+     ((op) == LDA_ZP   ) || ((op) == LDA_ZPX  ) || ((op) == LDX_ABS  ) || ((op) == LDX_ABSY ) || \
+     ((op) == LDX_IMM  ) || ((op) == LDX_ZP   ) || ((op) == LDX_ZPY  ) || ((op) == LDY_ABS  ) || \
+     ((op) == LDY_ABSX ) || ((op) == LDY_IMM  ) || ((op) == LDY_ZP   ) || ((op) == LDY_ZPX  ) || \
+     ((op) == LSR_ABS  ) || ((op) == LSR_ABSX ) || ((op) == LSR_ACC  ) || ((op) == LSR_ZP   ) || \
+     ((op) == LSR_ZPX  ) || ((op) == NOP      ) || ((op) == NOP_1A   ) || ((op) == NOP_3A   ) || \
+     ((op) == NOP_5A   ) || ((op) == NOP_7A   ) || ((op) == NOP_DA   ) || ((op) == NOP_FA   ) || \
+     ((op) == ORA_ABS  ) || ((op) == ORA_ABSX ) || ((op) == ORA_ABSY ) || ((op) == ORA_IMM  ) || \
+     ((op) == ORA_INDX ) || ((op) == ORA_INDY ) || ((op) == ORA_ZP   ) || ((op) == ORA_ZPX  ) || \
+     ((op) == PHA      ) || ((op) == PHP      ) || ((op) == PLA      ) || ((op) == PLP      ) || \
+     ((op) == RLA_ABS  ) || ((op) == RLA_ABSX ) || ((op) == RLA_ABSY ) || ((op) == RLA_INDX ) || \
+     ((op) == RLA_INDY ) || ((op) == RLA_ZP   ) || ((op) == RLA_ZPX  ) || ((op) == ROL_ABS  ) || \
+     ((op) == ROL_ABSX ) || ((op) == ROL_ACC  ) || ((op) == ROL_ZP   ) || ((op) == ROL_ZPX  ) || \
+     ((op) == ROR_ABS  ) || ((op) == ROR_ABSX ) || ((op) == ROR_ACC  ) || ((op) == ROR_ZP   ) || \
+     ((op) == ROR_ZPX  ) || ((op) == RRA_ABS  ) || ((op) == RRA_ABSX ) || ((op) == RRA_ABSY ) || \
+     ((op) == RRA_INDX ) || ((op) == RRA_INDY ) || ((op) == RRA_ZP   ) || ((op) == RRA_ZPX  ) || \
+     ((op) == RTI      ) || ((op) == RTS      ) || ((op) == SAX_ABS  ) || ((op) == SAX_INDX ) || \
+     ((op) == SAX_ZP   ) || ((op) == SAX_ZPY  ) || ((op) == SBC_ABS  ) || ((op) == SBC_ABSX ) || \
+     ((op) == SBC_ABSY ) || ((op) == SBC_IMM  ) || ((op) == SBC_IMM2 ) || ((op) == SBC_INDX ) || \
+     ((op) == SBC_INDY ) || ((op) == SBC_ZP   ) || ((op) == SBC_ZPX  ) || ((op) == SEC      ) || \
+     ((op) == SED      ) || ((op) == SEI      ) || ((op) == SLO_ABS  ) || ((op) == SLO_ABSX ) || \
+     ((op) == SLO_ABSY ) || ((op) == SLO_INDX ) || ((op) == SLO_INDY ) || ((op) == SLO_ZP   ) || \
+     ((op) == SLO_ZPX  ) || ((op) == SRE_ABS  ) || ((op) == SRE_ABSX ) || ((op) == SRE_ABSY ) || \
+     ((op) == SRE_INDX ) || ((op) == SRE_INDY ) || ((op) == SRE_ZP   ) || ((op) == SRE_ZPX  ) || \
+     ((op) == STA_ABS  ) || ((op) == STA_ABSX ) || ((op) == STA_ABSY ) || ((op) == STA_INDX ) || \
+     ((op) == STA_INDY ) || ((op) == STA_ZP   ) || ((op) == STA_ZPX  ) || ((op) == STX_ABS  ) || \
+     ((op) == STX_ZP   ) || ((op) == STX_ZPY  ) || ((op) == STY_ABS  ) || ((op) == STY_ZP   ) || \
+     ((op) == STY_ZPX  ) || ((op) == SXA_ABSY ) || ((op) == SYA_ABSX ) || ((op) == TAX      ) || \
+     ((op) == TAY      ) || ((op) == TOP_ABS  ) || ((op) == TOP_ABSX ) || ((op) == TOP_ABSX2) || \
+     ((op) == TOP_ABSX3) || ((op) == TOP_ABSX4) || ((op) == TOP_ABSX5) || ((op) == TOP_ABSX6) || \
+     ((op) == TSX      ) || ((op) == TXA      ) || ((op) == TXS      ) || ((op) == TYA      ))
 
 // Timing generation cycle states.
 localparam [2:0] T0 = 3'h0,
@@ -580,7 +586,9 @@ always @*
       T1:
         begin
           // These instructions are in their last cycle but do not prefetch.
-          if ((q_ir == CLC)      || (q_ir == CLD)      || (q_ir == CLI)      ||
+          if ((q_ir == AAC_IMM)  || (q_ir == AAC_IMM2) || (q_ir == ARR_IMM)  ||
+              (q_ir == ASR_IMM)  || (q_ir == ATX_IMM)  || (q_ir == AXS_IMM)  ||
+              (q_ir == CLC)      || (q_ir == CLD)      || (q_ir == CLI)      ||
               (q_ir == CLV)      || (q_ir == DOP_IMM)  || (q_ir == DOP_IMM2) ||
               (q_ir == DOP_IMM3) || (q_ir == DOP_IMM4) || (q_ir == DOP_IMM5) ||
               (q_ir == HLT)      || (q_ir == LDA_IMM)  || (q_ir == LDX_IMM)  ||
@@ -616,7 +624,7 @@ always @*
               (q_ir == CPX_IMM) || (q_ir == CPY_IMM) || (q_ir == DEX)     || (q_ir == DEY)     ||
               (q_ir == EOR_IMM) || (q_ir == INX)     || (q_ir == INY)     || (q_ir == LSR_ACC) ||
               (q_ir == ORA_IMM) || (q_ir == ROL_ACC) || (q_ir == ROR_ACC) || (q_ir == SBC_IMM) ||
-              (q_ir == SBC_IMM))
+              (q_ir == SBC_IMM2))
             d_t = T1;
 
           // These instructions are in their last cycle but do not prefetch.
@@ -820,6 +828,7 @@ reg s_to_pcl;              // load pcl with s (adl)
 
 // Instruction-specific controls.  Typically triggers the meat of a particular operation that
 // occurs regardless of addressing mode.
+reg aac_op;                // final cycle of an aac inst (db)
 reg adc_op;                // final cycle of an adc inst (db, sb)
 reg and_op;                // final cycle of an and inst (db, sb)
 reg asl_acc_op;            // perform asl_acc inst (db, sb)
@@ -932,6 +941,7 @@ reg one_to_i;              // used to supress irqs while processing an interrupt
     dl_to_pcl            = (val);    \
     s_to_pcl             = (val);    \
                                      \
+    aac_op               = (val);    \
     adc_op               = (val);    \
     and_op               = (val);    \
     asl_acc_op           = (val);    \
@@ -1047,6 +1057,11 @@ always @*
     else if (q_t == T1)
       begin
         case (q_ir)
+          AAC_IMM, AAC_IMM2:
+            begin
+              load_prg_byte = 1'b1;
+              aac_op        = 1'b1;
+            end
           ADC_ABS, AND_ABS, ASL_ABS, BIT_ABS, CMP_ABS, CPX_ABS, CPY_ABS, DCP_ABS, DEC_ABS, EOR_ABS,
                    INC_ABS, ISC_ABS, JMP_ABS, JMP_IND, LAX_ABS, LDA_ABS, LDX_ABS, LDY_ABS, LSR_ABS,
                    ORA_ABS, RLA_ABS, ROL_ABS, ROR_ABS, RRA_ABS, SAX_ABS, SBC_ABS, SLO_ABS, SRE_ABS,
@@ -1160,7 +1175,7 @@ always @*
               y_to_ai    = 1'b1;
               neg1_to_bi = 1'b1;
             end
-          DOP_IMM, DOP_IMM2, DOP_IMM3, DOP_IMM4, DOP_IMM5:
+          DOP_IMM, DOP_IMM2, DOP_IMM3, DOP_IMM4, DOP_IMM5, ARR_IMM, ASR_IMM, ATX_IMM, AXS_IMM:
             begin
               load_prg_byte = 1'b1;
             end
@@ -2539,10 +2554,10 @@ assign dl_adh     = dl_to_abh            | dl_to_pch;
 assign pch_adh    = load_prg_byte        | load_prg_byte_noinc;
 assign zero_adh0  = zero_to_abh;
 assign zero_adh17 = one_to_abh           | one_to_ai            | zero_to_abh;
-assign ac_db      = ac_to_bi             | ac_to_dor;
-assign dl_db      = dl_to_ai             | dl_to_bi             | dl_to_p              |
-                    dl_to_s              | invdl_to_bi          | lda_op               |
-                    ldx_op               | ldy_op;
+assign ac_db      = aac_op               | ac_to_bi             | ac_to_dor;
+assign dl_db      = aac_op               | dl_to_ai             | dl_to_bi             |
+                    dl_to_p              | dl_to_s              | invdl_to_bi          |
+                    lda_op               | ldx_op               | ldy_op;
 assign p_db       = p_to_dor;
 assign pch_db     = pch_to_bi            | pch_to_dor;
 assign pcl_db     = pcl_to_dor;
@@ -2563,18 +2578,19 @@ assign y_sb       = tya_op               | y_to_ai              | y_to_bi       
 assign s_sb       = s_to_ai              | tsx_op;
 assign sb_adh     = aluinc_to_abh        | alusum_to_abh        | alusum_to_pch        |
                     one_to_ai            | one_to_i;
-assign sb_db      = adc_op               | aluinc_to_dor        | and_op               |
-                    asl_acc_op           | asl_mem_op           | bit_op               |
-                    cmp_op               | dl_to_s              | dec_op               |
-                    dex_op               | dey_op               | dl_to_ai             |
-                    eor_op               | inc_op               | inx_op               |
-                    iny_op               | lda_op               | ldx_op               |
-                    ldy_op               | lsr_acc_op           | lsr_mem_op           |
-                    one_to_i             | ora_op               | rol_acc_op           |
-                    rol_mem_op           | ror_acc_op           | ror_mem_op           |
-                    tax_op               | tay_op               | tsx_op               |
-                    txa_op               | tya_op               | x_to_bi              |
-                    x_to_dor             | y_to_bi              | y_to_dor;
+assign sb_db      = aac_op               | adc_op               | aluinc_to_dor        |
+                    and_op               | asl_acc_op           | asl_mem_op           |
+                    bit_op               | cmp_op               | dl_to_s              |
+                    dec_op               | dex_op               | dey_op               |
+                    dl_to_ai             | eor_op               | inc_op               |
+                    inx_op               | iny_op               | lda_op               |
+                    ldx_op               | ldy_op               | lsr_acc_op           |
+                    lsr_mem_op           | one_to_i             | ora_op               |
+                    rol_acc_op           | rol_mem_op           | ror_acc_op           |
+                    ror_mem_op           | tax_op               | tay_op               |
+                    tsx_op               | txa_op               | tya_op               |
+                    x_to_bi              | x_to_dor             | y_to_bi              |
+                    y_to_dor;
 assign adh_abh    = aluinc_to_abh        | alusum_to_abh        | dl_to_abh            |
                     ff_to_abh            | load_prg_byte        | load_prg_byte_noinc  |
                     one_to_abh           | zero_to_abh;
@@ -2592,10 +2608,10 @@ assign invdb_add  = invadd_to_bi         | invdl_to_bi;
 assign sb_s       = aluinc_to_s          | alusum_to_s          | dl_to_s              |
                     txs_op;
 assign zero_add   = zero_to_ai;
-assign sb_ac      = adc_op               | and_op               | asl_acc_op           |
-                    eor_op               | lda_op               | lsr_acc_op           |
-                    ora_op               | rol_acc_op           | ror_acc_op           |
-                    txa_op               | tya_op;
+assign sb_ac      = aac_op               | adc_op               | and_op               |
+                    asl_acc_op           | eor_op               | lda_op               |
+                    lsr_acc_op           | ora_op               | rol_acc_op           |
+                    ror_acc_op           | txa_op               | tya_op;
 assign sb_add     = ac_to_ai             | dl_to_ai             | neg1_to_ai           |
                     one_to_ai            | s_to_ai              | x_to_ai              |
                     y_to_ai;
@@ -2610,35 +2626,36 @@ assign acr_c      = adc_op               | asl_acc_op           | asl_mem_op    
                     rol_acc_op           | rol_mem_op           | ror_acc_op           |
                     ror_mem_op;
 assign db0_c      = dl_to_p;
+assign db7_c      = aac_op;
 assign ir5_c      = clc_op               | sec_op;
 assign db3_d      = dl_to_p;
 assign ir5_d      = cld_op               | sed_op;
 assign db2_i      = dl_to_p              | one_to_i;
 assign ir5_i      = cli_op               | sei_op;
-assign db7_n      = adc_op               | and_op               | asl_acc_op           |
-                    asl_mem_op           | cmp_op               | dec_op               |
-                    dex_op               | dey_op               | dl_bits67_to_p       |
-                    dl_to_p              | eor_op               | inc_op               |
+assign db7_n      = aac_op               | adc_op               | and_op               |
+                    asl_acc_op           | asl_mem_op           | cmp_op               |
+                    dec_op               | dex_op               | dey_op               |
+                    dl_bits67_to_p       | dl_to_p              | eor_op               |
+                    inc_op               | inx_op               | iny_op               |
+                    lda_op               | ldx_op               | ldy_op               |
+                    lsr_acc_op           | lsr_mem_op           | ora_op               |
+                    rol_acc_op           | rol_mem_op           | ror_acc_op           |
+                    ror_mem_op           | tax_op               | tay_op               |
+                    tsx_op               | txa_op               | tya_op;
+assign avr_v      = adc_op;
+assign db6_v      = dl_bits67_to_p       | dl_to_p;
+assign zero_v     = clv_op;
+assign db1_z      = dl_to_p;
+assign dbz_z      = aac_op               | adc_op               | and_op               |
+                    asl_acc_op           | asl_mem_op           | bit_op               |
+                    cmp_op               | dec_op               | dex_op               |
+                    dey_op               | eor_op               | inc_op               |
                     inx_op               | iny_op               | lda_op               |
                     ldx_op               | ldy_op               | lsr_acc_op           |
                     lsr_mem_op           | ora_op               | rol_acc_op           |
                     rol_mem_op           | ror_acc_op           | ror_mem_op           |
                     tax_op               | tay_op               | tsx_op               |
                     txa_op               | tya_op;
-assign avr_v      = adc_op;
-assign db6_v      = dl_bits67_to_p       | dl_to_p;
-assign zero_v     = clv_op;
-assign db1_z      = dl_to_p;
-assign dbz_z      = adc_op               | and_op               | asl_acc_op           |
-                    asl_mem_op           | bit_op               | cmp_op               |
-                    dec_op               | dex_op               | dey_op               |
-                    eor_op               | inc_op               | inx_op               |
-                    iny_op               | lda_op               | ldx_op               |
-                    ldy_op               | lsr_acc_op           | lsr_mem_op           |
-                    ora_op               | rol_acc_op           | rol_mem_op           |
-                    ror_acc_op           | ror_mem_op           | tax_op               |
-                    tay_op               | tsx_op               | txa_op               |
-                    tya_op;
 assign ands       = and_op               | bit_op;
 assign eors       = eor_op;
 assign ors        = ora_op;
@@ -2690,11 +2707,11 @@ assign adl[0]   = (add_adl)   ? q_add[0]   :
                   (s_adl)     ? q_s[0]     :
                   (zero_adl0) ? 1'b0       : 1'b1;
 
-assign db_in   = (ac_db)   ? q_ac  :
-                 (dl_db)   ? q_dl  :
-                 (p_db)    ? p     :
-                 (pch_db)  ? q_pch :
-                 (pcl_db)  ? q_pcl : 8'hFF;
+assign db_in = 8'hFF & ({8{~ac_db}}  | q_ac)  &
+                       ({8{~dl_db}}  | q_dl)  &
+                       ({8{~p_db}}   | p)     &
+                       ({8{~pch_db}} | q_pch) &
+                       ({8{~pcl_db}} | q_pcl);
 
 assign sb_in = 8'hFF & ({8{~ac_sb}}  | q_ac)  &
                        ({8{~add_sb}} | q_add) &
@@ -2721,6 +2738,7 @@ assign d_x              = (sb_x)            ? sb_out                        : q_
 assign d_y              = (sb_y)            ? sb_out                        : q_y;
 assign d_c              = (acr_c)           ? acr                           :
                           (db0_c)           ? db_out[0]                     :
+                          (db7_c)           ? db_out[7]                     :
                           (ir5_c)           ? q_ir[5]                       : q_c;
 assign d_d              = (db3_d)           ? db_out[3]                     :
                           (ir5_d)           ? q_ir[5]                       : q_d;
