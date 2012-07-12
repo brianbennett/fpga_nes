@@ -360,6 +360,7 @@ wire       sb_y;        // latch sb bus value in y reg
 // Processor status controls.
 wire       acr_c;       // latch acr into c status reg
 wire       db0_c;       // latch db[0] into c status reg
+wire       db6_c;       // latch db[6] into c status reg
 wire       ir5_c;       // latch ir[5] into c status reg
 wire       db3_d;       // latch db[3] into d status reg
 wire       ir5_d;       // latch ir[5] into d status reg
@@ -367,6 +368,7 @@ wire       db2_i;       // latch db[2] into i status reg
 wire       ir5_i;       // latch ir[5] into i status reg
 wire       db7_n;       // latch db[7] into n status reg
 wire       avr_v;       // latch avr into v status reg
+wire       db5xor6_v;   // latch db[5] ^ db[6] into v status reg
 wire       db6_v;       // latch db[6] into v status reg
 wire       zero_v;      // latch 0 into v status reg
 wire       db1_z;       // latch db[1] into z status reg
@@ -586,18 +588,17 @@ always @*
       T1:
         begin
           // These instructions are in their last cycle but do not prefetch.
-          if ((q_ir == AAC_IMM)  || (q_ir == AAC_IMM2) || (q_ir == ARR_IMM)  ||
-              (q_ir == ATX_IMM)  || (q_ir == AXS_IMM)  || (q_ir == CLC)      ||
-              (q_ir == CLD)      || (q_ir == CLI)      || (q_ir == CLV)      ||
-              (q_ir == DOP_IMM)  || (q_ir == DOP_IMM2) || (q_ir == DOP_IMM3) ||
-              (q_ir == DOP_IMM4) || (q_ir == DOP_IMM5) || (q_ir == HLT)      ||
-              (q_ir == LDA_IMM)  || (q_ir == LDX_IMM)  || (q_ir == LDY_IMM)  ||
-              (q_ir == NOP)      || (q_ir == NOP_1A)   || (q_ir == NOP_3A)   ||
-              (q_ir == NOP_5A)   || (q_ir == NOP_7A)   || (q_ir == NOP_DA)   ||
-              (q_ir == NOP_FA)   || (q_ir == SEC)      || (q_ir == SED)      ||
-              (q_ir == SEI)      || (q_ir == TAX)      || (q_ir == TAY)      ||
-              (q_ir == TSX)      || (q_ir == TXA)      || (q_ir == TXS)      ||
-              (q_ir == TYA))
+          if ((q_ir == AAC_IMM)  || (q_ir == AAC_IMM2) || (q_ir == ATX_IMM)  ||
+              (q_ir == AXS_IMM)  || (q_ir == CLC)      || (q_ir == CLD)      ||
+              (q_ir == CLI)      || (q_ir == CLV)      || (q_ir == DOP_IMM)  ||
+              (q_ir == DOP_IMM2) || (q_ir == DOP_IMM3) || (q_ir == DOP_IMM4) ||
+              (q_ir == DOP_IMM5) || (q_ir == HLT)      || (q_ir == LDA_IMM)  ||
+              (q_ir == LDX_IMM)  || (q_ir == LDY_IMM)  || (q_ir == NOP)      ||
+              (q_ir == NOP_1A)   || (q_ir == NOP_3A)   || (q_ir == NOP_5A)   ||
+              (q_ir == NOP_7A)   || (q_ir == NOP_DA)   || (q_ir == NOP_FA)   ||
+              (q_ir == SEC)      || (q_ir == SED)      || (q_ir == SEI)      ||
+              (q_ir == TAX)      || (q_ir == TAY)      || (q_ir == TSX)      ||
+              (q_ir == TXA)      || (q_ir == TXS)      || (q_ir == TYA))
             d_t = T0;
 
           // Check for not-taken branches.  These instructions must setup the not-taken PC during
@@ -620,11 +621,11 @@ always @*
       T2:
         begin
           // These instructions prefetch the next opcode during their final cycle.
-          if ((q_ir == ADC_IMM) || (q_ir == AND_IMM) || (q_ir == ASL_ACC) || (q_ir == ASR_IMM) ||
-              (q_ir == CMP_IMM) || (q_ir == CPX_IMM) || (q_ir == CPY_IMM) || (q_ir == DEX)     ||
-              (q_ir == DEY)     || (q_ir == EOR_IMM) || (q_ir == INX)     || (q_ir == INY)     ||
-              (q_ir == LSR_ACC) || (q_ir == ORA_IMM) || (q_ir == ROL_ACC) || (q_ir == ROR_ACC) ||
-              (q_ir == SBC_IMM) || (q_ir == SBC_IMM2))
+          if ((q_ir == ADC_IMM) || (q_ir == AND_IMM) || (q_ir == ARR_IMM) || (q_ir == ASL_ACC) ||
+              (q_ir == ASR_IMM) || (q_ir == CMP_IMM) || (q_ir == CPX_IMM) || (q_ir == CPY_IMM) ||
+              (q_ir == DEX)     || (q_ir == DEY)     || (q_ir == EOR_IMM) || (q_ir == INX)     ||
+              (q_ir == INY)     || (q_ir == LSR_ACC) || (q_ir == ORA_IMM) || (q_ir == ROL_ACC) ||
+              (q_ir == ROR_ACC) || (q_ir == SBC_IMM) || (q_ir == SBC_IMM2))
             d_t = T1;
 
           // These instructions are in their last cycle but do not prefetch.
@@ -831,6 +832,7 @@ reg s_to_pcl;              // load pcl with s (adl)
 reg aac_op;                // final cycle of an aac inst (db)
 reg adc_op;                // final cycle of an adc inst (db, sb)
 reg and_op;                // final cycle of an and inst (db, sb)
+reg arr_op;                // final cycle of an arr inst (db, sb)
 reg asl_acc_op;            // perform asl_acc inst (db, sb)
 reg asl_mem_op;            // perform meat of asl inst for memory addressing modes (db, sb)
 reg bit_op;                // final cycle of a bit inst (db, sb)
@@ -944,6 +946,7 @@ reg one_to_i;              // used to supress irqs while processing an interrupt
     aac_op               = (val);    \
     adc_op               = (val);    \
     and_op               = (val);    \
+    arr_op               = (val);    \
     asl_acc_op           = (val);    \
     asl_mem_op           = (val);    \
     bit_op               = (val);    \
@@ -1118,16 +1121,16 @@ always @*
               zero_to_abh = 1'b1;
               dl_to_abl   = 1'b1;
             end
-          ASL_ACC, LSR_ACC, ROL_ACC, ROR_ACC:
-            begin
-              ac_to_ai = 1'b1;
-              ac_to_bi = 1'b1;
-            end
-          ASR_IMM:
+          ARR_IMM, ASR_IMM:
             begin
               load_prg_byte = 1'b1;
               ac_to_bi      = 1'b1;
               dl_to_bi      = 1'b1;
+            end
+          ASL_ACC, LSR_ACC, ROL_ACC, ROR_ACC:
+            begin
+              ac_to_ai = 1'b1;
+              ac_to_bi = 1'b1;
             end
           BCC, BCS, BEQ, BMI, BNE, BPL, BVC, BVS:
             begin
@@ -1181,7 +1184,7 @@ always @*
               y_to_ai    = 1'b1;
               neg1_to_bi = 1'b1;
             end
-          DOP_IMM, DOP_IMM2, DOP_IMM3, DOP_IMM4, DOP_IMM5, ARR_IMM, ASR_IMM, ATX_IMM, AXS_IMM:
+          DOP_IMM, DOP_IMM2, DOP_IMM3, DOP_IMM4, DOP_IMM5, ATX_IMM, AXS_IMM:
             begin
               load_prg_byte = 1'b1;
             end
@@ -1354,6 +1357,11 @@ always @*
             begin
               load_prg_byte = 1'b1;
               asl_acc_op    = 1'b1;
+            end
+          ARR_IMM:
+            begin
+              load_prg_byte = 1'b1;
+              arr_op        = 1'b1;
             end
           ASL_ZP, LSR_ZP, RLA_ZP, ROL_ZP, ROR_ZP, RRA_ZP, SLO_ZP, SRE_ZP:
             begin
@@ -2570,13 +2578,13 @@ assign pcl_db     = pcl_to_dor;
 assign ac_sb      = ac_to_ai             | tax_op               | tay_op;
 assign add_sb     = adc_op               | aluinc_to_abh        | aluinc_to_dor        |
                     aluinc_to_s          | alusum_to_abh        | alusum_to_pch        |
-                    alusum_to_s          | and_op               | asl_acc_op           |
-                    asl_mem_op           | bit_op               | cmp_op               |
-                    dec_op               | dex_op               | dey_op               |
-                    eor_op               | inc_op               | inx_op               |
-                    iny_op               | lsr_acc_op           | lsr_mem_op           |
-                    ora_op               | rol_acc_op           | rol_mem_op           |
-                    ror_acc_op           | ror_mem_op;
+                    alusum_to_s          | and_op               | arr_op               |
+                    asl_acc_op           | asl_mem_op           | bit_op               |
+                    cmp_op               | dec_op               | dex_op               |
+                    dey_op               | eor_op               | inc_op               |
+                    inx_op               | iny_op               | lsr_acc_op           |
+                    lsr_mem_op           | ora_op               | rol_acc_op           |
+                    rol_mem_op           | ror_acc_op           | ror_mem_op;
 assign x_sb       = txa_op               | txs_op               | x_to_ai              |
                     x_to_bi              | x_to_dor;
 assign y_sb       = tya_op               | y_to_ai              | y_to_bi              |
@@ -2585,18 +2593,18 @@ assign s_sb       = s_to_ai              | tsx_op;
 assign sb_adh     = aluinc_to_abh        | alusum_to_abh        | alusum_to_pch        |
                     one_to_ai            | one_to_i;
 assign sb_db      = aac_op               | adc_op               | aluinc_to_dor        |
-                    and_op               | asl_acc_op           | asl_mem_op           |
-                    bit_op               | cmp_op               | dl_to_s              |
-                    dec_op               | dex_op               | dey_op               |
-                    dl_to_ai             | eor_op               | inc_op               |
-                    inx_op               | iny_op               | lda_op               |
-                    ldx_op               | ldy_op               | lsr_acc_op           |
-                    lsr_mem_op           | one_to_i             | ora_op               |
-                    rol_acc_op           | rol_mem_op           | ror_acc_op           |
-                    ror_mem_op           | tax_op               | tay_op               |
-                    tsx_op               | txa_op               | tya_op               |
-                    x_to_bi              | x_to_dor             | y_to_bi              |
-                    y_to_dor;
+                    and_op               | arr_op               | asl_acc_op           |
+                    asl_mem_op           | bit_op               | cmp_op               |
+                    dl_to_s              | dec_op               | dex_op               |
+                    dey_op               | dl_to_ai             | eor_op               |
+                    inc_op               | inx_op               | iny_op               |
+                    lda_op               | ldx_op               | ldy_op               |
+                    lsr_acc_op           | lsr_mem_op           | one_to_i             |
+                    ora_op               | rol_acc_op           | rol_mem_op           |
+                    ror_acc_op           | ror_mem_op           | tax_op               |
+                    tay_op               | tsx_op               | txa_op               |
+                    tya_op               | x_to_bi              | x_to_dor             |
+                    y_to_bi              | y_to_dor;
 assign adh_abh    = aluinc_to_abh        | alusum_to_abh        | dl_to_abh            |
                     ff_to_abh            | load_prg_byte        | load_prg_byte_noinc  |
                     one_to_abh           | zero_to_abh;
@@ -2615,9 +2623,10 @@ assign sb_s       = aluinc_to_s          | alusum_to_s          | dl_to_s       
                     txs_op;
 assign zero_add   = zero_to_ai;
 assign sb_ac      = aac_op               | adc_op               | and_op               |
-                    asl_acc_op           | eor_op               | lda_op               |
-                    lsr_acc_op           | ora_op               | rol_acc_op           |
-                    ror_acc_op           | txa_op               | tya_op;
+                    arr_op               | asl_acc_op           | eor_op               |
+                    lda_op               | lsr_acc_op           | ora_op               |
+                    rol_acc_op           | ror_acc_op           | txa_op               |
+                    tya_op;
 assign sb_add     = ac_to_ai             | dl_to_ai             | neg1_to_ai           |
                     one_to_ai            | s_to_ai              | x_to_ai              |
                     y_to_ai;
@@ -2632,6 +2641,7 @@ assign acr_c      = adc_op               | asl_acc_op           | asl_mem_op    
                     rol_acc_op           | rol_mem_op           | ror_acc_op           |
                     ror_mem_op;
 assign db0_c      = dl_to_p;
+assign db6_c      = arr_op;
 assign db7_c      = aac_op;
 assign ir5_c      = clc_op               | sec_op;
 assign db3_d      = dl_to_p;
@@ -2639,29 +2649,31 @@ assign ir5_d      = cld_op               | sed_op;
 assign db2_i      = dl_to_p              | one_to_i;
 assign ir5_i      = cli_op               | sei_op;
 assign db7_n      = aac_op               | adc_op               | and_op               |
-                    asl_acc_op           | asl_mem_op           | cmp_op               |
-                    dec_op               | dex_op               | dey_op               |
-                    dl_bits67_to_p       | dl_to_p              | eor_op               |
+                    arr_op               | asl_acc_op           | asl_mem_op           |
+                    cmp_op               | dec_op               | dex_op               |
+                    dey_op               | dl_bits67_to_p       | dl_to_p              |
+                    eor_op               | inc_op               | inx_op               |
+                    iny_op               | lda_op               | ldx_op               |
+                    ldy_op               | lsr_acc_op           | lsr_mem_op           |
+                    ora_op               | rol_acc_op           | rol_mem_op           |
+                    ror_acc_op           | ror_mem_op           | tax_op               |
+                    tay_op               | tsx_op               | txa_op               |
+                    tya_op;
+assign avr_v      = adc_op;
+assign db6_v      = dl_bits67_to_p       | dl_to_p;
+assign db5xor6_v  = arr_op;
+assign zero_v     = clv_op;
+assign db1_z      = dl_to_p;
+assign dbz_z      = aac_op               | adc_op               | and_op               |
+                    arr_op               | asl_acc_op           | asl_mem_op           |
+                    bit_op               | cmp_op               | dec_op               |
+                    dex_op               | dey_op               | eor_op               |
                     inc_op               | inx_op               | iny_op               |
                     lda_op               | ldx_op               | ldy_op               |
                     lsr_acc_op           | lsr_mem_op           | ora_op               |
                     rol_acc_op           | rol_mem_op           | ror_acc_op           |
                     ror_mem_op           | tax_op               | tay_op               |
                     tsx_op               | txa_op               | tya_op;
-assign avr_v      = adc_op;
-assign db6_v      = dl_bits67_to_p       | dl_to_p;
-assign zero_v     = clv_op;
-assign db1_z      = dl_to_p;
-assign dbz_z      = aac_op               | adc_op               | and_op               |
-                    asl_acc_op           | asl_mem_op           | bit_op               |
-                    cmp_op               | dec_op               | dex_op               |
-                    dey_op               | eor_op               | inc_op               |
-                    inx_op               | iny_op               | lda_op               |
-                    ldx_op               | ldy_op               | lsr_acc_op           |
-                    lsr_mem_op           | ora_op               | rol_acc_op           |
-                    rol_mem_op           | ror_acc_op           | ror_mem_op           |
-                    tax_op               | tay_op               | tsx_op               |
-                    txa_op               | tya_op;
 assign ands       = and_op               | bit_op;
 assign eors       = eor_op;
 assign ors        = ora_op;
@@ -2673,10 +2685,10 @@ assign sums       = adc_op               | aluinc_to_abh        | aluinc_to_abl 
                     dec_op               | dex_op               | dey_op               |
                     inc_op               | inx_op               | iny_op               |
                     rol_acc_op           | rol_mem_op;
-assign srs        = lsr_acc_op           | lsr_mem_op           | ror_acc_op           |
-                    ror_mem_op;
+assign srs        = arr_op               | lsr_acc_op           | lsr_mem_op           |
+                    ror_acc_op           | ror_mem_op;
 
-assign addc       = (adc_op | rol_acc_op | rol_mem_op | ror_acc_op | ror_mem_op) ? q_c :
+assign addc       = (adc_op | arr_op | rol_acc_op | rol_mem_op | ror_acc_op | ror_mem_op) ? q_c :
                     aluinc_to_abh        | aluinc_to_abl        | aluinc_to_bi         |
                     aluinc_to_dor        | aluinc_to_s          | cmp_op               |
                     inc_op               | inx_op               | iny_op;
@@ -2744,6 +2756,7 @@ assign d_x              = (sb_x)            ? sb_out                        : q_
 assign d_y              = (sb_y)            ? sb_out                        : q_y;
 assign d_c              = (acr_c)           ? acr                           :
                           (db0_c)           ? db_out[0]                     :
+                          (db6_c)           ? db_out[6]                     :
                           (db7_c)           ? db_out[7]                     :
                           (ir5_c)           ? q_ir[5]                       : q_c;
 assign d_d              = (db3_d)           ? db_out[3]                     :
@@ -2752,6 +2765,7 @@ assign d_i              = (db2_i)           ? db_out[2]                     :
                           (ir5_i)           ? q_ir[5]                       : q_i;
 assign d_n              = (db7_n)           ? db_out[7]                     : q_n;
 assign d_v              = (avr_v)           ? avr                           :
+                          (db5xor6_v)       ? db_out[5] ^ db_out[6]         :
                           (db6_v)           ? db_out[6]                     :
                           (zero_v)          ? 1'b0                          : q_v;
 assign d_z              = (db1_z)           ? db_out[1]                     :
