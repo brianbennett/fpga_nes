@@ -587,17 +587,17 @@ always @*
         begin
           // These instructions are in their last cycle but do not prefetch.
           if ((q_ir == AAC_IMM)  || (q_ir == AAC_IMM2) || (q_ir == ARR_IMM)  ||
-              (q_ir == ASR_IMM)  || (q_ir == ATX_IMM)  || (q_ir == AXS_IMM)  ||
-              (q_ir == CLC)      || (q_ir == CLD)      || (q_ir == CLI)      ||
-              (q_ir == CLV)      || (q_ir == DOP_IMM)  || (q_ir == DOP_IMM2) ||
-              (q_ir == DOP_IMM3) || (q_ir == DOP_IMM4) || (q_ir == DOP_IMM5) ||
-              (q_ir == HLT)      || (q_ir == LDA_IMM)  || (q_ir == LDX_IMM)  ||
-              (q_ir == LDY_IMM)  || (q_ir == NOP)      || (q_ir == NOP_1A)   ||
-              (q_ir == NOP_3A)   || (q_ir == NOP_5A)   || (q_ir == NOP_7A)   ||
-              (q_ir == NOP_DA)   || (q_ir == NOP_FA)   || (q_ir == SEC)      ||
-              (q_ir == SED)      || (q_ir == SEI)      || (q_ir == TAX)      ||
-              (q_ir == TAY)      || (q_ir == TSX)      || (q_ir == TXA)      ||
-              (q_ir == TXS)      || (q_ir == TYA))
+              (q_ir == ATX_IMM)  || (q_ir == AXS_IMM)  || (q_ir == CLC)      ||
+              (q_ir == CLD)      || (q_ir == CLI)      || (q_ir == CLV)      ||
+              (q_ir == DOP_IMM)  || (q_ir == DOP_IMM2) || (q_ir == DOP_IMM3) ||
+              (q_ir == DOP_IMM4) || (q_ir == DOP_IMM5) || (q_ir == HLT)      ||
+              (q_ir == LDA_IMM)  || (q_ir == LDX_IMM)  || (q_ir == LDY_IMM)  ||
+              (q_ir == NOP)      || (q_ir == NOP_1A)   || (q_ir == NOP_3A)   ||
+              (q_ir == NOP_5A)   || (q_ir == NOP_7A)   || (q_ir == NOP_DA)   ||
+              (q_ir == NOP_FA)   || (q_ir == SEC)      || (q_ir == SED)      ||
+              (q_ir == SEI)      || (q_ir == TAX)      || (q_ir == TAY)      ||
+              (q_ir == TSX)      || (q_ir == TXA)      || (q_ir == TXS)      ||
+              (q_ir == TYA))
             d_t = T0;
 
           // Check for not-taken branches.  These instructions must setup the not-taken PC during
@@ -620,11 +620,11 @@ always @*
       T2:
         begin
           // These instructions prefetch the next opcode during their final cycle.
-          if ((q_ir == ADC_IMM) || (q_ir == AND_IMM) || (q_ir == ASL_ACC) || (q_ir == CMP_IMM) ||
-              (q_ir == CPX_IMM) || (q_ir == CPY_IMM) || (q_ir == DEX)     || (q_ir == DEY)     ||
-              (q_ir == EOR_IMM) || (q_ir == INX)     || (q_ir == INY)     || (q_ir == LSR_ACC) ||
-              (q_ir == ORA_IMM) || (q_ir == ROL_ACC) || (q_ir == ROR_ACC) || (q_ir == SBC_IMM) ||
-              (q_ir == SBC_IMM2))
+          if ((q_ir == ADC_IMM) || (q_ir == AND_IMM) || (q_ir == ASL_ACC) || (q_ir == ASR_IMM) ||
+              (q_ir == CMP_IMM) || (q_ir == CPX_IMM) || (q_ir == CPY_IMM) || (q_ir == DEX)     ||
+              (q_ir == DEY)     || (q_ir == EOR_IMM) || (q_ir == INX)     || (q_ir == INY)     ||
+              (q_ir == LSR_ACC) || (q_ir == ORA_IMM) || (q_ir == ROL_ACC) || (q_ir == ROR_ACC) ||
+              (q_ir == SBC_IMM) || (q_ir == SBC_IMM2))
             d_t = T1;
 
           // These instructions are in their last cycle but do not prefetch.
@@ -1123,6 +1123,12 @@ always @*
               ac_to_ai = 1'b1;
               ac_to_bi = 1'b1;
             end
+          ASR_IMM:
+            begin
+              load_prg_byte = 1'b1;
+              ac_to_bi      = 1'b1;
+              dl_to_bi      = 1'b1;
+            end
           BCC, BCS, BEQ, BMI, BNE, BPL, BVC, BVS:
             begin
               load_prg_byte = 1'b1;
@@ -1354,6 +1360,11 @@ always @*
               dl_to_ai = 1'b1;
               dl_to_bi = 1'b1;
             end
+          ASR_IMM, LSR_ACC:
+            begin
+              load_prg_byte = 1'b1;
+              lsr_acc_op    = 1'b1;
+            end
           BCC, BCS, BEQ, BMI, BNE, BPL, BVC, BVS:
             begin
               alusum_to_pcl  = 1'b1;
@@ -1472,11 +1483,6 @@ always @*
             begin
               load_prg_byte = 1'b1;
               ldy_op        = 1'b1;
-            end
-          LSR_ACC:
-            begin
-              load_prg_byte = 1'b1;
-              lsr_acc_op    = 1'b1;
             end
           ORA_IMM:
             begin
