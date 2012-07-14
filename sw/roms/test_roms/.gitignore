@@ -2,3 +2,5 @@
 !.gitignore
 !nestest.nes
 !tutor.nes
+!instr_test-v3/
+!instr_test-v3/*

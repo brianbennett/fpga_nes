@@ -63,25 +63,26 @@ module rp2a03
 //
 wire        cpu_ready;
 wire [ 7:0] cpu_din;
+wire        cpu_nirq;
 wire [ 7:0] cpu_dout;
 wire [15:0] cpu_a;
 wire        cpu_r_nw;
 
 cpu cpu_blk(
-  .clk(clk_in),
-  .rst(rst_in),
-  .ready(cpu_ready),
-  .dbgreg_sel(dbgreg_sel_in),
+  .clk_in(clk_in),
+  .rst_in(rst_in),
+  .ready_in(cpu_ready),
+  .dbgreg_sel_in(dbgreg_sel_in),
   .dbgreg_in(dbgreg_d_in),
-  .dbgreg_wr(dbgreg_wr_in),
-  .din(cpu_din),
-  .nnmi(nnmi_in),
-  .nres(nres_in),
-  .nirq(1'b1),
-  .dout(cpu_dout),
-  .a(cpu_a),
-  .r_nw(cpu_r_nw),
-  .brk(brk_out),
+  .dbgreg_wr_in(dbgreg_wr_in),
+  .d_in(cpu_din),
+  .nnmi_in(nnmi_in),
+  .nres_in(nres_in),
+  .nirq_in(cpu_nirq),
+  .d_out(cpu_dout),
+  .a_out(cpu_a),
+  .r_nw_out(cpu_r_nw),
+  .brk_out(brk_out),
   .dbgreg_out(dbgreg_d_out)
 );
 
@@ -142,6 +143,8 @@ sprdma sprdma_blk(
 
 assign cpu_ready = rdy_in & !sprdma_active;
 assign cpu_din   = d_in | jp_dout | audio_dout;
+assign cpu_nirq  = 1'b1;
+
 assign d_out     = (sprdma_active) ? sprdma_dout : cpu_dout;
 assign a_out     = (sprdma_active) ? sprdma_a    : cpu_a;
 assign r_nw_out  = (sprdma_active) ? sprdma_r_nw : cpu_r_nw;
