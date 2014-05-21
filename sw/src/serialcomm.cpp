@@ -63,29 +63,40 @@ BOOL SerialComm::Init()
 {
     BOOL ret = TRUE;
 
+	LPWSTR *szArgList;
+    int argCount;
+
+    szArgList = CommandLineToArgvW(GetCommandLine(), &argCount);
+
+	WCHAR* comPath = (WCHAR*)malloc((wcslen(L"\\\\.\\COM")+10)*sizeof(WCHAR));
+	wcscpy(comPath, L"\\\\.\\COM");
+	wcscat(comPath, szArgList[1]);
+
     if (ret)
     {
-        m_hSerialComm = CreateFile(_T("COM5"),
+        m_hSerialComm = CreateFile(comPath,
                                    GENERIC_READ | GENERIC_WRITE,
                                    0,
-                                   0,
+                                   NULL,
                                    OPEN_EXISTING,
                                    FILE_ATTRIBUTE_NORMAL,
-                                   0);
+                                   NULL);
 
         if (m_hSerialComm == INVALID_HANDLE_VALUE)
         {
             ret = FALSE;
             if (GetLastError() == ERROR_FILE_NOT_FOUND)
             {
-                MessageBox(NULL, _T("\"COM5\" file not found."), _T("NesDbg"), MB_OK);
+                MessageBox(NULL, _T("\"COM23\" file not found."), _T("NesDbg"), MB_OK);
             }
             else
             {
-                MessageBox(NULL, _T("Unknown error initializing COM5"), _T("NesDbg"), MB_OK);
+                MessageBox(NULL, _T("Unknown error initializing COM23"), _T("NesDbg"), MB_OK);
             }
         }
     }
+
+	LocalFree(szArgList);
 
     DCB serialConfig = {0};
     if (ret)
@@ -95,13 +106,13 @@ BOOL SerialComm::Init()
         if (!GetCommState(m_hSerialComm, &serialConfig))
         {
             ret = FALSE;
-            MessageBox(NULL, _T("Error getting comm state for COM5."), _T("NesDbg"), MB_OK);
+            MessageBox(NULL, _T("Error getting comm state for COM23."), _T("NesDbg"), MB_OK);
         }
     }
 
     if (ret)
     {
-        serialConfig.BaudRate = CBR_38400;
+        serialConfig.BaudRate = CBR_256000 ;
         serialConfig.ByteSize = 8;
         serialConfig.StopBits = ONESTOPBIT;
         serialConfig.Parity   = ODDPARITY;
@@ -172,6 +183,7 @@ BOOL SerialComm::SendData(
     UINT        numBytes)  // number of bytes to transmit
 {
     BOOL  ret          = TRUE;
+	
     DWORD bytesWritten = 0;
 
     ret = WriteFile(m_hSerialComm, pData, numBytes, &bytesWritten, NULL);
@@ -181,7 +193,7 @@ BOOL SerialComm::SendData(
     {
         ret = FALSE;
     }
-
+	
     return ret;
 }
 
@@ -196,6 +208,7 @@ BOOL SerialComm::ReceiveData(
     UINT  numBytes)  // number of bytes to receive
 {
     BOOL  ret       = TRUE;
+	
     DWORD bytesRead = 0;
 
     ret = ReadFile(m_hSerialComm, pData, numBytes, &bytesRead, NULL);
@@ -205,6 +218,6 @@ BOOL SerialComm::ReceiveData(
     {
         ret = FALSE;
     }
-
+	
     return ret;
 }

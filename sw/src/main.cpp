@@ -82,6 +82,7 @@ INT WINAPI WinMain(
     LPSTR     pCmdLine,       // command line string, excluding program name
     INT       cmdShow)        // controls how window should be shown
 {
+
     WNDCLASSEX wcex    = {0};
     HWND       hWnd    = NULL;
     INT        ret     = 0;
