@@ -31,6 +31,61 @@
 #include "scriptmgr.h"
 #include "serialcomm.h"
 
+HANDLE th = NULL;
+
+class ThreadX
+{
+public:
+	bool loopJudge;
+
+	ThreadX()  
+	{
+		loopJudge = true;
+	}  
+
+	static unsigned __stdcall ThreadStaticEntryPoint(void * pThis)  
+	{  
+		ThreadX * pthX = (ThreadX*)pThis;   // the tricky cast  
+		pthX->ThreadEntryPoint();           // now call the true entry-point-function  
+		return 1;                           // the thread exit code  
+	}
+
+	void ThreadEntryPoint()  
+	{
+		int last_keys = -1;
+		while(loopJudge)
+		{
+			JOYINFOEX joy;
+			joy.dwSize = sizeof(joy);
+			joy.dwFlags = JOY_RETURNALL;
+			if (joyGetPosEx(JOYSTICKID1, &joy) != MMSYSERR_NOERROR) {
+				MessageBox(NULL, _T("JoyPad Error."), _T("NesDbg"), MB_OK);
+				break;
+			}
+			unsigned char keys = 0;
+			keys |= !!(joy.dwButtons & 4) * 1;
+			keys |= !!(joy.dwButtons & 8) * 2;
+			keys |= !!(joy.dwButtons & 0x40) * 4;
+			keys |= !!(joy.dwButtons & 0x80) * 8;
+			keys |= (joy.dwYpos < 0x4000) * 16;
+			keys |= (joy.dwYpos >= 0xC000) * 32;
+			keys |= (joy.dwXpos < 0x4000) * 64;
+			keys |= (joy.dwXpos >= 0xC000) * 128;
+
+			keys = ~keys;
+			//if (keys != last_keys) {
+				JoypadCfgPacket joypadCfgPacket(keys);
+				g_pNesDbg->GetSerialComm()->SendData(joypadCfgPacket.PacketData(),
+													 joypadCfgPacket.SizeInBytes());
+				last_keys = keys;
+			//}
+		}
+	}
+};
+
+ThreadX* o1;
+
+
 /***************************************************************************************************
 ** % Method:      NesDbg::NesDbg()
 *  % Description: NesDbg constructor.
@@ -350,34 +405,24 @@ VOID NesDbg::LoadRom()
 
 VOID NesDbg::TestJoypad()
 {
-	int last_keys = -1;
-	for(;;) {
-		JOYINFOEX joy;
-		joy.dwSize = sizeof(joy);
-		joy.dwFlags = JOY_RETURNALL;
-		if (joyGetPosEx(JOYSTICKID1, &joy) != MMSYSERR_NOERROR) {
-			MessageBox(NULL, _T("JoyPad Error."), _T("NesDbg"), MB_OK);
-			break;
-		}
-		unsigned char keys = 0;
-		keys |= !!(joy.dwButtons & 4) * 1;
-		keys |= !!(joy.dwButtons & 8) * 2;
-		keys |= !!(joy.dwButtons & 0x40) * 4;
-		keys |= !!(joy.dwButtons & 0x80) * 8;
-		keys |= (joy.dwYpos < 0x4000) * 16;
-		keys |= (joy.dwYpos >= 0xC000) * 32;
-		keys |= (joy.dwXpos < 0x4000) * 64;
-		keys |= (joy.dwXpos >= 0xC000) * 128;
+	o1 = new ThreadX();
+	unsigned  uiThreadID;
 
-		keys = ~keys;
-		//if (keys != last_keys) {
-			JoypadCfgPacket joypadCfgPacket(keys);
-			g_pNesDbg->GetSerialComm()->SendData(joypadCfgPacket.PacketData(),
-												 joypadCfgPacket.SizeInBytes());
-			last_keys = keys;
-		//}
+	th = (HANDLE)_beginthreadex( NULL,         // security  
+                                   0,            // stack size  
+                                   ThreadX::ThreadStaticEntryPoint,  
+                                   o1,           // arg list  
+                                   CREATE_SUSPENDED,  // so we can later call ResumeThread()  
+                                   &uiThreadID );
+	ResumeThread(th);
+}
+
+VOID NesDbg::StopJoypad()
+{
+	if(th != NULL)
+	{
+		o1->loopJudge = false;
 	}
-	 
 }
 
 /***************************************************************************************************

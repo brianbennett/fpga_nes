@@ -8,6 +8,7 @@
 #define IDM_TOOLS_TESTSCRIPTS                   40002
 #define IDM_FILE_LOADROM                        40003
 #define IDM_JOYPAD1                             40004
+#define IDM_STOPJOYPAD_1                        40005
 #define IDC_TESTSCRIPTS_PROGRESS                40011
 #define IDC_TESTSCRIPTS_RUN                     40013
 #define IDC_TESTSCRIPTS_DONE                    40014

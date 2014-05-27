@@ -28,6 +28,7 @@ MainMenu MENU
         MENUITEM "Test Scripts...", IDM_TOOLS_TESTSCRIPTS
     }
     MENUITEM "Joypad", IDM_JOYPAD1
+    MENUITEM "StopJoypad ", IDM_STOPJOYPAD_1
 }
 
 

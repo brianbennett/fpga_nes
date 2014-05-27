@@ -62,6 +62,9 @@ static LRESULT CALLBACK WndProc(
 				case IDM_JOYPAD1:
 					g_pNesDbg->TestJoypad();
 					break;
+				case IDM_STOPJOYPAD_1:
+					g_pNesDbg->StopJoypad();
+					break;
             }
             break;
         case WM_DESTROY:
