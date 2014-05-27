@@ -97,6 +97,7 @@ BOOL SerialComm::Init()
     }
 
 	LocalFree(szArgList);
+	free(comPath);
 
     DCB serialConfig = {0};
     if (ret)

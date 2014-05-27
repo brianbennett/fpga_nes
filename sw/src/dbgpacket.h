@@ -45,6 +45,7 @@ enum DbgPacketOpCode
     DbgPacketOpCodePpuMemWr          = 0x0A, // write PPU memory
     DbgPacketOpCodePpuDisable        = 0x0B, // disable PPU
     DbgPacketOpCodeCartSetCfg        = 0x0C, // set cartridge config from iNES header
+	DbgPacketOpCodeJoypadSetCfg		 = 0x0D  // joypad control config
 };
 
 enum CpuReg
@@ -306,6 +307,25 @@ private:
     CartSetCfgPacket();
     CartSetCfgPacket& operator=(const CartSetCfgPacket&);
     CartSetCfgPacket(const CartSetCfgPacket&);
+};
+
+/***************************************************************************************************
+** % Class:       JoypadCfgPacket
+*  % Description: Send Joypad control info to fpga.
+***************************************************************************************************/
+class JoypadCfgPacket : public DbgPacket
+{
+public:
+    JoypadCfgPacket(const BYTE pJOYPADCONTROL);
+    virtual ~JoypadCfgPacket() {};
+
+    virtual UINT SizeInBytes() const;
+    virtual UINT ReturnBytesExpected() const { return 0; }
+
+private:
+    JoypadCfgPacket();
+    JoypadCfgPacket& operator=(const JoypadCfgPacket&);
+    JoypadCfgPacket(const JoypadCfgPacket&);
 };
 
 #endif // DBGPACKET_H

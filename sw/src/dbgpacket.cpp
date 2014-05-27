@@ -477,3 +477,25 @@ UINT CartSetCfgPacket::SizeInBytes() const
 {
     return sizeof(BYTE) + (5 * sizeof(BYTE));
 }
+
+/***************************************************************************************************
+** % Method:      JoypadCfgPacket::JoypadCfgPacket()
+*  % Description: JoypadCfgPacket constructor.
+***************************************************************************************************/
+JoypadCfgPacket::JoypadCfgPacket(
+    const BYTE pJOYPADCONTROL)  // iNES header pointer (should point at byte 0)
+{
+    m_pData = new BYTE [1 + 1];
+
+    m_pData[0] = DbgPacketOpCodeJoypadSetCfg;
+	m_pData[1] = pJOYPADCONTROL;
+}
+
+/***************************************************************************************************
+** % Method:      CartSetCfgPacket::SizeInBytes()
+*  % Description: Returns total packet size, in bytes.
+***************************************************************************************************/
+UINT JoypadCfgPacket::SizeInBytes() const
+{
+    return sizeof(BYTE) + (1 * sizeof(BYTE));
+}

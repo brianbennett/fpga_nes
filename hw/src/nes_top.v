@@ -32,18 +32,22 @@ module nes_top
   input  wire       BTN_EAST,          // console reset
   input  wire       RXD,               // rs-232 rx signal
   input  wire [3:0] SW,                // switches
-  input  wire       NES_JOYPAD_DATA1,  // joypad 1 input signal
-  input  wire       NES_JOYPAD_DATA2,  // joypad 2 input signal
+  //input  wire       NES_JOYPAD_DATA1,  // joypad 1 input signal
+  //input  wire       NES_JOYPAD_DATA2,  // joypad 2 input signal
   output wire       TXD,               // rs-232 tx signal
   output wire       VGA_HSYNC,         // vga hsync signal
   output wire       VGA_VSYNC,         // vga vsync signal
   output wire [2:0] VGA_RED,           // vga red signal
   output wire [2:0] VGA_GREEN,         // vga green signal
   output wire [1:0] VGA_BLUE,          // vga blue signal
-  output wire       NES_JOYPAD_CLK,    // joypad output clk signal
-  output wire       NES_JOYPAD_LATCH,  // joypad output latch signal
-  output wire       AUDIO              // pwm output audio channel
+  //output wire       NES_JOYPAD_CLK,    // joypad output clk signal
+  //output wire       NES_JOYPAD_LATCH,  // joypad output latch signal
+  output wire       AUDIO,             // pwm output audio channel
+  output wire		  AUDIO_SD,				// OP enable/disable pin
+  output wire [7:0] led
 );
+
+assign AUDIO_SD = 1'b1; //enable AUD_SD
 
 //
 // System Memory Buses
@@ -71,6 +75,10 @@ wire [ 7:0] rp2a03_dbgreg_din;
 wire        rp2a03_dbgreg_wr;
 wire [ 7:0] rp2a03_dbgreg_dout;
 
+// JOYPAD
+wire [ 7:0] joypad_cfg;
+wire        joypad_cfg_upd;
+
 rp2a03 rp2a03_blk(
   .clk_in(CLK_100MHZ),
   .rst_in(BTN_SOUTH),
@@ -82,10 +90,14 @@ rp2a03 rp2a03_blk(
   .a_out(rp2a03_a),
   .r_nw_out(rp2a03_r_nw),
   .brk_out(rp2a03_brk),
+  /*
   .jp_data1_in(NES_JOYPAD_DATA1),
   .jp_data2_in(NES_JOYPAD_DATA2),
   .jp_clk(NES_JOYPAD_CLK),
   .jp_latch(NES_JOYPAD_LATCH),
+  */
+  .joypad_cfg_in(joypad_cfg),
+  .joypad_cfg_upd_in(joypad_cfg_upd),
   .mute_in(SW),
   .audio_out(AUDIO),
   .dbgreg_sel_in(rp2a03_dbgreg_sel),
@@ -234,7 +246,9 @@ hci hci_blk(
   .ppu_vram_a(hci_ppu_vram_a),
   .ppu_vram_dout(hci_ppu_vram_dout),
   .cart_cfg(cart_cfg),
-  .cart_cfg_upd(cart_cfg_upd)
+  .cart_cfg_upd(cart_cfg_upd),
+  .joypad_cfg(joypad_cfg),
+  .joypad_cfg_upd(joypad_cfg_upd)
 );
 
 // Mux cpumc signals from rp2a03 or hci blk, depending on debug break state (hci_active).
@@ -256,6 +270,8 @@ assign hci_ppu_vram_din = cart_chr_dout | vram_dout;
 
 // Issue NMI interupt on PPU vertical blank.
 assign rp2a03_nnmi = ppu_nvbl;
+
+assign led = joypad_cfg;
 
 endmodule
 

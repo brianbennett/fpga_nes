@@ -32,28 +32,27 @@ module jp
   input  wire        wr,        // write enable signal
   input  wire [15:0] addr,      // 16-bit memory address
   input  wire        din,       // data input bus
-  input  wire        jp_data1,  // joypad 1 input signal
-  input  wire        jp_data2,  // joypad 2 input signal
-  output wire        jp_clk,    // joypad output clk signal
-  output wire        jp_latch,  // joypad output latch signal
+  input  wire [ 7:0] joypad_cfg_in,  // joypad input signal
+  input  wire        joypad_cfg_upd_in,  // joypad cfg input signal
   output reg  [ 7:0] dout       // data output bus
 );
+reg [ 7:0]	joypad_cfg_latch;
 
-//
-// FFs for tracking/reading current controller state.
-//
+wire jp_latch;
+
 reg [7:0] q_jp1_state, d_jp1_state;
 reg [7:0] q_jp2_state, d_jp2_state;
 reg       q_jp_clk,    d_jp_clk;
 reg       q_jp_latch,  d_jp_latch;
 reg [8:0] q_cnt,       d_cnt;
 
+
 always @(posedge clk)
   begin
     if (rst)
       begin
         q_jp1_state <= 8'h00;
-        q_jp2_state <= 8'h00;
+		  q_jp2_state <= 8'h00;
         q_jp_clk    <= 1'b0;
         q_jp_latch  <= 1'b0;
         q_cnt       <= 9'h00;
@@ -61,7 +60,7 @@ always @(posedge clk)
     else
       begin
         q_jp1_state <= d_jp1_state;
-        q_jp2_state <= d_jp2_state;
+		  q_jp2_state <= d_jp2_state;
         q_jp_clk    <= d_jp_clk;
         q_jp_latch  <= d_jp_latch;
         q_cnt       <= d_cnt;
@@ -74,7 +73,7 @@ always @*
   begin
     // Default most FFs to current state.
     d_jp1_state = q_jp1_state;
-    d_jp2_state = q_jp2_state;
+	 d_jp2_state = q_jp2_state;
     d_jp_clk    = q_jp_clk;
     d_jp_latch  = q_jp_latch;
 
@@ -84,8 +83,8 @@ always @*
     // clock 7 more times to read other 7 buttons.  Controller states are active low.
     if (q_cnt[5:1] == 5'h00)
       begin
-        d_jp1_state[state_idx] = ~jp_data1;
-        d_jp2_state[state_idx] = ~jp_data2;
+        d_jp1_state[state_idx] = ~joypad_cfg_latch[state_idx];
+		  d_jp2_state[state_idx] = 1;
 
         if (q_cnt[8:1] == 8'h00)
           d_jp_latch = 1'b1;
@@ -101,10 +100,8 @@ always @*
 
 assign state_idx = q_cnt[8:6] - 3'h1;
 assign jp_latch  = q_jp_latch;
-assign jp_clk    = q_jp_clk;
 
 localparam [15:0] JOYPAD1_MMR_ADDR = 16'h4016;
-localparam [15:0] JOYPAD2_MMR_ADDR = 16'h4017;
 
 localparam S_STROBE_WROTE_0 = 1'b0,
            S_STROBE_WROTE_1 = 1'b1;
@@ -123,14 +120,12 @@ always @(posedge clk)
       begin
         q_addr           <= 16'h0000;
         q_jp1_read_state <= 9'h000;
-        q_jp2_read_state <= 9'h000;
         q_strobe_state   <= S_STROBE_WROTE_0;
       end
     else
       begin
         q_addr           <= addr;
         q_jp1_read_state <= d_jp1_read_state;
-        q_jp2_read_state <= d_jp2_read_state;
         q_strobe_state   <= d_strobe_state;
       end
   end
@@ -141,7 +136,7 @@ always @*
 
     // Default FFs to current state.
     d_jp1_read_state = q_jp1_read_state;
-    d_jp2_read_state = q_jp2_read_state;
+	 d_jp2_read_state = q_jp2_read_state;
     d_strobe_state   = q_strobe_state;
 
     if (addr[15:1] == JOYPAD1_MMR_ADDR[15:1])
@@ -163,7 +158,7 @@ always @*
                   begin
                     d_strobe_state = S_STROBE_WROTE_0;
                     d_jp1_read_state = { q_jp1_state, 1'b0 };
-                    d_jp2_read_state = { q_jp2_state, 1'b0 };
+						  d_jp2_read_state = { q_jp2_state, 1'b1 };
                   end
               end
 
@@ -171,11 +166,19 @@ always @*
             // should be 1.
             else if (!wr && !addr[0])
               d_jp1_read_state = { 1'b1, q_jp1_read_state[8:1] };
-            else if (!wr && addr[0])
+				else if (!wr && addr[0])
               d_jp2_read_state = { 1'b1, q_jp2_read_state[8:1] };
           end
       end
   end
 
-endmodule
 
+always @(posedge joypad_cfg_upd_in)
+  begin
+    if( !jp_latch )
+	   begin
+		  joypad_cfg_latch = joypad_cfg_in;
+		end
+  end
+
+endmodule

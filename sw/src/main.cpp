@@ -59,6 +59,9 @@ static LRESULT CALLBACK WndProc(
                 case IDM_TOOLS_TESTSCRIPTS:
                     g_pNesDbg->LaunchTestScriptDlg();
                     break;
+				case IDM_JOYPAD1:
+					g_pNesDbg->TestJoypad();
+					break;
             }
             break;
         case WM_DESTROY:

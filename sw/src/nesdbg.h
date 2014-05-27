@@ -33,6 +33,7 @@
 #include <tchar.h>
 
 #include "util.h"
+#include "debug.h"
 
 class ScriptMgr;
 class SerialComm;
@@ -52,6 +53,7 @@ public:
     VOID LaunchRawDbgDlg();
     VOID LaunchTestScriptDlg();
     VOID LoadRom();
+	VOID TestJoypad();
 
     ScriptMgr*  GetScriptMgr() { return m_pScriptMgr; }
     SerialComm* GetSerialComm() { return m_pSerialComm; }

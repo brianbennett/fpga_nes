@@ -40,13 +40,17 @@ module rp2a03
   output wire [15:0] a_out,          // address bus
   output wire        r_nw_out,       // read/write select (write low)
   output wire        brk_out,        // debug break signal
-
+  
+  /*
   // Joypad signals.
   input  wire        jp_data1_in,    // joypad 1 input signal
   input  wire        jp_data2_in,    // joypad 2 input signal
   output wire        jp_clk,         // joypad output clk signal
   output wire        jp_latch,       // joypad output latch signal
-
+  */
+  // Joypad signals.
+  input	wire [ 7:0]	joypad_cfg_in,
+  input	wire        joypad_cfg_upd_in,
   // Audio signals.
   input  wire [ 3:0] mute_in,        // disable autio channels
   output wire        audio_out,      // pwm audio output
@@ -113,10 +117,8 @@ jp jp_blk(
   .wr(~cpu_r_nw),
   .addr(cpu_a),
   .din(cpu_dout[0]),
-  .jp_data1(jp_data1_in),
-  .jp_data2(jp_data2_in),
-  .jp_clk(jp_clk),
-  .jp_latch(jp_latch),
+  .joypad_cfg_in(joypad_cfg_in),
+  .joypad_cfg_upd_in(joypad_cfg_upd_in),
   .dout(jp_dout)
 );
 
