@@ -431,7 +431,7 @@ VOID NesDbg::StopJoypad()
 ***************************************************************************************************/
 const TCHAR* NesDbg::GetMessageBoxTitle()
 {
-    static const TCHAR* pMsgBoxTitle = _T("NesDbg");
+    static const TCHAR* pMsgBoxTitle = _T("FPGA NES µ÷ÊÔÆ÷");
     return pMsgBoxTitle;
 }
 

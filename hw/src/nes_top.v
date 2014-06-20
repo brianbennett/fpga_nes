@@ -37,9 +37,9 @@ module nes_top
   output wire       TXD,               // rs-232 tx signal
   output wire       VGA_HSYNC,         // vga hsync signal
   output wire       VGA_VSYNC,         // vga vsync signal
-  output wire [2:0] VGA_RED,           // vga red signal
-  output wire [2:0] VGA_GREEN,         // vga green signal
-  output wire [1:0] VGA_BLUE,          // vga blue signal
+  output wire [3:0] VGA_RED,           // vga red signal
+  output wire [3:0] VGA_GREEN,         // vga green signal
+  output wire [3:0] VGA_BLUE,          // vga blue signal
   //output wire       NES_JOYPAD_CLK,    // joypad output clk signal
   //output wire       NES_JOYPAD_LATCH,  // joypad output latch signal
   output wire       AUDIO,             // pwm output audio channel

@@ -36,9 +36,9 @@ module ppu
   input  wire [ 7:0] vram_d_in,     // video memory data bus (input)
   output wire        hsync_out,     // vga hsync signal
   output wire        vsync_out,     // vga vsync signal
-  output wire [ 2:0] r_out,         // vga red signal
-  output wire [ 2:0] g_out,         // vga green signal
-  output wire [ 1:0] b_out,         // vga blue signal
+  output wire [ 3:0] r_out,         // vga red signal
+  output wire [ 3:0] g_out,         // vga green signal
+  output wire [ 3:0] b_out,         // vga blue signal
   output wire [ 7:0] ri_d_out,      // register interface data out
   output wire        nvbl_out,      // /VBL (low during vertical blank)
   output wire [13:0] vram_a_out,    // video memory address bus
